@@ -84,15 +84,20 @@ export async function middleware(request: NextRequest) {
     request.headers.get("x-real-ip") ||
     "unknown";
 
-  // Rate limit auth endpoints
-  if (AUTH_PATHS.some((p) => pathname.startsWith(p))) {
-    const { allowed, remaining } = rateLimit(ip, 60, 15 * 60 * 1000);
+  // Rate limit by path type — each gets its own counter (prefixed key)
+  const isAuth = AUTH_PATHS.some((p) => pathname.startsWith(p));
+  const isApi = API_PATHS.some((p) => pathname.startsWith(p));
+
+  if (isAuth) {
+    // Auth pages: 120 requests per 5 minutes (page loads, redirects, etc.)
+    // Actual login/signup attempts are separately rate-limited in their API routes
+    const { allowed, remaining } = rateLimit(`auth:${ip}`, 120, 5 * 60 * 1000);
     if (!allowed) {
       const response = NextResponse.json(
-        { error: "Too many requests. Please try again later." },
+        { error: "Too many requests. Please try again in a few minutes." },
         { status: 429 }
       );
-      response.headers.set("Retry-After", "900");
+      response.headers.set("Retry-After", "300");
       return addSecurityHeaders(response);
     }
 
@@ -106,9 +111,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Rate limit API endpoints
-  if (API_PATHS.some((p) => pathname.startsWith(p))) {
-    const { allowed, remaining } = rateLimit(ip, 300, 60 * 1000);
+  if (isApi) {
+    // API endpoints: 300 requests per minute
+    const { allowed, remaining } = rateLimit(`api:${ip}`, 300, 60 * 1000);
     if (!allowed) {
       const response = NextResponse.json(
         { error: "Rate limit exceeded." },
@@ -128,8 +133,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // General request handling
-  const { allowed } = rateLimit(ip, 500, 60 * 1000);
+  // General page requests: 500 per minute
+  const { allowed } = rateLimit(`page:${ip}`, 500, 60 * 1000);
   if (!allowed) {
     const response = NextResponse.json(
       { error: "Too many requests. Please slow down." },

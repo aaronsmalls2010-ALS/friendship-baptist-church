@@ -10,7 +10,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FormSuccess } from "@/components/shared/form-success";
 import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter";
 import { signUpSchema, type SignUpFormData } from "@/lib/validations/auth";
-import { createClient } from "@/lib/supabase/client";
 import {
   Mail,
   Lock,
@@ -73,33 +72,23 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signUp({
-        email: result.data.email,
-        password: result.data.password,
-        options: {
-          data: {
-            first_name: result.data.firstName,
-            last_name: result.data.lastName,
-            phone: result.data.phone || undefined,
-          },
-        },
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: result.data.email,
+          password: result.data.password,
+          firstName: result.data.firstName,
+          lastName: result.data.lastName,
+          phone: result.data.phone || "",
+          honeypot: result.data.honeypot || "",
+        }),
       });
 
-      if (error) {
-        if (error.message.includes("already registered")) {
-          setServerError(
-            "An account with this email already exists. Please sign in instead."
-          );
-        } else if (error.message.includes("rate limit")) {
-          setServerError(
-            "Too many sign-up attempts. Please try again in a few minutes."
-          );
-        } else {
-          setServerError(
-            error.message || "Something went wrong. Please try again."
-          );
-        }
+      const data = await response.json();
+
+      if (!response.ok) {
+        setServerError(data.error || "Something went wrong. Please try again.");
         return;
       }
 
@@ -125,7 +114,7 @@ export default function RegisterPage() {
             <div className="mt-6">
               <FormSuccess
                 title="Account Created!"
-                message="We've sent a verification link to your email. Please check your inbox and click the link to activate your account."
+                message="Welcome to the Friendship Baptist Church family! Your account is ready. You can now sign in and explore your member portal."
                 actionLabel="Go to Login"
                 actionHref="/auth/login"
               />

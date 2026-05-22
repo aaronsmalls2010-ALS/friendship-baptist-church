@@ -8,6 +8,7 @@ import {
   SlideUpItem,
 } from "@/components/motion/slide-up";
 import { CTAButton } from "@/components/shared/cta-button";
+import { EditableText } from "@/components/cms/editable-text";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -268,8 +269,7 @@ function GalleryTab() {
         <div className="rounded-xl border border-warm-200 bg-warm-50 p-6 text-center">
           <ImageIcon className="mx-auto mb-2 h-8 w-8 text-warm-400" />
           <p className="text-warm-600">
-            Photo gallery coming soon. Check back for images from our worship
-            services and events.
+            <EditableText id="media.gallery.placeholder" fallback="Photo gallery coming soon. Check back for images from our worship services and events." as="span" multiline />
           </p>
         </div>
       </FadeIn>
@@ -321,11 +321,10 @@ function TestimoniesTab() {
           <MessageCircleHeart className="h-10 w-10 text-purple-400" />
           <div>
             <h3 className="font-heading text-lg font-bold text-warm-900">
-              Has God been working in your life?
+              <EditableText id="media.testimonies.cta.heading" fallback="Has God been working in your life?" as="span" />
             </h3>
             <p className="mt-1 text-warm-500">
-              We would love to hear your testimony and share it with the church
-              family.
+              <EditableText id="media.testimonies.cta.description" fallback="We would love to hear your testimony and share it with the church family." as="span" multiline />
             </p>
           </div>
           <CTAButton href="/contact" variant="primary">
@@ -342,8 +341,8 @@ export default function MediaPage() {
   return (
     <>
       <PageHero
-        title="Media Center"
-        subtitle="Sermons, music, and testimonies to feed your spirit"
+        title={<EditableText id="media.hero.title" fallback="Media Center" as="span" />}
+        subtitle={<EditableText id="media.hero.subtitle" fallback="Sermons, music, and testimonies to feed your spirit" as="span" />}
         breadcrumbs={[{ label: "Media" }]}
       />
 

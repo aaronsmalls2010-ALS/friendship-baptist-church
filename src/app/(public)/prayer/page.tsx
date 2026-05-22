@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Heart, Clock, CheckCircle2, HandHeart } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
-import { SectionHeading } from "@/components/shared/section-heading";
 import { PageHero } from "@/components/shared/page-hero";
 import { ScriptureDivider } from "@/components/shared/scripture-divider";
 import { FormSuccess } from "@/components/shared/form-success";
@@ -22,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MOCK_PRAYER_REQUESTS } from "@/lib/mock-data";
+import { EditableText } from "@/components/cms/editable-text";
 
 const categories = [
   "Health",
@@ -97,10 +97,21 @@ export default function PrayerPage() {
       <section className="section-padding bg-warm-50 dark:bg-warm-950">
         <div className="container-narrow">
           <FadeIn>
-            <SectionHeading
-              title="Share Your Prayer Request"
-              subtitle="Let our prayer warriors lift you up before the Lord"
-            />
+            <div className="text-center mb-10 lg:mb-14">
+              <EditableText
+                id="prayer.submit.title"
+                fallback="Share Your Prayer Request"
+                as="h2"
+                className="text-fluid-3xl font-bold text-warm-900 dark:text-warm-50"
+              />
+              <EditableText
+                id="prayer.submit.subtitle"
+                fallback="Let our prayer warriors lift you up before the Lord"
+                as="p"
+                className="mt-3 text-fluid-base text-warm-600 dark:text-warm-400 max-w-2xl mx-auto"
+              />
+              <div className="mt-4 h-1 w-16 rounded-full bg-gradient-purple mx-auto" />
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.2}>
@@ -195,18 +206,41 @@ export default function PrayerPage() {
 
       {/* Scripture Divider */}
       <ScriptureDivider
-        text="The prayer of a righteous person is powerful and effective."
-        reference="James 5:16"
+        text={
+          <EditableText
+            id="prayer.scripture.text"
+            fallback="The prayer of a righteous person is powerful and effective."
+            as="span"
+          />
+        }
+        reference={
+          <EditableText
+            id="prayer.scripture.reference"
+            fallback="James 5:16"
+            as="span"
+          />
+        }
       />
 
       {/* Community Prayers */}
       <section className="section-padding">
         <div className="container-wide">
           <FadeIn>
-            <SectionHeading
-              title="Pray With Us"
-              subtitle="Join our congregation in lifting up these prayer needs"
-            />
+            <div className="text-center mb-10 lg:mb-14">
+              <EditableText
+                id="prayer.community.title"
+                fallback="Pray With Us"
+                as="h2"
+                className="text-fluid-3xl font-bold text-warm-900 dark:text-warm-50"
+              />
+              <EditableText
+                id="prayer.community.subtitle"
+                fallback="Join our congregation in lifting up these prayer needs"
+                as="p"
+                className="mt-3 text-fluid-base text-warm-600 dark:text-warm-400 max-w-2xl mx-auto"
+              />
+              <div className="mt-4 h-1 w-16 rounded-full bg-gradient-purple mx-auto" />
+            </div>
           </FadeIn>
 
           <SlideUpContainer className="grid grid-cols-1 gap-6 lg:grid-cols-2">

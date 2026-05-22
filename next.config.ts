@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // ── Image optimization ──
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -11,22 +12,102 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // ── Security headers (applied to all routes) ──
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: [
+          // Prevent clickjacking
           { key: "X-Frame-Options", value: "DENY" },
+          // Prevent MIME type sniffing attacks
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "origin-when-cross-origin" },
+          // Control referrer information sent with requests
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Restrict powerful browser features
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value:
+              "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
+          },
+          // Force HTTPS for 2 years with preload
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          // Prevent cross-origin information leakage
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+          // DNS prefetch control
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+      // Cache control for static assets
+      {
+        source: "/images/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Prevent caching of auth pages
+      {
+        source: "/auth/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+          { key: "Pragma", value: "no-cache" },
+          { key: "Expires", value: "0" },
+        ],
+      },
+      // Prevent caching of portal/admin pages
+      {
+        source: "/portal/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
+          },
+        ],
+      },
+      {
+        source: "/admin/(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate",
           },
         ],
       },
     ];
   },
+
+  // ── Redirects for security ──
+  async redirects() {
+    return [
+      // Redirect common attack paths to 404
+      { source: "/wp-admin", destination: "/not-found", permanent: false },
+      { source: "/wp-admin/:path*", destination: "/not-found", permanent: false },
+      { source: "/wp-login.php", destination: "/not-found", permanent: false },
+      { source: "/wp-content/:path*", destination: "/not-found", permanent: false },
+      { source: "/xmlrpc.php", destination: "/not-found", permanent: false },
+      { source: "/.env", destination: "/not-found", permanent: false },
+      { source: "/.env.local", destination: "/not-found", permanent: false },
+      { source: "/phpmyadmin", destination: "/not-found", permanent: false },
+      { source: "/admin.php", destination: "/not-found", permanent: false },
+    ];
+  },
+
+  // ── Powered-by header removal ──
+  poweredByHeader: false,
+
+  // ── Strict mode for React ──
+  reactStrictMode: true,
 };
 
 export default nextConfig;

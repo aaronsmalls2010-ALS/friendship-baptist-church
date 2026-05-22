@@ -9,6 +9,8 @@ import { ScriptureRotator } from "@/components/brand/scripture-rotator";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { CHURCH_INFO } from "@/lib/constants";
+import { EditableText } from "@/components/cms/editable-text";
+import { EditableImage } from "@/components/cms/editable-image";
 
 export default function HomePage() {
   return (
@@ -17,13 +19,13 @@ export default function HomePage() {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0">
-          <Image
-            src="/images/church/cross.jpg"
+          <EditableImage
+            id="home.hero.bg"
+            fallback="/images/church/cross.jpg"
             alt=""
             fill
             className="object-cover"
             priority
-            quality={85}
           />
           <div className="absolute inset-0 bg-gradient-hero" />
           <div className="absolute inset-0 bg-purple-950/40" />
@@ -37,7 +39,7 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             <p className="font-scripture italic text-gold-300 text-fluid-lg mb-4">
-              Welcome to
+              <EditableText id="home.hero.welcome" fallback="Welcome to" as="span" />
             </p>
           </motion.div>
 
@@ -47,10 +49,10 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="text-fluid-hero font-heading font-bold leading-tight mb-4"
           >
-            The Friendship
+            <EditableText id="home.hero.title1" fallback="The Friendship" as="span" />
             <br />
             <span className="text-gradient-warm bg-clip-text text-transparent bg-gradient-to-r from-peach-300 to-gold-300">
-              Baptist Church
+              <EditableText id="home.hero.title2" fallback="Baptist Church" as="span" />
             </span>
           </motion.h1>
 
@@ -60,7 +62,7 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.6 }}
             className="font-scripture italic text-gold-300 text-fluid-xl mb-2"
           >
-            The Church That Christ Built
+            <EditableText id="home.hero.tagline" fallback="The Church That Christ Built" as="span" />
           </motion.p>
 
           <motion.p
@@ -151,11 +153,12 @@ export default function HomePage() {
             <FadeIn direction="left">
               <div className="relative">
                 <div className="aspect-[3/4] relative rounded-2xl overflow-hidden shadow-glow-lg">
-                  <Image
-                    src="/images/pastor/pastor-robe.png"
+                  <EditableImage
+                    id="home.pastor.photo"
+                    fallback="/images/pastor/pastor-robe.png"
                     alt="Pastor Isiah Smalls"
                     fill
-                    className="object-cover"
+                    className="object-cover object-top"
                     sizes="(max-width: 768px) 100vw, 50vw"
                   />
                 </div>
@@ -172,21 +175,24 @@ export default function HomePage() {
                   {CHURCH_INFO.pastor}
                 </h2>
                 <div className="space-y-4 text-warm-600 dark:text-warm-400">
-                  <p>
-                    Welcome to The Friendship Baptist Church, where we believe
-                    that true fellowship begins with love, grows through faith,
-                    and endures by the grace of God.
-                  </p>
-                  <p>
-                    Rooted in the rich Lowcountry Gullah Geechee tradition, our
-                    church family has been a beacon of hope and worship for
-                    generations. Whether you&apos;re a lifelong member or visiting
-                    for the first time, you have a home here.
-                  </p>
-                  <p>
-                    Come as you are, and leave transformed by the power of God&apos;s
-                    love.
-                  </p>
+                  <EditableText
+                    id="home.pastor.p1"
+                    as="p"
+                    multiline
+                    fallback="Welcome to The Friendship Baptist Church, where we believe that true fellowship begins with love, grows through faith, and endures by the grace of God."
+                  />
+                  <EditableText
+                    id="home.pastor.p2"
+                    as="p"
+                    multiline
+                    fallback="Rooted in the rich Lowcountry Gullah Geechee tradition, our church family has been a beacon of hope and worship for generations. Whether you're a lifelong member or visiting for the first time, you have a home here."
+                  />
+                  <EditableText
+                    id="home.pastor.p3"
+                    as="p"
+                    multiline
+                    fallback="Come as you are, and leave transformed by the power of God's love."
+                  />
                 </div>
                 <div className="mt-8">
                   <CTAButton href="/pastor" variant="primary">
@@ -213,24 +219,28 @@ export default function HomePage() {
             {[
               {
                 title: "Ministries",
+                descId: "home.connect.ministries.desc",
                 desc: "Find your place of service and grow in your calling",
                 href: "/ministries",
                 icon: Users,
               },
               {
                 title: "Events",
+                descId: "home.connect.events.desc",
                 desc: "Join us for fellowship, worship, and community gatherings",
                 href: "/events",
                 icon: BookOpen,
               },
               {
                 title: "Prayer",
+                descId: "home.connect.prayer.desc",
                 desc: "Share your prayer requests and let us lift you up",
                 href: "/prayer",
                 icon: Heart,
               },
               {
                 title: "Media",
+                descId: "home.connect.media.desc",
                 desc: "Watch sermons, listen to worship music, and be blessed",
                 href: "/media",
                 icon: Video,
@@ -247,9 +257,12 @@ export default function HomePage() {
                   <h3 className="font-heading text-lg font-semibold text-warm-900 dark:text-warm-50 mb-2">
                     {item.title}
                   </h3>
-                  <p className="text-sm text-warm-600 dark:text-warm-400">
-                    {item.desc}
-                  </p>
+                  <EditableText
+                    id={item.descId}
+                    fallback={item.desc}
+                    as="p"
+                    className="text-sm text-warm-600 dark:text-warm-400"
+                  />
                 </a>
               </SlideUpItem>
             ))}

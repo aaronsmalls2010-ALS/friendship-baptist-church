@@ -18,6 +18,7 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { PageHero } from "@/components/shared/page-hero";
 import { ScriptureDivider } from "@/components/shared/scripture-divider";
 import { FormSuccess } from "@/components/shared/form-success";
+import { EditableText } from "@/components/cms/editable-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,8 +74,8 @@ export default function MinistriesPage() {
   return (
     <>
       <PageHero
-        title="Our Ministries"
-        subtitle="Find your place of service in the body of Christ"
+        title={<EditableText id="ministries.hero.title" fallback="Our Ministries" as="span" />}
+        subtitle={<EditableText id="ministries.hero.subtitle" fallback="Find your place of service in the body of Christ" as="span" />}
         breadcrumbs={[{ label: "Ministries" }]}
       />
 
@@ -83,8 +84,8 @@ export default function MinistriesPage() {
         <div className="container-wide">
           <FadeIn>
             <SectionHeading
-              title="Serving Together"
-              subtitle="Every ministry is an opportunity to use your God-given gifts"
+              title={<EditableText id="ministries.grid.heading" fallback="Serving Together" as="span" />}
+              subtitle={<EditableText id="ministries.grid.subtitle" fallback="Every ministry is an opportunity to use your God-given gifts" as="span" />}
             />
           </FadeIn>
 
@@ -144,8 +145,8 @@ export default function MinistriesPage() {
 
       {/* ── Scripture Divider ────────────────────────────────────────── */}
       <ScriptureDivider
-        text="For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do."
-        reference="Ephesians 2:10"
+        text={<EditableText id="ministries.scripture.text" fallback="For we are God's handiwork, created in Christ Jesus to do good works, which God prepared in advance for us to do." as="span" multiline />}
+        reference={<EditableText id="ministries.scripture.reference" fallback="Ephesians 2:10" as="span" />}
       />
 
       {/* ── Join a Ministry Form ─────────────────────────────────────── */}
@@ -153,8 +154,8 @@ export default function MinistriesPage() {
         <div className="container-narrow">
           <FadeIn>
             <SectionHeading
-              title="Get Involved"
-              subtitle="Ready to serve? Let us know which ministry interests you"
+              title={<EditableText id="ministries.join.heading" fallback="Get Involved" as="span" />}
+              subtitle={<EditableText id="ministries.join.subtitle" fallback="Ready to serve? Let us know which ministry interests you" as="span" />}
             />
           </FadeIn>
 

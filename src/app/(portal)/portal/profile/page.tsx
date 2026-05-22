@@ -28,7 +28,7 @@ export default function MyProfilePage() {
   const [address, setAddress] = useState(currentUser.address || "");
   const [city, setCity] = useState(currentUser.city || "Beaufort");
   const [state, setState] = useState(currentUser.state || "SC");
-  const [zip, setZip] = useState(currentUser.zip || "29902");
+  const [zip, setZip] = useState(currentUser.zip || "29907");
 
   // Emergency Contact
   const [emergencyName, setEmergencyName] = useState(

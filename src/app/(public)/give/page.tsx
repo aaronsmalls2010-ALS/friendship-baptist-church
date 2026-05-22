@@ -8,6 +8,7 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import { PageHero } from "@/components/shared/page-hero";
 import { ScriptureDivider } from "@/components/shared/scripture-divider";
 import { FormSuccess } from "@/components/shared/form-success";
+import { EditableText } from "@/components/cms/editable-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,8 +127,8 @@ export default function GivePage() {
     <>
       {/* Hero */}
       <PageHero
-        title="Give"
-        subtitle="Every generous act of giving is from above"
+        title={<EditableText id="give.hero.title" fallback="Give" as="span" />}
+        subtitle={<EditableText id="give.hero.subtitle" fallback="Every generous act of giving is from above" as="span" />}
         overlay="warm"
         breadcrumbs={[{ label: "Give" }]}
       />
@@ -137,8 +138,8 @@ export default function GivePage() {
         <div className="container-narrow">
           <FadeIn>
             <SectionHeading
-              title="Support Our Ministry"
-              subtitle="Your generosity makes a difference in the lives of our church family and community"
+              title={<EditableText id="give.form.heading" fallback="Support Our Ministry" as="span" />}
+              subtitle={<EditableText id="give.form.subtitle" fallback="Your generosity makes a difference in the lives of our church family and community" as="span" />}
             />
           </FadeIn>
 
@@ -275,8 +276,8 @@ export default function GivePage() {
 
       {/* Scripture Divider */}
       <ScriptureDivider
-        text="Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver."
-        reference="2 Corinthians 9:7"
+        text={<EditableText id="give.scripture.text" fallback="Each of you should give what you have decided in your heart to give, not reluctantly or under compulsion, for God loves a cheerful giver." as="span" multiline />}
+        reference={<EditableText id="give.scripture.reference" fallback="2 Corinthians 9:7" as="span" />}
         variant="gold"
       />
 
@@ -285,13 +286,13 @@ export default function GivePage() {
         <div className="container-wide">
           <FadeIn>
             <SectionHeading
-              title="Why We Give"
-              subtitle="Giving is a cornerstone of our faith and an expression of gratitude"
+              title={<EditableText id="give.why.heading" fallback="Why We Give" as="span" />}
+              subtitle={<EditableText id="give.why.subtitle" fallback="Giving is a cornerstone of our faith and an expression of gratitude" as="span" />}
             />
           </FadeIn>
 
           <SlideUpContainer className="grid grid-cols-1 gap-8 md:grid-cols-3">
-            {WHY_WE_GIVE.map((item) => {
+            {WHY_WE_GIVE.map((item, index) => {
               const Icon = item.icon;
               return (
                 <SlideUpItem key={item.title}>
@@ -300,11 +301,9 @@ export default function GivePage() {
                       <Icon className="h-8 w-8 text-gold-600 dark:text-gold-400" />
                     </div>
                     <h3 className="mt-5 font-heading text-xl font-bold text-warm-900 dark:text-warm-50">
-                      {item.title}
+                      <EditableText id={`give.why.title${index + 1}`} fallback={item.title} as="span" />
                     </h3>
-                    <p className="mt-3 leading-relaxed text-warm-600 dark:text-warm-400">
-                      {item.description}
-                    </p>
+                    <EditableText id={`give.why.p${index + 1}`} fallback={item.description} as="p" className="mt-3 leading-relaxed text-warm-600 dark:text-warm-400" multiline />
                   </div>
                 </SlideUpItem>
               );
@@ -318,8 +317,8 @@ export default function GivePage() {
         <div className="container-narrow">
           <FadeIn>
             <SectionHeading
-              title="Giving FAQ"
-              subtitle="Common questions about giving at Friendship Baptist"
+              title={<EditableText id="give.faq.heading" fallback="Giving FAQ" as="span" />}
+              subtitle={<EditableText id="give.faq.subtitle" fallback="Common questions about giving at Friendship Baptist" as="span" />}
             />
           </FadeIn>
 
@@ -335,7 +334,7 @@ export default function GivePage() {
                     {item.question}
                   </AccordionTrigger>
                   <AccordionContent className="leading-relaxed text-warm-600 dark:text-warm-400">
-                    {item.answer}
+                    <EditableText id={`give.faq.q${index + 1}`} fallback={item.answer} as="p" multiline />
                   </AccordionContent>
                 </AccordionItem>
               ))}

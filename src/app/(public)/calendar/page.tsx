@@ -12,6 +12,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { PageHero } from "@/components/shared/page-hero";
 import { CTAButton } from "@/components/shared/cta-button";
+import { EditableText } from "@/components/cms/editable-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MOCK_EVENTS, MOCK_MINISTRIES } from "@/lib/mock-data";
@@ -164,8 +165,8 @@ export default function CalendarPage() {
   return (
     <>
       <PageHero
-        title="Church Calendar"
-        subtitle="Stay connected with what's happening at Friendship Baptist"
+        title={<EditableText id="calendar.hero.title" fallback="Church Calendar" as="span" />}
+        subtitle={<EditableText id="calendar.hero.subtitle" fallback="Stay connected with what's happening at Friendship Baptist" as="span" />}
         breadcrumbs={[{ label: "Calendar" }]}
       />
 
@@ -421,11 +422,10 @@ export default function CalendarPage() {
         <div className="container-narrow text-center">
           <FadeIn>
             <h2 className="text-fluid-2xl font-heading font-bold text-warm-900 dark:text-warm-50 mb-4">
-              Looking for Something Specific?
+              <EditableText id="calendar.cta.heading" fallback="Looking for Something Specific?" as="span" />
             </h2>
             <p className="text-warm-600 dark:text-warm-400 text-lg mb-8 max-w-xl mx-auto">
-              Browse all upcoming events with full details, descriptions, and
-              RSVP options.
+              <EditableText id="calendar.cta.description" fallback="Browse all upcoming events with full details, descriptions, and RSVP options." as="span" multiline />
             </p>
             <CTAButton href="/events" icon={<CalendarDays className="h-5 w-5" />}>
               View All Events

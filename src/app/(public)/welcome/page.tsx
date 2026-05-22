@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { EditableText } from "@/components/cms/editable-text";
+import { EditableImage } from "@/components/cms/editable-image";
 import {
   Select,
   SelectContent,
@@ -35,6 +37,7 @@ const steps = [
     step: 1,
     icon: DoorOpen,
     title: "Arrive & Be Welcomed",
+    descId: "welcome.expect.step1",
     description:
       "Our ushers and greeters will welcome you with a warm smile the moment you walk through the door. We want you to feel at home from your very first step inside.",
   },
@@ -42,6 +45,7 @@ const steps = [
     step: 2,
     icon: Music,
     title: "Worship Together",
+    descId: "welcome.expect.step2",
     description:
       "Experience spirit-filled worship and Biblical preaching that speaks to the heart. Our services are rooted in the rich tradition of African American sacred worship.",
   },
@@ -49,6 +53,7 @@ const steps = [
     step: 3,
     icon: Users,
     title: "Fellowship",
+    descId: "welcome.expect.step3",
     description:
       "After service, stay and connect with our church family. Enjoy conversation, refreshments, and the genuine warmth that makes Friendship Baptist special.",
   },
@@ -56,6 +61,7 @@ const steps = [
     step: 4,
     icon: ArrowRight,
     title: "Next Steps",
+    descId: "welcome.expect.step4",
     description:
       "Discover ways to get connected and grow in your faith — from Sunday School and Bible Study to ministries and volunteer opportunities.",
   },
@@ -156,9 +162,12 @@ export default function WelcomePage() {
                         {s.title}
                       </h3>
                     </div>
-                    <p className="text-sm leading-relaxed text-warm-600 dark:text-warm-400">
-                      {s.description}
-                    </p>
+                    <EditableText
+                      id={s.descId}
+                      fallback={s.description}
+                      as="p"
+                      className="text-sm leading-relaxed text-warm-600 dark:text-warm-400"
+                    />
                   </div>
                 </div>
               </SlideUpItem>
@@ -220,11 +229,12 @@ export default function WelcomePage() {
                     <p className="mt-1 text-warm-600 dark:text-warm-400">
                       {fullAddress}
                     </p>
-                    <p className="mt-2 text-sm text-warm-500">
-                      Located in the heart of downtown Beaufort, just off
-                      Washington Street. Look for our steeple — you can&apos;t
-                      miss it!
-                    </p>
+                    <EditableText
+                      id="welcome.visit.p1"
+                      as="p"
+                      className="mt-2 text-sm text-warm-500"
+                      fallback="Located on Friendship Lane in Beaufort. Look for our steeple — you can't miss it!"
+                    />
                   </div>
                 </div>
               </div>
@@ -402,11 +412,12 @@ export default function WelcomePage() {
             <FadeIn direction="left">
               <div className="relative mx-auto max-w-sm">
                 <div className="aspect-[3/4] relative overflow-hidden rounded-2xl shadow-lg">
-                  <Image
-                    src="/images/pastor/pastor-suit.png"
+                  <EditableImage
+                    id="welcome.pastor.photo"
+                    fallback="/images/pastor/pastor-suit.png"
                     alt="Pastor Isiah Smalls"
                     fill
-                    className="object-cover"
+                    className="object-cover object-top"
                     sizes="(max-width: 768px) 100vw, 40vw"
                   />
                 </div>
@@ -424,19 +435,18 @@ export default function WelcomePage() {
                   You Are Welcome Here
                 </h2>
                 <div className="space-y-4 text-warm-600 dark:text-warm-400 leading-relaxed">
-                  <p>
-                    On behalf of the entire Friendship Baptist Church family, I
-                    want you to know that you are welcome here — just as you are.
-                    Whether you have been walking with the Lord for decades or
-                    are taking your very first steps of faith, there is a place
-                    for you at our table.
-                  </p>
-                  <p>
-                    Our doors are open, our hearts are ready, and our arms are
-                    wide. Come experience the warmth of a congregation that truly
-                    loves like family. We believe that God has led you to this
-                    moment, and we cannot wait to meet you.
-                  </p>
+                  <EditableText
+                    id="welcome.pastor.p1"
+                    as="p"
+                    multiline
+                    fallback="On behalf of the entire Friendship Baptist Church family, I want you to know that you are welcome here — just as you are. Whether you have been walking with the Lord for decades or are taking your very first steps of faith, there is a place for you at our table."
+                  />
+                  <EditableText
+                    id="welcome.pastor.p2"
+                    as="p"
+                    multiline
+                    fallback="Our doors are open, our hearts are ready, and our arms are wide. Come experience the warmth of a congregation that truly loves like family. We believe that God has led you to this moment, and we cannot wait to meet you."
+                  />
                   <p className="font-semibold text-warm-800 dark:text-warm-200">
                     &mdash; {CHURCH_INFO.pastor}
                   </p>

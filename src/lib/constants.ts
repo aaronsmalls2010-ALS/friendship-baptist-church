@@ -3,12 +3,12 @@ export const CHURCH_INFO = {
   tagline: "The Church That Christ Built",
   pastor: "Pastor Isiah Smalls",
   address: {
-    street: "1406 Washington St",
+    street: "36 Friendship Lane",
     city: "Beaufort",
     state: "SC",
-    zip: "29902",
+    zip: "29907",
   },
-  phone: "(843) 524-0634",
+  phone: "(843) 525-1509",
   email: "info@thefriendshipbaptist.com",
   serviceTimes: [
     { day: "Sunday", time: "10:00 AM", name: "Morning Worship" },

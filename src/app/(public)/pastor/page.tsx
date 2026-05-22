@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { EditableText } from "@/components/cms/editable-text";
+import { EditableImage } from "@/components/cms/editable-image";
 import {
   Select,
   SelectContent,
@@ -29,30 +31,35 @@ const milestones = [
   {
     year: "1988",
     title: "Called to Ministry",
+    descId: "pastor.timeline.1988",
     description:
       "As a young man growing up in the Lowcountry, Isiah Smalls felt the undeniable call of God on his life during a revival meeting. Surrendering to that call, he began preaching and teaching in local churches, discovering the gift God had placed within him.",
   },
   {
     year: "1994",
     title: "Seminary Education",
+    descId: "pastor.timeline.1994",
     description:
       "Answering the call to deepen his knowledge of the Word, he pursued theological studies at Morris College and later earned his Master of Divinity, equipping himself to rightly divide the truth and shepherd God's people with wisdom.",
   },
   {
     year: "1998",
     title: "Early Pastoral Ministry",
+    descId: "pastor.timeline.1998",
     description:
       "Pastor Smalls served faithfully in several congregations across the Lowcountry, building a reputation as a compassionate shepherd, a powerful preacher, and a man devoted to prayer and community service.",
   },
   {
     year: "2010",
     title: "Called to Friendship Baptist",
+    descId: "pastor.timeline.2010",
     description:
       "The Lord led Pastor Smalls to The Friendship Baptist Church in Beaufort, South Carolina. Under his leadership, the church experienced a season of spiritual renewal, growth in membership, and a deepened commitment to community outreach.",
   },
   {
     year: "Present",
     title: "A Vision for the Future",
+    descId: "pastor.timeline.present",
     description:
       "Today, Pastor Smalls continues to lead Friendship Baptist with a vision rooted in Biblical truth and community transformation. From launching digital ministry to strengthening youth programs, he is building a bridge between the rich heritage of the church and the needs of a new generation.",
   },
@@ -62,18 +69,21 @@ const visionCards = [
   {
     icon: BookOpen,
     title: "Biblical Teaching",
+    descId: "pastor.vision.teaching",
     description:
       "Pastor Smalls is committed to verse-by-verse, spirit-led teaching of God's Word. He believes the Bible is the living, breathing foundation for every decision, every relationship, and every season of life. His sermons challenge, encourage, and equip believers to walk in truth.",
   },
   {
     icon: Users,
     title: "Community Engagement",
+    descId: "pastor.vision.community",
     description:
       "The church does not exist within four walls. Pastor Smalls has championed outreach programs, partnerships with local organizations, and a culture of service that extends the love of Christ into the neighborhoods, schools, and families of Beaufort.",
   },
   {
     icon: Heart,
     title: "Spiritual Formation",
+    descId: "pastor.vision.formation",
     description:
       "Discipleship is at the heart of his ministry. Through Bible study, mentoring, prayer groups, and intentional fellowship, Pastor Smalls cultivates an environment where every member is growing deeper in their relationship with God and bearing fruit in their daily lives.",
   },
@@ -102,6 +112,7 @@ export default function PastorPage() {
         title="Pastor Isiah Smalls"
         subtitle="Shepherd, Teacher, Servant"
         backgroundImage="/images/pastor/pastor-robe.png"
+        backgroundPosition="top"
         breadcrumbs={[
           { label: "About", href: "/about" },
           { label: "Pastor Smalls" },
@@ -117,32 +128,32 @@ export default function PastorPage() {
                 <p className="font-scripture italic text-peach-500 text-fluid-lg mb-4">
                   A Word from Our Pastor
                 </p>
-                <blockquote className="font-scripture italic text-fluid-xl text-gold-700 dark:text-gold-400 leading-relaxed mb-6">
-                  &ldquo;This church is not just a building — it is a family
-                  knit together by the love of God. When you walk through those
-                  doors, you are not a stranger. You are a brother, a sister, a
-                  child of the Most High. And we are here to walk with you, pray
-                  with you, and believe with you for every promise God has
-                  spoken over your life.&rdquo;
-                </blockquote>
-                <p className="text-warm-600 dark:text-warm-400">
-                  Pastor Smalls brings a shepherd&apos;s heart and a
-                  teacher&apos;s mind to every aspect of ministry at Friendship
-                  Baptist. His leadership is defined by compassion, Biblical
-                  conviction, and a genuine love for every soul that enters the
-                  church.
-                </p>
+                <EditableText
+                  id="pastor.welcome.quote"
+                  as="blockquote"
+                  multiline
+                  className="font-scripture italic text-fluid-xl text-gold-700 dark:text-gold-400 leading-relaxed mb-6"
+                  fallback={`“This church is not just a building — it is a family knit together by the love of God. When you walk through those doors, you are not a stranger. You are a brother, a sister, a child of the Most High. And we are here to walk with you, pray with you, and believe with you for every promise God has spoken over your life.”`}
+                />
+                <EditableText
+                  id="pastor.welcome.desc"
+                  as="p"
+                  multiline
+                  className="text-warm-600 dark:text-warm-400"
+                  fallback="Pastor Smalls brings a shepherd's heart and a teacher's mind to every aspect of ministry at Friendship Baptist. His leadership is defined by compassion, Biblical conviction, and a genuine love for every soul that enters the church."
+                />
               </div>
             </FadeIn>
 
             <FadeIn direction="right" delay={0.2}>
               <div className="relative flex justify-center">
-                <div className="aspect-square w-full max-w-md relative rounded-2xl overflow-hidden shadow-glow-lg">
-                  <Image
-                    src="/images/pastor/pastor-headshot.png"
+                <div className="aspect-[3/4] w-full max-w-md relative rounded-2xl overflow-hidden shadow-glow-lg">
+                  <EditableImage
+                    id="pastor.welcome.photo"
+                    fallback="/images/pastor/pastor-headshot.png"
                     alt="Pastor Isiah Smalls"
                     fill
-                    className="object-cover"
+                    className="object-cover object-top"
                     sizes="(max-width: 768px) 100vw, 400px"
                   />
                 </div>
@@ -192,9 +203,13 @@ export default function PastorPage() {
                       <h3 className="font-heading text-xl font-bold text-warm-900 dark:text-warm-50 mb-2">
                         {milestone.title}
                       </h3>
-                      <p className="text-warm-600 dark:text-warm-400 leading-relaxed">
-                        {milestone.description}
-                      </p>
+                      <EditableText
+                        id={milestone.descId}
+                        fallback={milestone.description}
+                        as="p"
+                        multiline
+                        className="text-warm-600 dark:text-warm-400 leading-relaxed"
+                      />
                     </div>
 
                     {/* Year dot — center on desktop, left on mobile */}
@@ -234,9 +249,13 @@ export default function PastorPage() {
                   <h3 className="font-heading text-xl font-bold text-warm-900 dark:text-warm-50 mb-3">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-warm-600 dark:text-warm-400 leading-relaxed">
-                    {card.description}
-                  </p>
+                  <EditableText
+                    id={card.descId}
+                    fallback={card.description}
+                    as="p"
+                    multiline
+                    className="text-sm text-warm-600 dark:text-warm-400 leading-relaxed"
+                  />
                 </div>
               </SlideUpItem>
             ))}

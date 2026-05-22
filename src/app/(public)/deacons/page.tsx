@@ -3,7 +3,6 @@
 import { Phone, Mail, Users } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { CTAButton } from "@/components/shared/cta-button";
-import { SectionHeading } from "@/components/shared/section-heading";
 import { PageHero } from "@/components/shared/page-hero";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,6 +14,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { MOCK_DEACONS, MOCK_WARDS } from "@/lib/mock-data";
+import { EditableText } from "@/components/cms/editable-text";
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`;
@@ -41,10 +41,21 @@ export default function DeaconsPage() {
       <section className="section-padding">
         <div className="container-wide">
           <FadeIn>
-            <SectionHeading
-              title="Our Deacons"
-              subtitle="Meet the servant leaders who shepherd our church family"
-            />
+            <div className="text-center mb-10 lg:mb-14">
+              <EditableText
+                id="deacons.grid.title"
+                fallback="Our Deacons"
+                as="h2"
+                className="text-fluid-3xl font-bold text-warm-900 dark:text-warm-50"
+              />
+              <EditableText
+                id="deacons.grid.subtitle"
+                fallback="Meet the servant leaders who shepherd our church family"
+                as="p"
+                className="mt-3 text-fluid-base text-warm-600 dark:text-warm-400 max-w-2xl mx-auto"
+              />
+              <div className="mt-4 h-1 w-16 rounded-full bg-gradient-purple mx-auto" />
+            </div>
           </FadeIn>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -107,10 +118,21 @@ export default function DeaconsPage() {
       <section className="section-padding bg-warm-50">
         <div className="container-wide">
           <FadeIn>
-            <SectionHeading
-              title="Ward Assignments"
-              subtitle="Each deacon shepherds families in their assigned ward"
-            />
+            <div className="text-center mb-10 lg:mb-14">
+              <EditableText
+                id="deacons.wards.title"
+                fallback="Ward Assignments"
+                as="h2"
+                className="text-fluid-3xl font-bold text-warm-900 dark:text-warm-50"
+              />
+              <EditableText
+                id="deacons.wards.subtitle"
+                fallback="Each deacon shepherds families in their assigned ward"
+                as="p"
+                className="mt-3 text-fluid-base text-warm-600 dark:text-warm-400 max-w-2xl mx-auto"
+              />
+              <div className="mt-4 h-1 w-16 rounded-full bg-gradient-purple mx-auto" />
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.2}>
@@ -157,52 +179,62 @@ export default function DeaconsPage() {
       <section className="section-padding">
         <div className="container-narrow">
           <FadeIn>
-            <SectionHeading
-              title="The Role of Deacons"
-              subtitle="Servants of Christ, stewards of the church"
-            />
+            <div className="text-center mb-10 lg:mb-14">
+              <EditableText
+                id="deacons.role.title"
+                fallback="The Role of Deacons"
+                as="h2"
+                className="text-fluid-3xl font-bold text-warm-900 dark:text-warm-50"
+              />
+              <EditableText
+                id="deacons.role.subtitle"
+                fallback="Servants of Christ, stewards of the church"
+                as="p"
+                className="mt-3 text-fluid-base text-warm-600 dark:text-warm-400 max-w-2xl mx-auto"
+              />
+              <div className="mt-4 h-1 w-16 rounded-full bg-gradient-purple mx-auto" />
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.15}>
             <div className="space-y-5 text-warm-600 leading-relaxed">
-              <p>
-                At Friendship Baptist Church, our deacons are ordained servant
-                leaders called by God to assist the pastor in the spiritual and
-                practical care of the congregation. They are men of faith,
-                character, and compassion who have devoted their lives to
-                building up the body of Christ through prayer, service, and
-                visitation.
-              </p>
-              <p>
-                Each deacon is assigned a ward&mdash;a group of church families
-                within the Beaufort community. They visit the sick, comfort the
-                bereaved, pray with families during times of crisis, and
-                celebrate with them in times of joy. Their ministry extends
-                beyond the walls of the sanctuary into the homes and hearts of
-                our members.
-              </p>
-              <p>
-                Our deacons also serve alongside the pastor in administering the
-                sacraments of Communion and Baptism, leading devotional services,
-                and ensuring the church operates with integrity and love. They
-                are pillars of our congregation and examples of what it means to
-                live a life of humble service.
-              </p>
+              <EditableText
+                id="deacons.role.desc1"
+                fallback="At Friendship Baptist Church, our deacons are ordained servant leaders called by God to assist the pastor in the spiritual and practical care of the congregation. They are men of faith, character, and compassion who have devoted their lives to building up the body of Christ through prayer, service, and visitation."
+                as="p"
+                multiline
+              />
+              <EditableText
+                id="deacons.role.desc2"
+                fallback="Each deacon is assigned a ward—a group of church families within the Beaufort community. They visit the sick, comfort the bereaved, pray with families during times of crisis, and celebrate with them in times of joy. Their ministry extends beyond the walls of the sanctuary into the homes and hearts of our members."
+                as="p"
+                multiline
+              />
+              <EditableText
+                id="deacons.role.desc3"
+                fallback="Our deacons also serve alongside the pastor in administering the sacraments of Communion and Baptism, leading devotional services, and ensuring the church operates with integrity and love. They are pillars of our congregation and examples of what it means to live a life of humble service."
+                as="p"
+                multiline
+              />
             </div>
           </FadeIn>
 
           {/* Scripture Quote */}
           <FadeIn delay={0.3}>
             <blockquote className="mt-10 rounded-xl bg-purple-50 border-l-4 border-purple-600 p-6 lg:p-8">
-              <p className="font-scripture text-fluid-lg italic text-purple-900 leading-relaxed">
-                &ldquo;In the same way, deacons are to be worthy of respect,
-                sincere, not indulging in much wine, and not pursuing dishonest
-                gain. They must keep hold of the deep truths of the faith with a
-                clear conscience.&rdquo;
-              </p>
-              <cite className="mt-4 block text-sm font-medium tracking-wide uppercase text-purple-600 not-italic">
-                &mdash; 1 Timothy 3:8-9
-              </cite>
+              <EditableText
+                id="deacons.scripture.text"
+                fallback={"“In the same way, deacons are to be worthy of respect, sincere, not indulging in much wine, and not pursuing dishonest gain. They must keep hold of the deep truths of the faith with a clear conscience.”"}
+                as="p"
+                className="font-scripture text-fluid-lg italic text-purple-900 leading-relaxed"
+                multiline
+              />
+              <EditableText
+                id="deacons.scripture.reference"
+                fallback={"— 1 Timothy 3:8-9"}
+                as="p"
+                className="mt-4 text-sm font-medium tracking-wide uppercase text-purple-600"
+              />
             </blockquote>
           </FadeIn>
         </div>
@@ -212,13 +244,18 @@ export default function DeaconsPage() {
       <section className="section-padding bg-warm-50">
         <div className="container-narrow text-center">
           <FadeIn>
-            <h2 className="font-heading text-fluid-2xl font-bold text-warm-900 mb-3">
-              Need Prayer?
-            </h2>
-            <p className="text-warm-600 mb-8 max-w-lg mx-auto">
-              Our deacons and church family are here to support you. Submit a
-              prayer request and let us stand with you in faith.
-            </p>
+            <EditableText
+              id="deacons.cta.title"
+              fallback="Need Prayer?"
+              as="h2"
+              className="font-heading text-fluid-2xl font-bold text-warm-900 mb-3"
+            />
+            <EditableText
+              id="deacons.cta.desc"
+              fallback="Our deacons and church family are here to support you. Submit a prayer request and let us stand with you in faith."
+              as="p"
+              className="text-warm-600 mb-8 max-w-lg mx-auto"
+            />
             <CTAButton href="/prayer" variant="primary">
               Submit a Prayer Request
             </CTAButton>

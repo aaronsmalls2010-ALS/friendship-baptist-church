@@ -14,23 +14,28 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { EditableText } from "@/components/cms/editable-text";
+import { EditableImage } from "@/components/cms/editable-image";
 
 const missionCards = [
   {
     icon: Target,
     title: "Our Mission",
+    descId: "about.mission.desc",
     description:
       "To proclaim the Gospel of Jesus Christ through preaching, teaching, and service, nurturing believers in faith and reaching the lost with the transforming love of God. We exist to glorify God, equip the saints, and serve our community with compassion rooted in the Scriptures.",
   },
   {
     icon: Heart,
     title: "Our Values",
+    descId: "about.values.desc",
     description:
       "We are guided by love for God and neighbor, faithfulness to Biblical truth, unity in the body of Christ, and service to the least of these. We honor the traditions passed down by our ancestors while embracing the work God is doing in this present season.",
   },
   {
     icon: Eye,
     title: "Our Vision",
+    descId: "about.vision.desc",
     description:
       "To be a spirit-filled, community-centered church that raises up disciples, strengthens families, and transforms our Lowcountry community through the power of the Holy Spirit. We envision a church where every member is growing, serving, and walking in purpose.",
   },
@@ -40,32 +45,37 @@ const beliefs = [
   {
     id: "bible",
     title: "The Bible",
+    contentId: "about.beliefs.bible",
     content:
       "We believe the Bible is the inspired, infallible, and authoritative Word of God. It is the foundation of our faith and practice, given by the Holy Spirit to guide, correct, and equip believers for every good work. The Scriptures are sufficient for all matters of doctrine and daily living.",
   },
   {
     id: "god",
     title: "God",
+    contentId: "about.beliefs.god",
     content:
       "We believe in one God, eternally existing in three persons: Father, Son, and Holy Spirit. God is the Creator of all things, sovereign over all creation, infinite in wisdom, holy in nature, and perfect in love. He is worthy of all worship, honor, and praise.",
   },
   {
     id: "jesus",
     title: "Jesus Christ",
+    contentId: "about.beliefs.jesus",
     content:
       "We believe that Jesus Christ is the Son of God, born of a virgin, fully God and fully man. He lived a sinless life, died on the cross as the atoning sacrifice for our sins, rose bodily from the grave on the third day, and ascended to the right hand of the Father where He intercedes for us.",
   },
   {
     id: "salvation",
     title: "Salvation",
+    contentId: "about.beliefs.salvation",
     content:
       "We believe that salvation is a gift of God received through faith in Jesus Christ alone. It is not earned by works but by the grace of God. All who repent of their sins and confess Jesus as Lord are forgiven, born again by the Holy Spirit, and made new creatures in Christ.",
   },
   {
     id: "church",
     title: "The Church",
+    contentId: "about.beliefs.church",
     content:
-      "We believe the Church is the body of Christ, composed of all who have placed their faith in Him. The local church is an assembly of baptized believers, organized for worship, fellowship, discipleship, and mission. We practice baptism by immersion and observe the Lord&apos;s Supper as ordinances given by Christ.",
+      "We believe the Church is the body of Christ, composed of all who have placed their faith in Him. The local church is an assembly of baptized believers, organized for worship, fellowship, discipleship, and mission. We practice baptism by immersion and observe the Lord's Supper as ordinances given by Christ.",
   },
 ];
 
@@ -88,32 +98,31 @@ export default function AboutPage() {
                 <p className="font-scripture italic text-peach-500 text-fluid-lg mb-2">
                   Our Story
                 </p>
-                <h2 className="text-fluid-3xl font-heading font-bold text-warm-900 dark:text-warm-50 mb-6">
-                  A Church Born of Freedom and Faith
-                </h2>
+                <EditableText
+                  id="about.story.heading"
+                  as="h2"
+                  className="text-fluid-3xl font-heading font-bold text-warm-900 dark:text-warm-50 mb-6"
+                  fallback="A Church Born of Freedom and Faith"
+                />
                 <div className="space-y-4 text-warm-600 dark:text-warm-400 leading-relaxed">
-                  <p>
-                    The Friendship Baptist Church was born in the soil of
-                    emancipation, when newly freed men and women of the
-                    Lowcountry gathered beneath moss-draped oaks to worship a God
-                    who had carried them through the unimaginable. From those
-                    sacred gatherings rose a congregation rooted in faith, bound
-                    by fellowship, and anchored in the rich Gullah Geechee
-                    heritage of Beaufort, South Carolina.
-                  </p>
-                  <p>
-                    Through generations of faithfulness, our church has stood as
-                    a pillar in the community — a place where the weary find
-                    rest, the lost find direction, and families find belonging.
-                    From our humble beginnings to the sanctuary we worship in
-                    today, every chapter of our story has been written by the
-                    hand of God.
-                  </p>
-                  <p>
-                    We carry the prayers of our ancestors in our hearts, and we
-                    walk forward with the same faith that built this house of
-                    worship — believing that the best is yet to come.
-                  </p>
+                  <EditableText
+                    id="about.story.p1"
+                    as="p"
+                    multiline
+                    fallback="The Friendship Baptist Church was born in the soil of emancipation, when newly freed men and women of the Lowcountry gathered beneath moss-draped oaks to worship a God who had carried them through the unimaginable. From those sacred gatherings rose a congregation rooted in faith, bound by fellowship, and anchored in the rich Gullah Geechee heritage of Beaufort, South Carolina."
+                  />
+                  <EditableText
+                    id="about.story.p2"
+                    as="p"
+                    multiline
+                    fallback="Through generations of faithfulness, our church has stood as a pillar in the community — a place where the weary find rest, the lost find direction, and families find belonging. From our humble beginnings to the sanctuary we worship in today, every chapter of our story has been written by the hand of God."
+                  />
+                  <EditableText
+                    id="about.story.p3"
+                    as="p"
+                    multiline
+                    fallback="We carry the prayers of our ancestors in our hearts, and we walk forward with the same faith that built this house of worship — believing that the best is yet to come."
+                  />
                 </div>
               </div>
             </FadeIn>
@@ -121,8 +130,9 @@ export default function AboutPage() {
             <FadeIn direction="right" delay={0.2}>
               <div className="relative">
                 <div className="aspect-[4/5] relative rounded-2xl overflow-hidden shadow-glow-lg">
-                  <Image
-                    src="/images/church/exterior.png"
+                  <EditableImage
+                    id="about.story.image"
+                    fallback="/images/church/exterior.png"
                     alt="The Friendship Baptist Church exterior"
                     fill
                     className="object-cover"
@@ -157,9 +167,13 @@ export default function AboutPage() {
                   <h3 className="font-heading text-xl font-bold text-warm-900 dark:text-warm-50 mb-3">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-warm-600 dark:text-warm-400 leading-relaxed">
-                    {card.description}
-                  </p>
+                  <EditableText
+                    id={card.descId}
+                    fallback={card.description}
+                    as="p"
+                    multiline
+                    className="text-sm text-warm-600 dark:text-warm-400 leading-relaxed"
+                  />
                 </div>
               </SlideUpItem>
             ))}
@@ -194,7 +208,12 @@ export default function AboutPage() {
                     {belief.title}
                   </AccordionTrigger>
                   <AccordionContent className="text-warm-600 dark:text-warm-400 leading-relaxed text-base">
-                    {belief.content}
+                    <EditableText
+                      id={belief.contentId}
+                      fallback={belief.content}
+                      as="p"
+                      multiline
+                    />
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -218,28 +237,24 @@ export default function AboutPage() {
 
             <FadeIn delay={0.2}>
               <div className="space-y-5 text-warm-700 dark:text-warm-300 text-fluid-base leading-relaxed">
-                <p>
-                  The Friendship Baptist Church is woven into the fabric of the
-                  Gullah Geechee Lowcountry — a culture born of resilience,
-                  shaped by the tides and the marshgrass, and sustained by an
-                  unshakable faith in God. Our people have been keepers of the
-                  land, the language, and the traditions that connect us to our
-                  African roots and to one another.
-                </p>
-                <p>
-                  Here in Beaufort, where the salt air carries the songs of our
-                  grandmothers and the Spanish moss drapes the oaks like prayer
-                  shawls, our church has stood as a gathering place — not just
-                  for worship, but for celebration, for healing, for community.
-                  We are a people who believe that when we sit together at the
-                  table, when we sing together in the sanctuary, and when we
-                  serve together in the neighborhood, we are doing the work that
-                  God has called us to do.
-                </p>
-                <p>
-                  This is more than a church. This is home. And everyone who
-                  walks through our doors becomes family.
-                </p>
+                <EditableText
+                  id="about.heritage.p1"
+                  as="p"
+                  multiline
+                  fallback="The Friendship Baptist Church is woven into the fabric of the Gullah Geechee Lowcountry — a culture born of resilience, shaped by the tides and the marshgrass, and sustained by an unshakable faith in God. Our people have been keepers of the land, the language, and the traditions that connect us to our African roots and to one another."
+                />
+                <EditableText
+                  id="about.heritage.p2"
+                  as="p"
+                  multiline
+                  fallback="Here in Beaufort, where the salt air carries the songs of our grandmothers and the Spanish moss drapes the oaks like prayer shawls, our church has stood as a gathering place — not just for worship, but for celebration, for healing, for community. We are a people who believe that when we sit together at the table, when we sing together in the sanctuary, and when we serve together in the neighborhood, we are doing the work that God has called us to do."
+                />
+                <EditableText
+                  id="about.heritage.p3"
+                  as="p"
+                  multiline
+                  fallback="This is more than a church. This is home. And everyone who walks through our doors becomes family."
+                />
               </div>
             </FadeIn>
           </div>

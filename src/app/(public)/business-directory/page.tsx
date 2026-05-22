@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { Search, Phone, Mail, Globe, Plus } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
-import { SectionHeading } from "@/components/shared/section-heading";
 import { PageHero } from "@/components/shared/page-hero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MOCK_BUSINESSES } from "@/lib/mock-data";
+import { EditableText } from "@/components/cms/editable-text";
 
 const ALL_CATEGORIES = [
   "All",
@@ -204,10 +204,21 @@ export default function BusinessDirectoryPage() {
       <section className="section-padding bg-warm-50 dark:bg-warm-950">
         <div className="container-narrow">
           <FadeIn>
-            <SectionHeading
-              title="List Your Business"
-              subtitle="Are you a member of Friendship Baptist with a business or service? Let your church family know!"
-            />
+            <div className="text-center mb-10 lg:mb-14">
+              <EditableText
+                id="directory.submit.title"
+                fallback="List Your Business"
+                as="h2"
+                className="text-fluid-3xl font-bold text-warm-900 dark:text-warm-50"
+              />
+              <EditableText
+                id="directory.submit.subtitle"
+                fallback="Are you a member of Friendship Baptist with a business or service? Let your church family know!"
+                as="p"
+                className="mt-3 text-fluid-base text-warm-600 dark:text-warm-400 max-w-2xl mx-auto"
+              />
+              <div className="mt-4 h-1 w-16 rounded-full bg-gradient-purple mx-auto" />
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.2}>

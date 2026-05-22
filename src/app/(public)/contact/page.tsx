@@ -23,6 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Clock, Building2, Send } from "lucide-react";
+import { EditableText } from "@/components/cms/editable-text";
 
 interface ContactForm {
   name: string;
@@ -89,13 +90,20 @@ export default function ContactPage() {
             <FadeIn direction="left">
               <Card className="shadow-card-hover">
                 <CardHeader>
-                  <CardTitle className="font-heading text-fluid-2xl font-bold text-warm-900">
-                    Send Us a Message
+                  <CardTitle>
+                    <EditableText
+                      id="contact.form.title"
+                      fallback="Send Us a Message"
+                      as="h2"
+                      className="font-heading text-fluid-2xl font-bold text-warm-900"
+                    />
                   </CardTitle>
-                  <p className="text-sm text-warm-500">
-                    Fill out the form below and we&apos;ll get back to you as
-                    soon as possible.
-                  </p>
+                  <EditableText
+                    id="contact.form.subtitle"
+                    fallback="Fill out the form below and we'll get back to you as soon as possible."
+                    as="p"
+                    className="text-sm text-warm-500"
+                  />
                 </CardHeader>
                 <CardContent>
                   {submitted ? (
@@ -302,22 +310,43 @@ export default function ContactPage() {
                       <h3 className="font-heading font-bold text-warm-900">
                         Office Hours
                       </h3>
-                      <p className="mt-1 text-sm text-warm-600">
-                        Monday &ndash; Friday: 9:00 AM &ndash; 3:00 PM
-                      </p>
+                      <EditableText
+                        id="contact.office.hours"
+                        fallback="Monday – Friday: 9:00 AM – 3:00 PM"
+                        as="p"
+                        className="mt-1 text-sm text-warm-600"
+                      />
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Map Placeholder */}
-                <div className="flex h-48 items-center justify-center rounded-xl bg-warm-100">
-                  <div className="text-center">
-                    <MapPin className="mx-auto h-8 w-8 text-warm-400" />
-                    <p className="mt-2 text-sm font-medium text-warm-500">
-                      Map Coming Soon
-                    </p>
+                {/* Google Map */}
+                <Card className="overflow-hidden shadow-card-hover">
+                  <div className="relative h-64 w-full">
+                    <iframe
+                      title="Friendship Baptist Church Location"
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3375.0!2d-80.68!3d32.42!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2s36+Friendship+Lane%2C+Beaufort%2C+SC+29907!5e0!3m2!1sen!2sus!4v1"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen={false}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      className="absolute inset-0"
+                    />
                   </div>
-                </div>
+                  <CardContent className="p-3">
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent("36 Friendship Lane, Beaufort, SC 29907")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm font-medium text-purple-700 hover:text-purple-600 transition-colors"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Get Directions
+                    </a>
+                  </CardContent>
+                </Card>
               </div>
             </FadeIn>
           </div>

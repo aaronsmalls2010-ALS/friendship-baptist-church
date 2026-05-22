@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Heart, Video, HandHeart } from "lucide-react";
+import { Menu, X, ChevronDown, Heart, Video, HandHeart, LogIn } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { useScrollPosition } from "@/hooks/use-scroll-position";
 import { PUBLIC_NAV } from "@/lib/constants";
@@ -92,6 +92,22 @@ export function PublicHeader() {
                   </AnimatePresence>
                 </div>
               ))}
+
+              {/* Member Login */}
+              <div className="ml-2 pl-2 border-l border-white/20">
+                <Link
+                  href="/auth/login"
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isScrolled
+                      ? "text-purple-700 hover:bg-purple-50"
+                      : "text-white/80 hover:text-white hover:bg-white/10"
+                  )}
+                >
+                  <LogIn className="h-4 w-4" />
+                  Member Login
+                </Link>
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -242,6 +258,18 @@ function MobileNav({
                 )}
               </div>
             ))}
+
+            {/* Member Login */}
+            <div className="mt-4 pt-4 border-t border-warm-200">
+              <Link
+                href="/auth/login"
+                onClick={onClose}
+                className="flex items-center gap-2 px-4 py-3 rounded-lg font-medium text-purple-700 bg-purple-50 hover:bg-purple-100"
+              >
+                <LogIn className="h-5 w-5" />
+                Member Login
+              </Link>
+            </div>
           </nav>
         </motion.div>
       )}

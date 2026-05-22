@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/providers/theme-provider";
 import { MusicProvider } from "@/providers/music-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { MusicPlayer } from "@/components/media/music-player";
+import { CMSWrapper } from "@/components/cms/cms-wrapper";
 import "./globals.css";
 
 const inter = Inter({
@@ -84,7 +85,9 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             <MusicProvider>
-              {children}
+              <CMSWrapper>
+                {children}
+              </CMSWrapper>
               <MusicPlayer />
             </MusicProvider>
           </AuthProvider>

@@ -7,6 +7,7 @@ import { CTAButton } from "@/components/shared/cta-button";
 import { FadeIn } from "@/components/motion/fade-in";
 import { MOCK_TIMELINE } from "@/lib/mock-data";
 import { Church, Heart } from "lucide-react";
+import { EditableText } from "@/components/cms/editable-text";
 
 // Sort timeline by order
 const timeline = [...MOCK_TIMELINE].sort((a, b) => a.order - b.order);
@@ -33,11 +34,13 @@ export default function HistoryPage() {
               <h2 className="font-heading text-fluid-3xl font-bold text-warm-900">
                 A Journey Through Time
               </h2>
-              <p className="mt-4 text-fluid-base text-warm-600">
-                From humble gatherings beneath Lowcountry oaks to a thriving
-                congregation, the story of Friendship Baptist Church is a
-                testament to God&apos;s faithfulness across generations.
-              </p>
+              <EditableText
+                id="history.intro.desc"
+                as="p"
+                multiline
+                className="mt-4 text-fluid-base text-warm-600"
+                fallback="From humble gatherings beneath Lowcountry oaks to a thriving congregation, the story of Friendship Baptist Church is a testament to God's faithfulness across generations."
+              />
             </div>
           </FadeIn>
 
@@ -129,29 +132,29 @@ export default function HistoryPage() {
                 A Living Legacy
               </h2>
 
-              <p className="mt-6 text-fluid-base text-warm-600 leading-relaxed">
-                For over 160 years, Friendship Baptist Church has stood as a
-                beacon of hope in Beaufort, South Carolina. Born from the
-                prayers of the formerly enslaved and nurtured by generation
-                after generation of faithful believers, this church is more
-                than a building — it is a living testimony.
-              </p>
+              <EditableText
+                id="history.legacy.p1"
+                as="p"
+                multiline
+                className="mt-6 text-fluid-base text-warm-600 leading-relaxed"
+                fallback="For over 160 years, Friendship Baptist Church has stood as a beacon of hope in Beaufort, South Carolina. Born from the prayers of the formerly enslaved and nurtured by generation after generation of faithful believers, this church is more than a building — it is a living testimony."
+              />
 
-              <p className="mt-4 font-scripture text-fluid-lg italic text-purple-800 leading-relaxed">
-                From the Gullah Geechee traditions that echo in our praise
-                to the oak-shaded grounds where the gospel was first spoken
-                in freedom, every brick and every hymn carries the weight of
-                our ancestors&apos; faith.
-              </p>
+              <EditableText
+                id="history.legacy.scripture"
+                as="p"
+                multiline
+                className="mt-4 font-scripture text-fluid-lg italic text-purple-800 leading-relaxed"
+                fallback="From the Gullah Geechee traditions that echo in our praise to the oak-shaded grounds where the gospel was first spoken in freedom, every brick and every hymn carries the weight of our ancestors' faith."
+              />
 
-              <p className="mt-4 text-fluid-base text-warm-600 leading-relaxed">
-                Today, under the leadership of Pastor Isiah Smalls,
-                Friendship Baptist continues to press forward — honoring the
-                past while embracing a bold future. The same spirit that
-                gathered beneath the trees in 1865 still burns in this
-                congregation: a spirit of love, resilience, and unwavering
-                devotion to the Lord.
-              </p>
+              <EditableText
+                id="history.legacy.p2"
+                as="p"
+                multiline
+                className="mt-4 text-fluid-base text-warm-600 leading-relaxed"
+                fallback="Today, under the leadership of Pastor Isiah Smalls, Friendship Baptist continues to press forward — honoring the past while embracing a bold future. The same spirit that gathered beneath the trees in 1865 still burns in this congregation: a spirit of love, resilience, and unwavering devotion to the Lord."
+              />
             </div>
           </FadeIn>
         </div>

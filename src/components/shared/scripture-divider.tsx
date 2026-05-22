@@ -1,11 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 interface ScriptureDividerProps {
-  text: string;
-  reference: string;
+  text: ReactNode;
+  reference: ReactNode;
   className?: string;
   variant?: "purple" | "warm" | "gold";
 }

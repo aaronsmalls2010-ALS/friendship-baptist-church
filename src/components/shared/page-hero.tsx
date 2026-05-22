@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
@@ -11,9 +12,10 @@ interface Breadcrumb {
 }
 
 interface PageHeroProps {
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
   backgroundImage?: string;
+  backgroundPosition?: string;
   breadcrumbs?: Breadcrumb[];
   className?: string;
   overlay?: "purple" | "dark" | "warm";
@@ -29,6 +31,7 @@ export function PageHero({
   title,
   subtitle,
   backgroundImage = "/images/church/exterior.png",
+  backgroundPosition = "center",
   breadcrumbs,
   className,
   overlay = "purple",
@@ -42,8 +45,8 @@ export function PageHero({
     >
       {/* Background */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="absolute inset-0 bg-cover bg-no-repeat"
+        style={{ backgroundImage: `url(${backgroundImage})`, backgroundPosition }}
       />
 
       {/* Gradient overlay */}

@@ -14,6 +14,7 @@ import { CTAButton } from "@/components/shared/cta-button";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { PageHero } from "@/components/shared/page-hero";
 import { ScriptureDivider } from "@/components/shared/scripture-divider";
+import { EditableText } from "@/components/cms/editable-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,8 +61,8 @@ export default function EventsPage() {
   return (
     <>
       <PageHero
-        title="Events & Happenings"
-        subtitle="Join us for worship, fellowship, and community"
+        title={<EditableText id="events.hero.title" fallback="Events & Happenings" as="span" />}
+        subtitle={<EditableText id="events.hero.subtitle" fallback="Join us for worship, fellowship, and community" as="span" />}
         breadcrumbs={[{ label: "Events" }]}
       />
 
@@ -137,8 +138,8 @@ export default function EventsPage() {
           <div className="container-wide">
             <FadeIn>
               <SectionHeading
-                title="Upcoming Events"
-                subtitle="Mark your calendar and join us"
+                title={<EditableText id="events.upcoming.heading" fallback="Upcoming Events" as="span" />}
+                subtitle={<EditableText id="events.upcoming.subtitle" fallback="Mark your calendar and join us" as="span" />}
               />
             </FadeIn>
 
@@ -221,8 +222,8 @@ export default function EventsPage() {
 
       {/* ── Scripture Divider ────────────────────────────────────────── */}
       <ScriptureDivider
-        text="For where two or three gather in my name, there am I with them."
-        reference="Matthew 18:20"
+        text={<EditableText id="events.scripture.text" fallback="For where two or three gather in my name, there am I with them." as="span" multiline />}
+        reference={<EditableText id="events.scripture.reference" fallback="Matthew 18:20" as="span" />}
       />
 
       {/* ── Past Events ─────────────────────────────────────────────── */}
@@ -231,8 +232,8 @@ export default function EventsPage() {
           <div className="container-wide">
             <FadeIn>
               <SectionHeading
-                title="Past Events"
-                subtitle="A look back at recent gatherings"
+                title={<EditableText id="events.past.heading" fallback="Past Events" as="span" />}
+                subtitle={<EditableText id="events.past.subtitle" fallback="A look back at recent gatherings" as="span" />}
               />
             </FadeIn>
 
@@ -285,11 +286,10 @@ export default function EventsPage() {
         <div className="container-narrow text-center">
           <FadeIn>
             <h2 className="text-fluid-2xl font-heading font-bold text-warm-900 dark:text-warm-50 mb-4">
-              Never Miss a Gathering
+              <EditableText id="events.cta.heading" fallback="Never Miss a Gathering" as="span" />
             </h2>
             <p className="text-warm-600 dark:text-warm-400 text-lg mb-8 max-w-xl mx-auto">
-              View our full church calendar to stay connected with everything
-              happening at Friendship Baptist.
+              <EditableText id="events.cta.description" fallback="View our full church calendar to stay connected with everything happening at Friendship Baptist." as="span" multiline />
             </p>
             <CTAButton href="/calendar" icon={<CalendarDays className="h-5 w-5" />}>
               View Calendar

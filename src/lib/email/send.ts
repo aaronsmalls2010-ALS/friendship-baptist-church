@@ -22,8 +22,10 @@ export async function sendEmail({
   text: string;
 }): Promise<{ success: boolean; error?: string }> {
   // Try Resend if API key is configured
-  const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey) {
+  const rawKey = process.env.RESEND_API_KEY;
+  if (rawKey) {
+    // Strip BOM (U+FEFF) that can sneak into env vars via copy-paste
+    const resendKey = rawKey.replace(new RegExp("^" + String.fromCharCode(0xfeff)), "").trim();
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -48,7 +50,7 @@ export async function sendEmail({
       console.error("[EMAIL] Resend error:", errorData);
       return { success: false, error: "Email delivery failed" };
     } catch (err) {
-      console.error("[EMAIL] Resend fetch error:", err);
+      console.error("[EMAIL] Resend fetch error:", err instanceof Error ? err.message : err);
       return { success: false, error: "Email service unavailable" };
     }
   }

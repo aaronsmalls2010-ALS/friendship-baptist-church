@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 270 11% 97%;
+    --foreground: 265 20% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 265 20% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 265 20% 15%;
+    --primary: 268 68% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 22 100% 70%;
+    --secondary-foreground: 22 50% 20%;
+    --muted: 268 14% 95%;
+    --muted-foreground: 265 12% 40%;
+    --accent: 46 100% 56%;
+    --accent-foreground: 46 100% 15%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 268 14% 90%;
+    --input: 268 14% 85%;
+    --ring: 268 68% 32%;
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 265 30% 7%;
+    --foreground: 270 11% 95%;
+    --card: 265 25% 10%;
+    --card-foreground: 270 11% 95%;
+    --popover: 265 25% 10%;
+    --popover-foreground: 270 11% 95%;
+    --primary: 272 50% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 22 80% 60%;
+    --secondary-foreground: 22 100% 95%;
+    --muted: 265 20% 15%;
+    --muted-foreground: 268 14% 65%;
+    --accent: 46 100% 45%;
+    --accent-foreground: 46 100% 95%;
+    --destructive: 0 63% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 265 20% 18%;
+    --input: 265 20% 20%;
+    --ring: 272 50% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading tracking-tight;
+  }
+
+  h1 {
+    @apply text-fluid-4xl font-bold;
+  }
+
+  h2 {
+    @apply text-fluid-3xl font-bold;
+  }
+
+  h3 {
+    @apply text-fluid-2xl font-semibold;
+  }
+
+  h4 {
+    @apply text-fluid-xl font-semibold;
+  }
+
+  p {
+    @apply text-fluid-base leading-relaxed;
+  }
+}
+
+@layer components {
+  .scripture-text {
+    @apply font-scripture italic text-fluid-lg text-purple-700 dark:text-purple-300;
+  }
+
+  .section-padding {
+    @apply px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-24;
+  }
+
+  .container-narrow {
+    @apply mx-auto max-w-4xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-wide {
+    @apply mx-auto max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 dark:bg-warm-900/80 dark:border-warm-700/20;
+  }
+
+  .text-gradient-purple {
+    @apply bg-gradient-purple bg-clip-text text-transparent;
+  }
+
+  .text-gradient-warm {
+    @apply bg-gradient-warm bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+}

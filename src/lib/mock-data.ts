@@ -54,7 +54,8 @@ export const MOCK_DEACONS: Deacon[] = [
   },
   {
     id: "d4", profile_id: "p4", ward_id: "w4", ordained_date: "2015-01-18",
-    bio: "Deacon Brisbane partners with Deacon Grant to care for the families of Ward 4. His faithful presence and generous heart bring encouragement to all who know him.",
+    title: "Emeritus",
+    bio: "Emeritus Deacon Brisbane has given decades of faithful service to the church. His wisdom, generous heart, and steadfast devotion continue to inspire and guide the congregation.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Horace", last_name: "Brisbane", photo_url: undefined, ward_name: "Ward 4",
   },
@@ -76,6 +77,13 @@ export const MOCK_DEACONS: Deacon[] = [
     bio: "Deacon Aaron Smalls faithfully shepherds the families of Ward 6. His quiet strength and unwavering commitment to the church make him a dependable source of spiritual support for his ward families.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Aaron", last_name: "Smalls", phone: "(843) 263-0072", photo_url: undefined, ward_name: "Ward 6",
+  },
+  {
+    id: "d8", profile_id: "p15", ward_id: "w1", ordained_date: "1990-05-20",
+    title: "Emeritus",
+    bio: "Emeritus Deacon Seigler has served Friendship Baptist Church with honor and distinction for many years. His legacy of faithful service, prayer, and devotion to the church family continues to be a guiding light for all who follow.",
+    is_active: true, created_at: "2024-01-01",
+    first_name: "Mikell", last_name: "Seigler", phone: "(843) 812-4321", photo_url: undefined, ward_name: "Ward 1 & Ward 2",
   },
 ];
 

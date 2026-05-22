@@ -21,14 +21,20 @@ function getInitials(firstName: string, lastName: string) {
 }
 
 function getDeaconsForWard(wardId: string): string {
-  const deacons = MOCK_DEACONS.filter((d) => d.ward_id === wardId);
+  const ward = MOCK_WARDS.find((w) => w.id === wardId);
+  // Match deacons whose ward_id matches directly OR whose ward_name covers this ward
+  const deacons = MOCK_DEACONS.filter((d) => {
+    if (d.ward_id === wardId) return true;
+    if (d.ward_name && ward) return d.ward_name.includes(ward.name);
+    return false;
+  });
   if (deacons.length === 0) return "Unassigned";
   return deacons
     .map((d) => {
       const prefix = d.title ? `${d.title} ` : "";
       return `${prefix}Deacon ${d.first_name} ${d.last_name}`;
     })
-    .join(" & ");
+    .join(" / ");
 }
 
 export default function DeaconsPage() {

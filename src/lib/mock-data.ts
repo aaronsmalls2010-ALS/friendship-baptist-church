@@ -19,51 +19,59 @@ import type {
 
 // ─── Wards ──────────────────────────────────────────────────────────
 export const MOCK_WARDS: Ward[] = [
-  { id: "w1", name: "Ward 1 — Downtown Beaufort", description: "Downtown and Historic District", deacon_id: "d1", families_count: 18, created_at: "2024-01-01" },
-  { id: "w2", name: "Ward 2 — Pigeon Point", description: "Pigeon Point and Ribaut Road area", deacon_id: "d2", families_count: 22, created_at: "2024-01-01" },
-  { id: "w3", name: "Ward 3 — Port Royal", description: "Port Royal and surrounding areas", deacon_id: "d3", families_count: 15, created_at: "2024-01-01" },
-  { id: "w4", name: "Ward 4 — Lady's Island", description: "Lady's Island and Sea Islands", deacon_id: "d4", families_count: 20, created_at: "2024-01-01" },
-  { id: "w5", name: "Ward 5 — Burton", description: "Burton and Robert Smalls area", deacon_id: "d5", families_count: 17, created_at: "2024-01-01" },
-  { id: "w6", name: "Ward 6 — Mossy Oaks", description: "Mossy Oaks and surrounding communities", deacon_id: "d6", families_count: 14, created_at: "2024-01-01" },
+  { id: "w1", name: "Ward 1", description: "Church families assigned to Ward 1", deacon_id: "d1", families_count: 18, created_at: "2024-01-01" },
+  { id: "w2", name: "Ward 2", description: "Church families assigned to Ward 2", deacon_id: "d1", families_count: 22, created_at: "2024-01-01" },
+  { id: "w3", name: "Ward 3", description: "Church families assigned to Ward 3", deacon_id: "d2", families_count: 15, created_at: "2024-01-01" },
+  { id: "w4", name: "Ward 4", description: "Church families assigned to Ward 4", deacon_id: "d3", families_count: 20, created_at: "2024-01-01" },
+  { id: "w5", name: "Ward 5", description: "Church families assigned to Ward 5", deacon_id: "d5", families_count: 17, created_at: "2024-01-01" },
+  { id: "w6", name: "Ward 6", description: "Church families assigned to Ward 6", deacon_id: "d7", families_count: 14, created_at: "2024-01-01" },
 ];
 
 // ─── Deacons ────────────────────────────────────────────────────────
 export const MOCK_DEACONS: Deacon[] = [
   {
     id: "d1", profile_id: "p1", ward_id: "w1", ordained_date: "2005-06-15",
-    bio: "Deacon Williams has faithfully served the church for nearly 20 years. He leads the hospital visitation ministry and is known for his steadfast devotion to prayer and service.",
+    title: "Chairman",
+    bio: "Chairman Deacon Simmons has faithfully served the church for many years. He leads the deacon board with wisdom and integrity, guiding the spiritual care of multiple ward families with a heart devoted to prayer and service.",
     is_active: true, created_at: "2024-01-01",
-    first_name: "James", last_name: "Williams", phone: "(843) 555-0101", email: "j.williams@email.com", photo_url: undefined, ward_name: "Ward 1 — Downtown Beaufort",
+    first_name: "Edward", last_name: "Simmons", phone: "(646) 201-0833", photo_url: undefined, ward_name: "Ward 1 & Ward 2",
   },
   {
-    id: "d2", profile_id: "p2", ward_id: "w2", ordained_date: "2010-03-22",
-    bio: "Deacon Brown brings warmth and wisdom to his ward families. A retired educator, he mentors young men in the church and leads the Tuesday morning prayer call.",
+    id: "d2", profile_id: "p2", ward_id: "w3", ordained_date: "2010-03-22",
+    bio: "Deacon Moultrie brings warmth and dedication to his ward families. He is known for his steadfast commitment to visiting the sick and comforting those in need, embodying the servant leadership that defines our deacon ministry.",
     is_active: true, created_at: "2024-01-01",
-    first_name: "Robert", last_name: "Brown", phone: "(843) 555-0102", email: "r.brown@email.com", photo_url: undefined, ward_name: "Ward 2 — Pigeon Point",
+    first_name: "Leon", last_name: "Moultrie", photo_url: undefined, ward_name: "Ward 3",
   },
   {
-    id: "d3", profile_id: "p3", ward_id: "w3", ordained_date: "2012-09-10",
-    bio: "Deacon Davis is a pillar of faith in the Port Royal community. He coordinates church outreach programs and serves on the building committee.",
+    id: "d3", profile_id: "p3", ward_id: "w4", ordained_date: "2012-09-10",
+    bio: "Deacon Grant serves alongside Deacon Brisbane to shepherd the families of Ward 4. His compassionate spirit and commitment to outreach make him a pillar of strength in the congregation.",
     is_active: true, created_at: "2024-01-01",
-    first_name: "Charles", last_name: "Davis", phone: "(843) 555-0103", email: "c.davis@email.com", photo_url: undefined, ward_name: "Ward 3 — Port Royal",
+    first_name: "Terry", last_name: "Grant", phone: "(843) 271-4581", photo_url: undefined, ward_name: "Ward 4",
   },
   {
     id: "d4", profile_id: "p4", ward_id: "w4", ordained_date: "2015-01-18",
-    bio: "Deacon Green shepherds the Lady's Island families with a compassionate heart. He leads the benevolence ministry and organizes the annual fish fry fundraiser.",
+    bio: "Deacon Brisbane partners with Deacon Grant to care for the families of Ward 4. His faithful presence and generous heart bring encouragement to all who know him.",
     is_active: true, created_at: "2024-01-01",
-    first_name: "Thomas", last_name: "Green", phone: "(843) 555-0104", email: "t.green@email.com", photo_url: undefined, ward_name: "Ward 4 — Lady's Island",
+    first_name: "Horace", last_name: "Brisbane", photo_url: undefined, ward_name: "Ward 4",
   },
   {
     id: "d5", profile_id: "p5", ward_id: "w5", ordained_date: "2018-05-27",
-    bio: "Deacon Jackson is a lifelong member of Friendship Baptist. His energy and dedication to the Burton community inspire both young and old in the congregation.",
+    title: "Vice Chairman",
+    bio: "Vice Chairman Deacon Smalls is a lifelong member of Friendship Baptist Church. His energy and dedication inspire both young and old in the congregation, and he serves as a trusted advisor on the deacon board.",
     is_active: true, created_at: "2024-01-01",
-    first_name: "Marcus", last_name: "Jackson", phone: "(843) 555-0105", email: "m.jackson@email.com", photo_url: undefined, ward_name: "Ward 5 — Burton",
+    first_name: "Oscar", last_name: "Smalls", phone: "(843) 263-0027", photo_url: undefined, ward_name: "Ward 5",
   },
   {
-    id: "d6", profile_id: "p6", ward_id: "w6", ordained_date: "2020-11-08",
-    bio: "Deacon Robinson is the newest member of the deacon board. He brings fresh perspective and technological savvy while honoring the traditions of the church.",
+    id: "d6", profile_id: "p6", ward_id: "w5", ordained_date: "2020-11-08",
+    bio: "Deacon Gwyn works alongside Vice Chairman Deacon Smalls to minister to the families of Ward 5. He brings a spirit of fellowship and devotion to every aspect of his service.",
     is_active: true, created_at: "2024-01-01",
-    first_name: "David", last_name: "Robinson", phone: "(843) 555-0106", email: "d.robinson@email.com", photo_url: undefined, ward_name: "Ward 6 — Mossy Oaks",
+    first_name: "Cecil", last_name: "Gwyn", phone: "(912) 344-0500", photo_url: undefined, ward_name: "Ward 5",
+  },
+  {
+    id: "d7", profile_id: "p7", ward_id: "w6", ordained_date: "2019-04-14",
+    bio: "Deacon Aaron Smalls faithfully shepherds the families of Ward 6. His quiet strength and unwavering commitment to the church make him a dependable source of spiritual support for his ward families.",
+    is_active: true, created_at: "2024-01-01",
+    first_name: "Aaron", last_name: "Smalls", phone: "(843) 263-0072", photo_url: undefined, ward_name: "Ward 6",
   },
 ];
 
@@ -245,7 +253,7 @@ export const MOCK_DEVOTIONALS: Devotional[] = [
   {
     id: "dv3", title: "Strength for the Weary", scripture: "Isaiah 40:31", scripture_text: "But those who hope in the Lord will renew their strength.",
     body: "Are you tired? Worn down by the demands of daily life? The Lord invites you to wait on Him — not passively, but with active trust. As you place your burdens at His feet, He will lift you up on wings like eagles.",
-    author: "Deacon James Williams", date: "2026-05-20", created_at: "2024-01-01",
+    author: "Deacon Edward Simmons", date: "2026-05-20", created_at: "2024-01-01",
   },
   {
     id: "dv4", title: "Walking in Purpose", scripture: "Jeremiah 29:11", scripture_text: "For I know the plans I have for you, declares the Lord.",

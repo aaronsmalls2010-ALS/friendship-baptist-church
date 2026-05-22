@@ -23,27 +23,31 @@ export default function DeaconManagementPage() {
     {
       key: "first_name",
       label: "Name",
-      render: (item: Deacon) => `${item.first_name} ${item.last_name}`,
+      render: (item: Deacon) => (
+        <span>
+          {item.title && (
+            <span className="text-xs text-gold-600 font-medium">{item.title} — </span>
+          )}
+          {item.first_name} {item.last_name}
+        </span>
+      ),
     },
     {
       key: "ward_name",
       label: "Ward",
-      render: (item: Deacon) => item.ward_name ?? "—",
-    },
-    {
-      key: "email",
-      label: "Email",
+      render: (item: Deacon) => <span>{item.ward_name ?? "—"}</span>,
     },
     {
       key: "phone",
       label: "Phone",
-      render: (item: Deacon) => item.phone ?? "—",
+      render: (item: Deacon) => <span>{item.phone ?? "—"}</span>,
     },
     {
       key: "ordained_date",
       label: "Ordained",
-      render: (item: Deacon) =>
-        item.ordained_date ? formatDate(item.ordained_date) : "—",
+      render: (item: Deacon) => (
+        <span>{item.ordained_date ? formatDate(item.ordained_date) : "—"}</span>
+      ),
     },
     {
       key: "is_active",
@@ -114,9 +118,9 @@ export default function DeaconManagementPage() {
 
       <DataTable
         data={MOCK_DEACONS as unknown as Record<string, unknown>[]}
-        columns={columns as Parameters<typeof DataTable>[0]["columns"]}
+        columns={columns as unknown as Parameters<typeof DataTable>[0]["columns"]}
         searchable
-        searchKeys={["first_name", "last_name", "email"]}
+        searchKeys={["first_name", "last_name", "ward_name"]}
       />
     </div>
   );

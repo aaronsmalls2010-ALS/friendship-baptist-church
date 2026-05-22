@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, Mail, Users } from "lucide-react";
+import { Phone, Users } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { CTAButton } from "@/components/shared/cta-button";
 import { PageHero } from "@/components/shared/page-hero";
@@ -20,9 +20,15 @@ function getInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`;
 }
 
-function getDeaconNameForWard(deaconId: string): string {
-  const deacon = MOCK_DEACONS.find((d) => d.id === deaconId);
-  return deacon ? `${deacon.first_name} ${deacon.last_name}` : "Unassigned";
+function getDeaconsForWard(wardId: string): string {
+  const deacons = MOCK_DEACONS.filter((d) => d.ward_id === wardId);
+  if (deacons.length === 0) return "Unassigned";
+  return deacons
+    .map((d) => {
+      const prefix = d.title ? `${d.title} ` : "";
+      return `${prefix}Deacon ${d.first_name} ${d.last_name}`;
+    })
+    .join(" & ");
 }
 
 export default function DeaconsPage() {
@@ -70,8 +76,13 @@ export default function DeaconsPage() {
                       </span>
                     </div>
                     <div>
+                      {deacon.title && (
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gold-600 mb-0.5">
+                          {deacon.title}
+                        </p>
+                      )}
                       <h3 className="font-heading text-lg font-semibold text-warm-900">
-                        {deacon.first_name} {deacon.last_name}
+                        Deacon {deacon.first_name} {deacon.last_name}
                       </h3>
                       {deacon.ward_name && (
                         <Badge className="mt-1 bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100">
@@ -87,8 +98,8 @@ export default function DeaconsPage() {
                   </p>
 
                   {/* Contact */}
-                  <div className="space-y-2 pt-4 border-t border-warm-100">
-                    {deacon.phone && (
+                  {deacon.phone && (
+                    <div className="pt-4 border-t border-warm-100">
                       <a
                         href={`tel:${deacon.phone}`}
                         className="flex items-center gap-2 text-sm text-warm-600 hover:text-purple-700 transition-colors"
@@ -96,17 +107,8 @@ export default function DeaconsPage() {
                         <Phone className="h-4 w-4 text-purple-500" />
                         {deacon.phone}
                       </a>
-                    )}
-                    {deacon.email && (
-                      <a
-                        href={`mailto:${deacon.email}`}
-                        className="flex items-center gap-2 text-sm text-warm-600 hover:text-purple-700 transition-colors"
-                      >
-                        <Mail className="h-4 w-4 text-purple-500" />
-                        {deacon.email}
-                      </a>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </FadeIn>
             ))}
@@ -158,7 +160,7 @@ export default function DeaconsPage() {
                         {ward.name}
                       </TableCell>
                       <TableCell className="text-warm-600">
-                        Deacon {ward.deacon_id ? getDeaconNameForWard(ward.deacon_id) : "Unassigned"}
+                        {getDeaconsForWard(ward.id)}
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="inline-flex items-center gap-1 text-warm-600">

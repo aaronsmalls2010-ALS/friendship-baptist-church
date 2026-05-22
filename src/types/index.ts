@@ -132,9 +132,10 @@ export interface Deacon {
   first_name: string;
   last_name: string;
   phone?: string;
-  email: string;
+  email?: string;
   photo_url?: string;
   ward_name?: string;
+  title?: string;
 }
 
 export interface Business {

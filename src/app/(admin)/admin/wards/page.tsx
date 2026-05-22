@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { MOCK_WARDS, MOCK_DEACONS } from "@/lib/mock-data";
 import type { Ward } from "@/types";
 
-export default function WardManagementPage() {
-  const deaconMap = new Map(
-    MOCK_DEACONS.map((d) => [d.id, `${d.first_name} ${d.last_name}`])
-  );
+function getDeaconsForWard(wardId: string): string {
+  const deacons = MOCK_DEACONS.filter((d) => d.ward_id === wardId);
+  if (deacons.length === 0) return "Unassigned";
+  return deacons.map((d) => `${d.first_name} ${d.last_name}`).join(", ");
+}
 
+export default function WardManagementPage() {
   const columns = [
     {
       key: "name",
@@ -26,10 +28,9 @@ export default function WardManagementPage() {
       render: (item: Ward) => item.description ?? "—",
     },
     {
-      key: "deacon_id",
-      label: "Deacon",
-      render: (item: Ward) =>
-        item.deacon_id ? deaconMap.get(item.deacon_id) ?? "—" : "—",
+      key: "id",
+      label: "Deacon(s)",
+      render: (item: Ward) => getDeaconsForWard(item.id),
     },
     {
       key: "families_count",

@@ -99,8 +99,31 @@ function LoginForm() {
         return;
       }
 
-      // Success - redirect to portal
-      window.location.href = "/portal";
+      // Success — determine redirect based on role
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      let role =
+        authUser?.user_metadata?.role || authUser?.app_metadata?.role;
+
+      // If role isn't in metadata yet, sync it from the profiles table
+      if (!role) {
+        try {
+          const roleRes = await fetch("/api/auth/get-role");
+          if (roleRes.ok) {
+            const roleData = await roleRes.json();
+            role = roleData.role;
+          }
+        } catch {
+          // Fall through — default to portal
+        }
+      }
+
+      if (role === "admin" || role === "super_admin") {
+        window.location.href = "/admin";
+      } else {
+        window.location.href = "/portal";
+      }
     } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {

@@ -35,6 +35,7 @@ const roleBadgeColors: Record<string, string> = {
   deacon: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
   minister: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
   admin: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+  super_admin: "bg-red-200 text-red-900 dark:bg-red-900/60 dark:text-red-200",
 };
 
 type MemberRow = (typeof membersData)[number];
@@ -58,14 +59,23 @@ const columns = [
     key: "role",
     label: "Role",
     sortable: true,
-    render: (item: MemberRow) => (
-      <Badge
-        variant="outline"
-        className={`border-0 capitalize ${roleBadgeColors[item.role] ?? ""}`}
-      >
-        {item.role}
-      </Badge>
-    ),
+    render: (item: MemberRow) => {
+      const roleLabels: Record<string, string> = {
+        member: "Member",
+        deacon: "Deacon",
+        minister: "Minister",
+        admin: "Admin",
+        super_admin: "Super Admin",
+      };
+      return (
+        <Badge
+          variant="outline"
+          className={`border-0 ${roleBadgeColors[item.role] ?? ""}`}
+        >
+          {roleLabels[item.role] ?? item.role}
+        </Badge>
+      );
+    },
   },
   {
     key: "phone",
@@ -120,6 +130,7 @@ export default function MemberManagementPage() {
                     <SelectItem value="deacon">Deacon</SelectItem>
                     <SelectItem value="minister">Minister</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

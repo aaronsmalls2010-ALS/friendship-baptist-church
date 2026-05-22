@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/brand/logo";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -42,7 +43,14 @@ const navItems = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/auth/login");
+  }
 
   return (
     <aside
@@ -97,6 +105,7 @@ export function AdminSidebar() {
 
       <div className="p-2 border-t border-purple-900">
         <button
+          onClick={handleSignOut}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-purple-400 hover:text-red-400 hover:bg-purple-900 w-full transition-colors",
             collapsed && "justify-center px-2"

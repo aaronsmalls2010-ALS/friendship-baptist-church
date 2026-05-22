@@ -67,7 +67,10 @@ export async function updateSession(request: NextRequest) {
     if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
       url.pathname = redirect;
     } else {
-      url.pathname = "/portal";
+      // Route admins to /admin, everyone else to /portal
+      const role = user.user_metadata?.role || user.app_metadata?.role;
+      url.pathname =
+        role === "admin" || role === "super_admin" ? "/admin" : "/portal";
     }
     url.search = "";
     return NextResponse.redirect(url);

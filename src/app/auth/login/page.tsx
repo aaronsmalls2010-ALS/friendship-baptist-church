@@ -100,33 +100,34 @@ function LoginForm() {
         return;
       }
 
-      // Success — always call get-role to ensure metadata is synced,
-      // then refresh the session so the JWT contains the updated role
-      let role: string | undefined;
+      // Success — determine role for redirect.
+      // We do this entirely client-side to avoid cookie race conditions
+      // with server API routes immediately after sign-in.
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
 
-      try {
-        const roleRes = await fetch("/api/auth/get-role");
-        if (roleRes.ok) {
-          const roleData = await roleRes.json();
-          role = roleData.role;
+      let role =
+        authUser?.user_metadata?.role || authUser?.app_metadata?.role;
+
+      // If role isn't in auth metadata, query the profiles table directly
+      // (uses the authenticated client, so RLS allows reading own profile)
+      if (!role && authUser) {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", authUser.id)
+            .single();
+          role = profile?.role;
+        } catch {
+          // Fall through — default to portal
         }
-      } catch {
-        // Fall through — try user metadata as fallback
       }
 
-      // If get-role didn't return a role, check user metadata directly
-      if (!role) {
-        const {
-          data: { user: authUser },
-        } = await supabase.auth.getUser();
-        role =
-          authUser?.user_metadata?.role || authUser?.app_metadata?.role;
-      }
-
-      // Refresh the session so the JWT cookie has the updated role metadata.
-      // Without this, the middleware reads the stale pre-sync JWT and
-      // redirects admin users away from /admin.
-      await supabase.auth.refreshSession();
+      // Fire off metadata sync in the background for future logins
+      // (don't await — we already have the role)
+      fetch("/api/auth/get-role").catch(() => {});
 
       if (role === "admin" || role === "super_admin") {
         window.location.href = "/admin";

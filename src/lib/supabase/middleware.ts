@@ -1,5 +1,16 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
+
+// Lightweight admin client for role lookups in middleware (bypasses RLS)
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) return null;
+  return createClient(url.trim(), serviceKey.trim(), {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -65,15 +76,18 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     let role = user.user_metadata?.role || user.app_metadata?.role;
 
-    // Fallback: check profiles table if role isn't in JWT yet
+    // Fallback: check profiles table using admin client (bypasses RLS)
     if (!role) {
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        role = profile?.role;
+        const admin = getAdminClient();
+        if (admin) {
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          role = profile?.role;
+        }
       } catch {
         // Continue with undefined role
       }
@@ -101,15 +115,18 @@ export async function updateSession(request: NextRequest) {
     let role = user.user_metadata?.role || user.app_metadata?.role;
 
     // If role isn't in JWT metadata yet (e.g. right after login before refresh),
-    // check the profiles table directly as a fallback before blocking access
+    // check the profiles table using admin client (bypasses RLS)
     if (!role) {
       try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        role = profile?.role;
+        const admin = getAdminClient();
+        if (admin) {
+          const { data: profile } = await admin
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          role = profile?.role;
+        }
       } catch {
         // If profile lookup fails, fall through to the redirect below
       }

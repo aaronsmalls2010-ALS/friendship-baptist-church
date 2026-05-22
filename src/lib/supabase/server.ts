@@ -1,12 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+// Strip BOM (U+FEFF) that can sneak into env vars via copy-paste
+const BOM_RE = new RegExp("^" + String.fromCharCode(0xfeff));
+function cleanEnv(val: string): string {
+  return val.replace(BOM_RE, "").trim();
+}
+
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL!),
+    cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!),
     {
       cookies: {
         getAll() {

@@ -2,23 +2,44 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
-// Lightweight admin client for role lookups in middleware (bypasses RLS)
+// Strip BOM (U+FEFF) that can sneak into env vars via copy-paste
+const BOM_RE = new RegExp("^" + String.fromCharCode(0xfeff));
+function cleanEnv(val: string | undefined): string {
+  return (val ?? "").replace(BOM_RE, "").trim();
+}
+
+// Admin client for role lookups (bypasses RLS)
 function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const serviceKey = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (!url || !serviceKey) return null;
-  return createClient(url.trim(), serviceKey.trim(), {
+  return createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+}
+
+// Helper: look up role from profiles table via admin client
+async function getRoleFromDb(userId: string): Promise<string | undefined> {
+  try {
+    const admin = getAdminClient();
+    if (!admin) return undefined;
+    const { data } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    return data?.role;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-  // If Supabase isn't configured, allow all requests (development without Supabase)
   if (!supabaseUrl || !supabaseAnonKey) {
     return supabaseResponse;
   }
@@ -39,20 +60,17 @@ export async function updateSession(request: NextRequest) {
           request.cookies.set(name, value)
         );
         supabaseResponse = NextResponse.next({ request });
+        // IMPORTANT: Pass through Supabase's own cookie options unchanged.
+        // Do NOT override with httpOnly/secure/sameSite — doing so prevents
+        // the browser Supabase client from reading its own auth cookies.
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, {
-            ...(options as Record<string, unknown>),
-            // Enforce secure cookie settings
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-          })
+          supabaseResponse.cookies.set(name, value, options)
         );
       },
     },
   });
 
-  // Refresh the session — important for keeping tokens fresh
+  // Refresh the session
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -76,35 +94,20 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     let role = user.user_metadata?.role || user.app_metadata?.role;
 
-    // Fallback: check profiles table using admin client (bypasses RLS)
     if (!role) {
-      try {
-        const admin = getAdminClient();
-        if (admin) {
-          const { data: profile } = await admin
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-          role = profile?.role;
-        }
-      } catch {
-        // Continue with undefined role
-      }
+      role = await getRoleFromDb(user.id);
     }
 
     const isAdminUser = role === "admin" || role === "super_admin";
 
-    // Validate redirect path — only allow relative paths to prevent open redirect
     if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-      // Override portal redirect for admin users — they belong on /admin
       if (isAdminUser && redirect.startsWith("/portal")) {
         url.pathname = "/admin";
       } else {
         url.pathname = redirect;
       }
     } else {
-      url.pathname = isAdminUser ? "/admin" : "/portal";
+      url.pathname = isAdminUser ? "/admin" : "/portal/profile";
     }
     url.search = "";
     return NextResponse.redirect(url);
@@ -114,27 +117,13 @@ export async function updateSession(request: NextRequest) {
   if (isAdminRoute && user) {
     let role = user.user_metadata?.role || user.app_metadata?.role;
 
-    // If role isn't in JWT metadata yet (e.g. right after login before refresh),
-    // check the profiles table using admin client (bypasses RLS)
     if (!role) {
-      try {
-        const admin = getAdminClient();
-        if (admin) {
-          const { data: profile } = await admin
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-          role = profile?.role;
-        }
-      } catch {
-        // If profile lookup fails, fall through to the redirect below
-      }
+      role = await getRoleFromDb(user.id);
     }
 
     if (role !== "admin" && role !== "super_admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/portal";
+      url.pathname = "/portal/profile";
       return NextResponse.redirect(url);
     }
   }

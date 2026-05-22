@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
       if (!error) {
         // Determine redirect: explicit valid path > role-based default
-        let redirectTo = "/portal";
+        let redirectTo = "/portal/profile";
         if (isValidRedirect) {
           redirectTo = next;
         } else {

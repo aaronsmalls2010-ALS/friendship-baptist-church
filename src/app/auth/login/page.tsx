@@ -132,7 +132,7 @@ function LoginForm() {
       if (role === "admin" || role === "super_admin") {
         window.location.href = "/admin";
       } else {
-        window.location.href = "/portal";
+        window.location.href = "/portal/profile";
       }
     } catch {
       setError("An unexpected error occurred. Please try again.");

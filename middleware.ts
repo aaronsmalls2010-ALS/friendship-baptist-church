@@ -84,9 +84,9 @@ export async function middleware(request: NextRequest) {
     request.headers.get("x-real-ip") ||
     "unknown";
 
-  // Rate limit auth endpoints aggressively
+  // Rate limit auth endpoints
   if (AUTH_PATHS.some((p) => pathname.startsWith(p))) {
-    const { allowed, remaining } = rateLimit(ip, 20, 15 * 60 * 1000);
+    const { allowed, remaining } = rateLimit(ip, 60, 15 * 60 * 1000);
     if (!allowed) {
       const response = NextResponse.json(
         { error: "Too many requests. Please try again later." },
@@ -108,7 +108,7 @@ export async function middleware(request: NextRequest) {
 
   // Rate limit API endpoints
   if (API_PATHS.some((p) => pathname.startsWith(p))) {
-    const { allowed, remaining } = rateLimit(ip, 100, 60 * 1000);
+    const { allowed, remaining } = rateLimit(ip, 300, 60 * 1000);
     if (!allowed) {
       const response = NextResponse.json(
         { error: "Rate limit exceeded." },
@@ -129,7 +129,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // General request handling
-  const { allowed } = rateLimit(ip, 200, 60 * 1000);
+  const { allowed } = rateLimit(ip, 500, 60 * 1000);
   if (!allowed) {
     const response = NextResponse.json(
       { error: "Too many requests. Please slow down." },

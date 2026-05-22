@@ -18,9 +18,9 @@ export function PublicHeader() {
     <>
       <motion.header
         className={cn(
-          "fixed top-0 left-0 right-0 z-50 transition-colors duration-300",
+          "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
           isScrolled
-            ? "glass shadow-md"
+            ? "bg-white/[0.97] dark:bg-warm-950/[0.97] backdrop-blur-lg shadow-md border-b border-warm-200/60 dark:border-warm-800/60"
             : "bg-transparent"
         )}
         initial={{ y: -100 }}
@@ -56,7 +56,7 @@ export function PublicHeader() {
                     className={cn(
                       "flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
                       isScrolled
-                        ? "text-warm-800 hover:text-purple-700 hover:bg-purple-50"
+                        ? "text-warm-900 hover:text-purple-700 hover:bg-purple-50/80"
                         : "text-white/90 hover:text-white hover:bg-white/10",
                       item.label === "Give" &&
                         "bg-gold-400 text-warm-900 hover:bg-gold-300 hover:text-warm-900 font-semibold"
@@ -94,13 +94,20 @@ export function PublicHeader() {
               ))}
 
               {/* Member Login */}
-              <div className="ml-2 pl-2 border-l border-white/20">
+              <div
+                className={cn(
+                  "ml-2 pl-2 border-l transition-colors",
+                  isScrolled
+                    ? "border-warm-300"
+                    : "border-white/20"
+                )}
+              >
                 <Link
                   href="/auth/login"
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                     isScrolled
-                      ? "text-purple-700 hover:bg-purple-50"
+                      ? "text-purple-800 hover:bg-purple-50/80"
                       : "text-white/80 hover:text-white hover:bg-white/10"
                   )}
                 >
@@ -116,7 +123,7 @@ export function PublicHeader() {
               className={cn(
                 "lg:hidden p-2 rounded-lg transition-colors",
                 isScrolled
-                  ? "text-warm-800 hover:bg-warm-100"
+                  ? "text-warm-900 hover:bg-warm-100"
                   : "text-white hover:bg-white/10"
               )}
               aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -136,7 +143,7 @@ export function PublicHeader() {
       <MobileNav open={mobileOpen} onClose={() => setMobileOpen(false)} />
 
       {/* Mobile Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden glass border-t border-warm-200">
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/[0.97] dark:bg-warm-950/[0.97] backdrop-blur-lg border-t border-warm-200 dark:border-warm-800">
         <div className="flex items-center justify-around py-2">
           <Link
             href="/media?tab=live"

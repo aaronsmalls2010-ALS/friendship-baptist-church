@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormSuccess } from "@/components/shared/form-success";
-import { Mail } from "lucide-react";
+import { Mail, ArrowLeft } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -26,13 +26,22 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-950 via-purple-900 to-purple-800">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-950 via-purple-900 to-purple-800 py-8">
       <div className="mx-4 w-full max-w-md">
+        {/* Back to website */}
+        <Link
+          href="/"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to website
+        </Link>
+
         {/* Card */}
         <div className="rounded-2xl bg-white p-8 shadow-2xl">
           {/* Logo */}
           <div className="mx-auto flex justify-center">
-            <Logo variant="icon" size="md" asLink={false} />
+            <Logo variant="icon" size="md" />
           </div>
 
           {submitted ? (

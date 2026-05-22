@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
 type VerifyState = "loading" | "success" | "error";
@@ -181,13 +181,22 @@ export default function VerifyEmailPage() {
 
 function VerifyEmailPageContent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-950 via-purple-900 to-purple-800">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-950 via-purple-900 to-purple-800 py-8">
       <div className="mx-4 w-full max-w-md">
+        {/* Back to website */}
+        <Link
+          href="/"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to website
+        </Link>
+
         {/* Card */}
         <div className="rounded-2xl bg-white p-8 shadow-2xl">
           {/* Logo */}
           <div className="mx-auto flex justify-center">
-            <Logo variant="icon" size="md" asLink={false} />
+            <Logo variant="icon" size="md" />
           </div>
 
           <VerifyEmailContent />

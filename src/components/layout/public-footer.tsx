@@ -16,12 +16,14 @@ const footerLinks = {
     { label: "Events", href: "/events" },
     { label: "Calendar", href: "/calendar" },
     { label: "New Here?", href: "/welcome" },
+    { label: "Business Directory", href: "/business-directory" },
   ],
   resources: [
     { label: "Sermons", href: "/media?tab=sermons" },
     { label: "Prayer Requests", href: "/prayer" },
     { label: "Give", href: "/give" },
     { label: "Contact Us", href: "/contact" },
+    { label: "Member Login", href: "/auth/login" },
   ],
 };
 
@@ -141,6 +143,14 @@ export function PublicFooter() {
             &copy; {new Date().getFullYear()} {CHURCH_INFO.name}. All rights
             reserved.
           </p>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-white/80 transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="hover:text-white/80 transition-colors">
+              Terms of Service
+            </Link>
+          </div>
           <p className="flex items-center gap-1">
             Built with <Heart className="h-3 w-3 text-peach-400" /> for the
             glory of God

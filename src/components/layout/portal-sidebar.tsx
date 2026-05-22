@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -12,8 +12,10 @@ import {
   TrendingUp,
   Bell,
   LogOut,
+  Globe,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -29,6 +31,13 @@ const navItems = [
 
 export function PortalSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/auth/login");
+  }
 
   return (
     <aside className="w-64 bg-white dark:bg-warm-900 border-r border-warm-200 dark:border-warm-800 h-screen sticky top-0 flex flex-col">
@@ -58,8 +67,18 @@ export function PortalSidebar() {
         })}
       </nav>
 
-      <div className="p-3 border-t border-warm-200 dark:border-warm-800">
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-warm-500 hover:text-red-600 hover:bg-red-50 w-full transition-colors">
+      <div className="p-3 border-t border-warm-200 dark:border-warm-800 space-y-1">
+        <Link
+          href="/"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-warm-500 hover:text-purple-600 hover:bg-purple-50 w-full transition-colors"
+        >
+          <Globe className="h-4.5 w-4.5" />
+          Back to Website
+        </Link>
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-warm-500 hover:text-red-600 hover:bg-red-50 w-full transition-colors"
+        >
           <LogOut className="h-4.5 w-4.5" />
           Sign Out
         </button>

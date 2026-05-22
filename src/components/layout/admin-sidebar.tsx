@@ -19,6 +19,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Globe,
 } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/brand/logo";
@@ -103,7 +104,18 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="p-2 border-t border-purple-900">
+      <div className="p-2 border-t border-purple-900 space-y-0.5">
+        <Link
+          href="/"
+          title={collapsed ? "Back to Website" : undefined}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-purple-400 hover:text-white hover:bg-purple-900 w-full transition-colors",
+            collapsed && "justify-center px-2"
+          )}
+        >
+          <Globe className="h-4.5 w-4.5 shrink-0" />
+          {!collapsed && "Back to Website"}
+        </Link>
         <button
           onClick={handleSignOut}
           className={cn(

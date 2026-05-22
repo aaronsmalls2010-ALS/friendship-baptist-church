@@ -15,6 +15,10 @@ import type {
   Notification,
   TimelineEvent,
   Testimony,
+  Family,
+  FamilyMember,
+  MinistryMember,
+  MinistryMessage,
 } from "@/types";
 
 // ─── Wards ──────────────────────────────────────────────────────────
@@ -79,27 +83,27 @@ export const MOCK_DEACONS: Deacon[] = [
 export const MOCK_MINISTRIES: Ministry[] = [
   {
     id: "m1", name: "Usher Board", description: "The Usher Board welcomes and assists all who enter the doors of Friendship Baptist. They serve as the first point of contact for visitors and ensure an orderly, spirit-filled worship experience.",
-    leader_id: "p7", schedule: "Meets 1st Saturday at 10:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
+    leader_id: "p7", manager_id: "p7", schedule: "Meets 1st Saturday at 10:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
   },
   {
     id: "m2", name: "Choir", description: "The Friendship Baptist Choir lifts voices in praise and worship, carrying on the rich tradition of African American sacred music. From hymns to contemporary gospel, the choir ministers through song every Sunday.",
-    leader_id: "p8", schedule: "Rehearsals every Thursday at 7:00 PM", image_url: undefined, is_active: true, created_at: "2024-01-01",
+    leader_id: "p8", manager_id: "p8", schedule: "Rehearsals every Thursday at 7:00 PM", image_url: undefined, is_active: true, created_at: "2024-01-01",
   },
   {
     id: "m3", name: "Youth Ministry", description: "Our Youth Ministry nurtures the next generation of believers through Bible study, fellowship, community service, and fun. Open to young people ages 12-18.",
-    leader_id: "p9", schedule: "Meets every Friday at 6:30 PM", image_url: undefined, is_active: true, created_at: "2024-01-01",
+    leader_id: "p9", manager_id: "p9", schedule: "Meets every Friday at 6:30 PM", image_url: undefined, is_active: true, created_at: "2024-01-01",
   },
   {
     id: "m4", name: "Missionary Society", description: "The Missionary Society extends the love of Christ beyond our church walls through local outreach, community support, and global mission partnerships rooted in the Great Commission.",
-    leader_id: "p10", schedule: "Meets 2nd Saturday at 11:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
+    leader_id: "p10", manager_id: "p10", schedule: "Meets 2nd Saturday at 11:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
   },
   {
     id: "m5", name: "Deaconess Board", description: "The Deaconess Board serves alongside the deacons, providing spiritual guidance, visiting the sick, and supporting families during times of need. They are pillars of compassion in our congregation.",
-    leader_id: "p11", schedule: "Meets 3rd Saturday at 10:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
+    leader_id: "p11", manager_id: "p11", schedule: "Meets 3rd Saturday at 10:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
   },
   {
     id: "m6", name: "Sunday School", description: "Sunday School offers Bible-based teaching for all ages. Classes meet before morning worship to deepen understanding of God's Word and strengthen faith foundations.",
-    leader_id: "p12", schedule: "Every Sunday at 9:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
+    leader_id: "p12", manager_id: "p12", schedule: "Every Sunday at 9:00 AM", image_url: undefined, is_active: true, created_at: "2024-01-01",
   },
 ];
 
@@ -269,13 +273,13 @@ export const MOCK_DEVOTIONALS: Devotional[] = [
 
 // ─── Member Profiles ────────────────────────────────────────────────
 export const MOCK_PROFILES: Profile[] = [
-  { id: "p7", email: "martha.washington@email.com", first_name: "Martha", last_name: "Washington", phone: "(843) 555-0201", role: "member", photo_url: undefined, created_at: "2022-03-15", updated_at: "2024-01-01" },
-  { id: "p8", email: "james.singleton@email.com", first_name: "James", last_name: "Singleton", phone: "(843) 555-0202", role: "member", photo_url: undefined, created_at: "2020-08-22", updated_at: "2024-01-01" },
-  { id: "p9", email: "crystal.young@email.com", first_name: "Crystal", last_name: "Young", phone: "(843) 555-0203", role: "member", photo_url: undefined, created_at: "2021-01-10", updated_at: "2024-01-01" },
-  { id: "p10", email: "mae.robinson@email.com", first_name: "Mae", last_name: "Robinson", phone: "(843) 555-0204", role: "member", photo_url: undefined, created_at: "2019-06-01", updated_at: "2024-01-01" },
+  { id: "p7", email: "martha.washington@email.com", first_name: "Martha", last_name: "Washington", phone: "(843) 555-0201", role: "member", gender: "female", family_id: "f1", date_of_birth: "1975-03-12", about_bio: "Proud member of Friendship Baptist for over 20 years. Active in the Usher Board and a dedicated servant of the Lord.", photo_url: undefined, created_at: "2022-03-15", updated_at: "2024-01-01" },
+  { id: "p8", email: "james.singleton@email.com", first_name: "James", last_name: "Singleton", phone: "(843) 555-0202", role: "member", gender: "male", date_of_birth: "1968-07-22", about_bio: "Choir director and lifelong musician. Using my gifts to glorify God through song.", photo_url: undefined, created_at: "2020-08-22", updated_at: "2024-01-01" },
+  { id: "p9", email: "crystal.young@email.com", first_name: "Crystal", last_name: "Young", phone: "(843) 555-0203", role: "member", gender: "female", family_id: "f2", date_of_birth: "1990-11-05", about_bio: "Youth Ministry leader passionate about guiding the next generation in faith.", photo_url: undefined, created_at: "2021-01-10", updated_at: "2024-01-01" },
+  { id: "p10", email: "mae.robinson@email.com", first_name: "Mae", last_name: "Robinson", phone: "(843) 555-0204", role: "member", gender: "female", family_id: "f3", date_of_birth: "1955-09-18", about_bio: "Missionary Society leader. Dedicated to community outreach and serving others.", photo_url: undefined, created_at: "2019-06-01", updated_at: "2024-01-01" },
   { id: "p11", email: "patricia.grant@email.com", first_name: "Patricia", last_name: "Grant", phone: "(843) 555-0205", role: "deacon", photo_url: undefined, created_at: "2018-11-15", updated_at: "2024-01-01" },
   { id: "p12", email: "henry.baker@email.com", first_name: "Henry", last_name: "Baker", phone: "(843) 555-0206", role: "minister", photo_url: undefined, created_at: "2017-04-20", updated_at: "2024-01-01" },
-  { id: "p13", email: "gloria.campbell@email.com", first_name: "Gloria", last_name: "Campbell", phone: "(843) 555-0207", role: "member", photo_url: undefined, created_at: "2023-02-28", updated_at: "2024-01-01" },
+  { id: "p13", email: "gloria.campbell@email.com", first_name: "Gloria", last_name: "Campbell", phone: "(843) 555-0207", role: "member", gender: "female", family_id: "f1", date_of_birth: "1998-06-30", photo_url: undefined, created_at: "2023-02-28", updated_at: "2024-01-01" },
   { id: "p14", email: "william.harris@email.com", first_name: "William", last_name: "Harris", phone: "(843) 555-0208", role: "admin", photo_url: undefined, created_at: "2016-09-05", updated_at: "2024-01-01" },
 ];
 
@@ -325,4 +329,52 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
   { id: "n3", profile_id: "p7", title: "Prayer Request Update", body: "Your prayer request has received 12 prayers from the congregation.", type: "prayer", is_read: true, action_url: "/prayer", created_at: "2026-05-19T14:30:00" },
   { id: "n4", profile_id: "p7", title: "VBS Volunteers Needed", body: "The Youth Ministry is looking for Vacation Bible School volunteers.", type: "ministry", is_read: true, action_url: "/portal/events", created_at: "2026-05-18T09:00:00" },
   { id: "n5", profile_id: "p7", title: "Giving Receipt Available", body: "Your May giving statement is ready for download.", type: "system", is_read: false, action_url: "/portal/giving", created_at: "2026-05-17T08:00:00" },
+];
+
+// ─── Families ──────────────────────────────────────────────────────
+export const MOCK_FAMILIES: Family[] = [
+  {
+    id: "f1", family_name: "The Washington Family", created_at: "2022-03-15", updated_at: "2024-01-01",
+  },
+  {
+    id: "f2", family_name: "The Smalls Family", created_at: "2019-06-01", updated_at: "2024-01-01",
+  },
+  {
+    id: "f3", family_name: "The Robinson Family", created_at: "2018-11-15", updated_at: "2024-01-01",
+  },
+];
+
+// ─── Family Members ────────────────────────────────────────────────
+export const MOCK_FAMILY_MEMBERS: FamilyMember[] = [
+  { id: "fm1", family_id: "f1", profile_id: "p7", relationship: "head", created_at: "2022-03-15", first_name: "Martha", last_name: "Washington", email: "martha.washington@email.com", phone: "(843) 555-0201" },
+  { id: "fm2", family_id: "f1", profile_id: "p13", relationship: "child", created_at: "2023-02-28", first_name: "Gloria", last_name: "Campbell", email: "gloria.campbell@email.com", phone: "(843) 555-0207" },
+  { id: "fm3", family_id: "f2", profile_id: "p9", relationship: "head", created_at: "2021-01-10", first_name: "Crystal", last_name: "Young", phone: "(843) 555-0203" },
+  { id: "fm4", family_id: "f3", profile_id: "p10", relationship: "head", created_at: "2019-06-01", first_name: "Mae", last_name: "Robinson", phone: "(843) 555-0204" },
+];
+
+// ─── Ministry Members ──────────────────────────────────────────────
+export const MOCK_MINISTRY_MEMBERS: MinistryMember[] = [
+  // Usher Board members
+  { id: "mm1", ministry_id: "m1", profile_id: "p7", role: "manager", status: "approved", requested_at: "2022-04-01", approved_at: "2022-04-01", profile_name: "Martha Washington", ministry_name: "Usher Board" },
+  { id: "mm2", ministry_id: "m1", profile_id: "p8", role: "member", status: "approved", requested_at: "2022-05-10", approved_at: "2022-05-12", approved_by: "p7", profile_name: "James Singleton", ministry_name: "Usher Board" },
+  { id: "mm3", ministry_id: "m1", profile_id: "p13", role: "member", status: "pending", requested_at: "2026-05-20", profile_name: "Gloria Campbell", ministry_name: "Usher Board" },
+  // Choir members
+  { id: "mm4", ministry_id: "m2", profile_id: "p8", role: "manager", status: "approved", requested_at: "2020-09-01", approved_at: "2020-09-01", profile_name: "James Singleton", ministry_name: "Choir" },
+  { id: "mm5", ministry_id: "m2", profile_id: "p10", role: "member", status: "approved", requested_at: "2020-10-15", approved_at: "2020-10-16", approved_by: "p8", profile_name: "Mae Robinson", ministry_name: "Choir" },
+  // Youth Ministry
+  { id: "mm6", ministry_id: "m3", profile_id: "p9", role: "manager", status: "approved", requested_at: "2021-02-01", approved_at: "2021-02-01", profile_name: "Crystal Young", ministry_name: "Youth Ministry" },
+  // Missionary Society
+  { id: "mm7", ministry_id: "m4", profile_id: "p10", role: "manager", status: "approved", requested_at: "2019-07-01", approved_at: "2019-07-01", profile_name: "Mae Robinson", ministry_name: "Missionary Society" },
+  { id: "mm8", ministry_id: "m4", profile_id: "p11", role: "member", status: "approved", requested_at: "2019-08-10", approved_at: "2019-08-12", approved_by: "p10", profile_name: "Patricia Grant", ministry_name: "Missionary Society" },
+  // A denied request
+  { id: "mm9", ministry_id: "m2", profile_id: "p14", role: "member", status: "denied", requested_at: "2026-04-01", profile_name: "William Harris", ministry_name: "Choir" },
+  // Sunday School
+  { id: "mm10", ministry_id: "m6", profile_id: "p12", role: "manager", status: "approved", requested_at: "2017-05-01", approved_at: "2017-05-01", profile_name: "Henry Baker", ministry_name: "Sunday School" },
+];
+
+// ─── Ministry Messages ─────────────────────────────────────────────
+export const MOCK_MINISTRY_MESSAGES: MinistryMessage[] = [
+  { id: "msg1", ministry_id: "m1", sent_by: "p7", subject: "Usher Board Meeting Reminder", body: "Reminder: Our monthly usher board meeting is this Saturday at 10 AM in the fellowship hall. Please make every effort to attend as we'll be discussing assignments for the anniversary celebration.", sent_at: "2026-05-20T14:00:00", sender_name: "Martha Washington", ministry_name: "Usher Board" },
+  { id: "msg2", ministry_id: "m2", sent_by: "p8", subject: "New Songs for Anniversary", body: "Choir family, we have three new songs to learn for the anniversary celebration. Please come to Thursday rehearsal prepared. Sheet music will be distributed.", sent_at: "2026-05-19T18:00:00", sender_name: "James Singleton", ministry_name: "Choir" },
+  { id: "msg3", ministry_id: "m3", sent_by: "p9", subject: "VBS Planning Update", body: "Youth Ministry team, VBS planning is in full swing! We need volunteers for crafts, snacks, and Bible study stations. Please let me know your availability.", sent_at: "2026-05-18T10:00:00", sender_name: "Crystal Young", ministry_name: "Youth Ministry" },
 ];

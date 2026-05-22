@@ -63,14 +63,19 @@ export async function updateSession(request: NextRequest) {
   if (isAuthRoute && user && !pathname.startsWith("/auth/callback")) {
     const redirect = request.nextUrl.searchParams.get("redirect");
     const url = request.nextUrl.clone();
+    const role = user.user_metadata?.role || user.app_metadata?.role;
+    const isAdminUser = role === "admin" || role === "super_admin";
+
     // Validate redirect path — only allow relative paths to prevent open redirect
     if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
-      url.pathname = redirect;
+      // Override portal redirect for admin users — they belong on /admin
+      if (isAdminUser && redirect.startsWith("/portal")) {
+        url.pathname = "/admin";
+      } else {
+        url.pathname = redirect;
+      }
     } else {
-      // Route admins to /admin, everyone else to /portal
-      const role = user.user_metadata?.role || user.app_metadata?.role;
-      url.pathname =
-        role === "admin" || role === "super_admin" ? "/admin" : "/portal";
+      url.pathname = isAdminUser ? "/admin" : "/portal";
     }
     url.search = "";
     return NextResponse.redirect(url);

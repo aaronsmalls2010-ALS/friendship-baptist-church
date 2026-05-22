@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { FormDialog } from "@/components/admin/form-dialog";
@@ -9,26 +10,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { MOCK_MINISTRIES } from "@/lib/mock-data";
+import { MOCK_MINISTRIES, MOCK_MINISTRY_MEMBERS } from "@/lib/mock-data";
 import { FadeIn } from "@/components/motion/fade-in";
+import { Eye } from "lucide-react";
 
 // Map ministries to plain objects for DataTable compatibility
-const ministriesData = MOCK_MINISTRIES.map((m) => ({
-  id: m.id,
-  name: m.name,
-  description: m.description,
-  schedule: m.schedule ?? "",
-  is_active: m.is_active,
-  member_count: Math.floor(Math.random() * 20) + 8, // placeholder count
-}));
+const ministriesData = MOCK_MINISTRIES.map((m) => {
+  const ministryMembers = MOCK_MINISTRY_MEMBERS.filter(
+    (mm) => mm.ministry_id === m.id
+  );
+  const approvedCount = ministryMembers.filter(
+    (mm) => mm.status === "approved"
+  ).length;
+  const pendingCount = ministryMembers.filter(
+    (mm) => mm.status === "pending"
+  ).length;
+  const manager = ministryMembers.find((mm) => mm.role === "manager");
 
-// Stabilize the random counts so they don't change on re-render
-const stableMinistries = ministriesData.map((m, i) => ({
-  ...m,
-  member_count: [24, 32, 18, 15, 20, 28][i] ?? 12,
-}));
+  return {
+    id: m.id,
+    name: m.name,
+    description: m.description,
+    schedule: m.schedule ?? "",
+    is_active: m.is_active,
+    member_count: approvedCount,
+    pending_count: pendingCount,
+    manager_name: manager?.profile_name ?? "—",
+  };
+});
 
-type MinistryRow = (typeof stableMinistries)[number];
+type MinistryRow = (typeof ministriesData)[number];
 
 const columns = [
   {
@@ -88,6 +99,42 @@ const columns = [
       </span>
     ),
   },
+  {
+    key: "manager_name",
+    label: "Manager",
+    render: (item: MinistryRow) => (
+      <span className="text-sm font-medium text-warm-700 dark:text-warm-200">
+        {item.manager_name}
+      </span>
+    ),
+  },
+  {
+    key: "pending_count",
+    label: "Pending",
+    render: (item: MinistryRow) =>
+      item.pending_count > 0 ? (
+        <Badge
+          variant="outline"
+          className="border-0 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300"
+        >
+          {item.pending_count} pending
+        </Badge>
+      ) : (
+        <span className="text-sm text-warm-400">0</span>
+      ),
+  },
+  {
+    key: "actions",
+    label: "View",
+    render: (item: MinistryRow) => (
+      <Link href={`/admin/ministries/${item.id}`}>
+        <Button variant="outline" size="sm" className="gap-1.5">
+          <Eye className="h-3.5 w-3.5" />
+          View
+        </Button>
+      </Link>
+    ),
+  },
 ];
 
 export default function MinistryManagementPage() {
@@ -142,7 +189,7 @@ export default function MinistryManagementPage() {
 
       <FadeIn>
         <DataTable
-          data={stableMinistries as unknown as Record<string, unknown>[]}
+          data={ministriesData as unknown as Record<string, unknown>[]}
           columns={columns as Parameters<typeof DataTable>[0]["columns"]}
           searchable
           searchKeys={["name"]}

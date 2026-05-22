@@ -17,8 +17,14 @@ export interface Profile {
   zip?: string;
   photo_url?: string;
   role: UserRole;
+  gender?: "male" | "female" | "other";
+  date_of_birth?: string;
+  about_bio?: string;
+  baptism_date?: string;
   birthday?: string;
   anniversary?: string;
+  ward_id?: string;
+  family_id?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   created_at: string;
@@ -30,6 +36,7 @@ export interface Ministry {
   name: string;
   description: string;
   leader_id?: string;
+  manager_id?: string;
   schedule?: string;
   image_url?: string;
   is_active: boolean;
@@ -204,4 +211,65 @@ export interface Testimony {
   is_approved: boolean;
   photo_url?: string;
   created_at: string;
+}
+
+// ─── Ministry Membership ────────────────────────────────────────────
+
+export type MinistryRole = "member" | "manager";
+export type MinistryMemberStatus = "pending" | "approved" | "denied";
+
+export interface MinistryMember {
+  id: string;
+  ministry_id: string;
+  profile_id: string;
+  role: MinistryRole;
+  status: MinistryMemberStatus;
+  requested_at: string;
+  approved_at?: string;
+  approved_by?: string;
+  // Joined fields for display
+  profile_name?: string;
+  profile_email?: string;
+  profile_photo_url?: string;
+  ministry_name?: string;
+}
+
+// ─── Family Tree ────────────────────────────────────────────────────
+
+export type FamilyRelationship = "head" | "spouse" | "child" | "parent" | "sibling" | "grandchild" | "grandparent" | "other";
+
+export interface Family {
+  id: string;
+  family_name: string;
+  created_at: string;
+  updated_at: string;
+  members?: FamilyMember[];
+}
+
+export interface FamilyMember {
+  id: string;
+  family_id: string;
+  profile_id: string;
+  relationship: FamilyRelationship;
+  created_at: string;
+  // Joined fields
+  first_name?: string;
+  last_name?: string;
+  photo_url?: string;
+  email?: string;
+  phone?: string;
+}
+
+// ─── Ministry Messages ──────────────────────────────────────────────
+
+export interface MinistryMessage {
+  id: string;
+  ministry_id: string;
+  sent_by: string;
+  subject: string;
+  body: string;
+  sent_at: string;
+  // Joined fields
+  sender_name?: string;
+  ministry_name?: string;
 }

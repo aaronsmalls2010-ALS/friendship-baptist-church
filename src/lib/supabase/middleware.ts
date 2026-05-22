@@ -63,7 +63,22 @@ export async function updateSession(request: NextRequest) {
   if (isAuthRoute && user && !pathname.startsWith("/auth/callback")) {
     const redirect = request.nextUrl.searchParams.get("redirect");
     const url = request.nextUrl.clone();
-    const role = user.user_metadata?.role || user.app_metadata?.role;
+    let role = user.user_metadata?.role || user.app_metadata?.role;
+
+    // Fallback: check profiles table if role isn't in JWT yet
+    if (!role) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        role = profile?.role;
+      } catch {
+        // Continue with undefined role
+      }
+    }
+
     const isAdminUser = role === "admin" || role === "super_admin";
 
     // Validate redirect path — only allow relative paths to prevent open redirect
@@ -83,8 +98,23 @@ export async function updateSession(request: NextRequest) {
 
   // ── Admin role check ──
   if (isAdminRoute && user) {
-    // Check user metadata for admin role
-    const role = user.user_metadata?.role || user.app_metadata?.role;
+    let role = user.user_metadata?.role || user.app_metadata?.role;
+
+    // If role isn't in JWT metadata yet (e.g. right after login before refresh),
+    // check the profiles table directly as a fallback before blocking access
+    if (!role) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        role = profile?.role;
+      } catch {
+        // If profile lookup fails, fall through to the redirect below
+      }
+    }
+
     if (role !== "admin" && role !== "super_admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/portal";

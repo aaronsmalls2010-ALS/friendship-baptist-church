@@ -45,20 +45,8 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
   response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
 
-  // Build CSP safely
-  let supabaseDomain = "";
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (supabaseUrl) {
-      supabaseDomain = new URL(supabaseUrl).hostname;
-    }
-  } catch {
-    // Ignore URL parsing errors
-  }
-
-  const connectSrc = supabaseDomain
-    ? `'self' https://${supabaseDomain} wss://${supabaseDomain} https://api.supabase.co`
-    : "'self'";
+  // Build CSP — use wildcard for Supabase to avoid edge runtime env var issues
+  const connectSrc = "'self' https://*.supabase.co wss://*.supabase.co https://api.supabase.co";
 
   const csp = [
     "default-src 'self'",

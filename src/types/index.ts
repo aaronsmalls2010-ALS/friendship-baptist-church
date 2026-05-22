@@ -71,6 +71,24 @@ export interface Sermon {
   created_at: string;
 }
 
+/** A single video segment within a worship service */
+export interface ServiceVideo {
+  type: "prayer" | "scripture" | "sermon" | "special";
+  label: string;
+  youtube_id?: string;        // YouTube video ID (e.g. "dQw4w9WgXcQ")
+  local_filename: string;     // Original file name for reference
+}
+
+/** A complete worship service grouping prayer + scripture + sermon videos */
+export interface WorshipService {
+  id: string;
+  date: string;               // ISO date "2020-04-05"
+  title: string;               // Display title for the service
+  speaker: string;
+  videos: ServiceVideo[];
+  is_special?: boolean;        // Pastor Appreciation, Easter, etc.
+}
+
 export interface MusicTrack {
   id: string;
   title: string;

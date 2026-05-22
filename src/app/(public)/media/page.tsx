@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
-  MOCK_SERMONS,
+  WORSHIP_SERVICES,
   MOCK_MUSIC_TRACKS,
   MOCK_TESTIMONIES,
 } from "@/lib/mock-data";
@@ -22,162 +22,227 @@ import { formatDuration, formatDate } from "@/lib/utils";
 import {
   Search,
   Play,
-  Clock,
   BookOpen,
   Camera,
   Quote,
   Music,
   ListPlus,
-  Mic2,
-  Image as ImageIcon,
+  Video,
+  Star,
+  Calendar,
+  User,
+  ChevronDown,
+  ChevronUp,
   MessageCircleHeart,
+  Image as ImageIcon,
 } from "lucide-react";
 
-// ─── Sermons Tab ─────────────────────────────────────────────────────
-function SermonsTab() {
+// ─── Services Tab (real worship service archive) ────────────────────
+function ServicesTab() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTopic, setActiveTopic] = useState<string | null>(null);
+  const [activeYear, setActiveYear] = useState<string | null>(null);
+  const [expandedService, setExpandedService] = useState<string | null>(null);
 
-  const allTopics = useMemo(() => {
-    const topics = new Set<string>();
-    MOCK_SERMONS.forEach((s) => s.topics.forEach((t) => topics.add(t)));
-    return Array.from(topics).sort();
+  const years = useMemo(() => {
+    const yrs = new Set<string>();
+    WORSHIP_SERVICES.forEach((ws) => yrs.add(ws.date.slice(0, 4)));
+    return Array.from(yrs).sort().reverse();
   }, []);
 
-  const filteredSermons = useMemo(() => {
-    return MOCK_SERMONS.filter((sermon) => {
+  const filteredServices = useMemo(() => {
+    return WORSHIP_SERVICES.filter((ws) => {
       const term = searchTerm.toLowerCase();
       const matchesSearch =
         !searchTerm ||
-        sermon.title.toLowerCase().includes(term) ||
-        sermon.speaker.toLowerCase().includes(term) ||
-        (sermon.scripture && sermon.scripture.toLowerCase().includes(term));
+        ws.title.toLowerCase().includes(term) ||
+        ws.speaker.toLowerCase().includes(term) ||
+        ws.date.includes(term);
 
-      const matchesTopic =
-        !activeTopic || sermon.topics.includes(activeTopic);
+      const matchesYear = !activeYear || ws.date.startsWith(activeYear);
 
-      return matchesSearch && matchesTopic;
+      return matchesSearch && matchesYear;
     });
-  }, [searchTerm, activeTopic]);
+  }, [searchTerm, activeYear]);
+
+  const serviceCount = filteredServices.length;
 
   return (
     <div className="space-y-8">
-      {/* Search */}
+      {/* Search + Info */}
       <FadeIn>
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
-          <Input
-            type="text"
-            placeholder="Search sermons by title, speaker, or scripture..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 rounded-xl border-warm-200 bg-white focus-visible:ring-purple-500"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
+            <Input
+              type="text"
+              placeholder="Search services by title, speaker, or date..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-xl border-warm-200 bg-white focus-visible:ring-purple-500"
+            />
+          </div>
+          <p className="text-sm text-warm-500">
+            {serviceCount} worship service{serviceCount !== 1 ? "s" : ""} archived
+          </p>
         </div>
       </FadeIn>
 
-      {/* Topic Filters */}
+      {/* Year Filters */}
       <FadeIn delay={0.1}>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveTopic(null)}
-            className="focus:outline-none"
-          >
+          <button onClick={() => setActiveYear(null)} className="focus:outline-none">
             <Badge
-              variant={activeTopic === null ? "default" : "outline"}
-              className={
-                activeTopic === null
-                  ? "bg-purple-700 text-white cursor-pointer"
-                  : "cursor-pointer hover:bg-warm-100"
-              }
+              variant={activeYear === null ? "default" : "outline"}
+              className={activeYear === null ? "bg-purple-700 text-white cursor-pointer" : "cursor-pointer hover:bg-warm-100"}
             >
-              All Topics
+              All Years
             </Badge>
           </button>
-          {allTopics.map((topic) => (
+          {years.map((year) => (
             <button
-              key={topic}
-              onClick={() =>
-                setActiveTopic(activeTopic === topic ? null : topic)
-              }
+              key={year}
+              onClick={() => setActiveYear(activeYear === year ? null : year)}
               className="focus:outline-none"
             >
               <Badge
-                variant={activeTopic === topic ? "default" : "outline"}
-                className={
-                  activeTopic === topic
-                    ? "bg-purple-700 text-white cursor-pointer"
-                    : "cursor-pointer hover:bg-warm-100"
-                }
+                variant={activeYear === year ? "default" : "outline"}
+                className={activeYear === year ? "bg-purple-700 text-white cursor-pointer" : "cursor-pointer hover:bg-warm-100"}
               >
-                {topic}
+                {year}
               </Badge>
             </button>
           ))}
         </div>
       </FadeIn>
 
-      {/* Sermon Cards */}
-      {filteredSermons.length === 0 ? (
+      {/* Service Cards */}
+      {filteredServices.length === 0 ? (
         <FadeIn>
           <div className="rounded-xl border border-warm-200 bg-warm-50 p-12 text-center">
             <BookOpen className="mx-auto mb-3 h-10 w-10 text-warm-300" />
-            <p className="text-warm-500">
-              No sermons match your search. Try a different term or topic.
-            </p>
+            <p className="text-warm-500">No services match your search.</p>
           </div>
         </FadeIn>
       ) : (
-        <SlideUpContainer className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredSermons.map((sermon) => (
-            <SlideUpItem key={sermon.id}>
-              <div className="group rounded-xl border border-warm-200 bg-white p-6 transition-all duration-300 hover:shadow-card-hover">
-                <div className="mb-3 flex items-start justify-between">
-                  <h3 className="font-heading text-lg font-bold text-warm-900 leading-tight">
-                    {sermon.title}
-                  </h3>
+        <SlideUpContainer className="space-y-4">
+          {filteredServices.map((service) => {
+            const isExpanded = expandedService === service.id;
+            const sermonVideo = service.videos.find((v) => v.type === "sermon");
+            const hasYouTube = service.videos.some((v) => v.youtube_id);
+
+            return (
+              <SlideUpItem key={service.id}>
+                <div className="overflow-hidden rounded-xl border border-warm-200 bg-white transition-all duration-300 hover:shadow-card-hover">
+                  {/* Service Header */}
                   <button
-                    aria-label={`Play sermon: ${sermon.title}`}
-                    className="ml-3 mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-700 transition-colors hover:bg-purple-700 hover:text-white"
+                    onClick={() => setExpandedService(isExpanded ? null : service.id)}
+                    className="flex w-full items-center gap-4 p-5 text-left focus:outline-none"
                   >
-                    <Play className="h-4 w-4 fill-current" />
+                    {/* Date Badge */}
+                    <div className="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-purple-100">
+                      <span className="text-xs font-semibold uppercase text-purple-600">
+                        {new Date(service.date + "T12:00:00").toLocaleDateString("en-US", { month: "short" })}
+                      </span>
+                      <span className="text-lg font-bold text-purple-900 leading-tight">
+                        {new Date(service.date + "T12:00:00").getDate()}
+                      </span>
+                    </div>
+
+                    {/* Service Info */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-heading text-lg font-bold text-warm-900">
+                          {service.title}
+                        </h3>
+                        {service.is_special && (
+                          <Badge className="bg-gold-100 text-gold-700 border-gold-200 hover:bg-gold-100 text-xs">
+                            <Star className="mr-1 h-3 w-3" />
+                            Special
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-1 flex items-center gap-4 text-sm text-warm-500">
+                        <span className="flex items-center gap-1">
+                          <User className="h-3.5 w-3.5" />
+                          {service.speaker}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(service.date)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Video Count + Expand Arrow */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 text-sm text-warm-400">
+                        <Video className="h-4 w-4" />
+                        <span>{service.videos.length}</span>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-warm-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-warm-400" />
+                      )}
+                    </div>
                   </button>
+
+                  {/* Expanded Content */}
+                  {isExpanded && (
+                    <div className="border-t border-warm-100 bg-warm-50/50 p-5">
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {service.videos.map((video, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-lg border border-warm-200 bg-white p-4 transition-all hover:border-purple-200"
+                          >
+                            {video.youtube_id ? (
+                              /* YouTube Embed */
+                              <div className="mb-3 aspect-video overflow-hidden rounded-lg">
+                                <iframe
+                                  src={`https://www.youtube.com/embed/${video.youtube_id}`}
+                                  title={video.label}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="h-full w-full"
+                                  loading="lazy"
+                                />
+                              </div>
+                            ) : (
+                              /* Coming Soon Placeholder */
+                              <div className="mb-3 flex aspect-video flex-col items-center justify-center rounded-lg bg-warm-100">
+                                <Video className="mb-2 h-8 w-8 text-warm-300" />
+                                <p className="text-xs text-warm-400">Coming to YouTube</p>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className={
+                                  video.type === "sermon"
+                                    ? "bg-purple-100 text-purple-700 text-xs"
+                                    : video.type === "prayer"
+                                    ? "bg-blue-100 text-blue-700 text-xs"
+                                    : video.type === "scripture"
+                                    ? "bg-green-100 text-green-700 text-xs"
+                                    : "bg-gold-100 text-gold-700 text-xs"
+                                }
+                              >
+                                {video.type === "sermon" ? "Sermon" :
+                                 video.type === "prayer" ? "Prayer" :
+                                 video.type === "scripture" ? "Scripture" : "Special"}
+                              </Badge>
+                              <span className="text-sm font-medium text-warm-700">{video.label}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                <p className="text-sm font-medium text-warm-700">
-                  {sermon.speaker}
-                </p>
-                <p className="mt-1 text-sm text-warm-500">
-                  {formatDate(sermon.date)}
-                </p>
-
-                {sermon.scripture && (
-                  <p className="mt-2 text-sm font-medium text-purple-700">
-                    {sermon.scripture}
-                  </p>
-                )}
-
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {sermon.topics.map((topic) => (
-                    <Badge
-                      key={topic}
-                      variant="secondary"
-                      className="bg-warm-100 text-warm-600 text-xs"
-                    >
-                      {topic}
-                    </Badge>
-                  ))}
-                </div>
-
-                {sermon.duration && (
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-warm-400">
-                    <Clock className="h-3.5 w-3.5" />
-                    <span>{formatDuration(sermon.duration)}</span>
-                  </div>
-                )}
-              </div>
-            </SlideUpItem>
-          ))}
+              </SlideUpItem>
+            );
+          })}
         </SlideUpContainer>
       )}
     </div>
@@ -188,22 +253,37 @@ function SermonsTab() {
 function MusicTab() {
   const { play, addToQueue, setQueue } = useMusicPlayer();
 
+  const playableTracks = MOCK_MUSIC_TRACKS.filter((t) => t.audio_url);
+
   const handlePlayAll = () => {
-    setQueue(MOCK_MUSIC_TRACKS);
-    play(MOCK_MUSIC_TRACKS[0]);
+    if (playableTracks.length > 0) {
+      setQueue(playableTracks);
+      play(playableTracks[0]);
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Play All Button */}
+      {/* Info Banner */}
       <FadeIn>
-        <button
-          onClick={handlePlayAll}
-          className="inline-flex items-center gap-2 rounded-xl bg-purple-700 px-6 py-3 font-medium text-white shadow-lg shadow-purple-900/20 transition-all hover:bg-purple-600"
-        >
-          <Play className="h-4 w-4 fill-current" />
-          Play All
-        </button>
+        <div className="flex flex-col gap-4 rounded-xl bg-purple-50 border border-purple-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-heading font-bold text-purple-900">Worship Music Collection</h3>
+            <p className="mt-1 text-sm text-purple-700">
+              {MOCK_MUSIC_TRACKS.length} gospel and worship tracks from our church music library.
+              Tracks will be available for streaming once uploaded.
+            </p>
+          </div>
+          {playableTracks.length > 0 && (
+            <button
+              onClick={handlePlayAll}
+              className="inline-flex items-center gap-2 rounded-xl bg-purple-700 px-6 py-3 font-medium text-white shadow-lg shadow-purple-900/20 transition-all hover:bg-purple-600 flex-shrink-0"
+            >
+              <Play className="h-4 w-4 fill-current" />
+              Play All
+            </button>
+          )}
+        </div>
       </FadeIn>
 
       {/* Track List */}
@@ -213,9 +293,13 @@ function MusicTab() {
             <div className="group flex flex-col gap-4 rounded-xl border border-warm-200 bg-white p-4 transition-all duration-300 hover:shadow-card-hover sm:flex-row sm:items-center">
               {/* Play Button */}
               <button
-                onClick={() => play(track)}
+                onClick={() => track.audio_url ? play(track) : undefined}
                 aria-label={`Play ${track.title}`}
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-700 transition-colors hover:bg-purple-700 hover:text-white"
+                className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
+                  track.audio_url
+                    ? "bg-purple-100 text-purple-700 hover:bg-purple-700 hover:text-white"
+                    : "bg-warm-100 text-warm-300 cursor-default"
+                }`}
               >
                 <Play className="h-4 w-4 fill-current" />
               </button>
@@ -227,9 +311,6 @@ function MusicTab() {
                 </h3>
                 <p className="mt-0.5 truncate text-sm text-warm-500">
                   {track.artist}
-                  {track.album && (
-                    <span className="text-warm-300"> &middot; {track.album}</span>
-                  )}
                 </p>
               </div>
 
@@ -244,14 +325,16 @@ function MusicTab() {
                 <span className="text-sm text-warm-400">
                   {formatDuration(track.duration)}
                 </span>
-                <button
-                  onClick={() => addToQueue(track)}
-                  aria-label={`Add ${track.title} to queue`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-warm-200 px-3 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
-                >
-                  <ListPlus className="h-3.5 w-3.5" />
-                  Queue
-                </button>
+                {track.audio_url && (
+                  <button
+                    onClick={() => addToQueue(track)}
+                    aria-label={`Add ${track.title} to queue`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-warm-200 px-3 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
+                  >
+                    <ListPlus className="h-3.5 w-3.5" />
+                    Queue
+                  </button>
+                )}
               </div>
             </div>
           </SlideUpItem>
@@ -298,16 +381,13 @@ function TestimoniesTab() {
         {approvedTestimonies.map((testimony) => (
           <SlideUpItem key={testimony.id}>
             <div className="relative rounded-xl border border-warm-200 bg-white p-6 transition-all duration-300 hover:shadow-card-hover">
-              {/* Decorative quote */}
               <Quote className="absolute right-5 top-5 h-8 w-8 text-purple-100" />
-
               <h3 className="font-heading text-lg font-bold text-warm-900">
                 {testimony.author_name}
               </h3>
               <p className="mt-1 text-sm text-warm-400">
                 {formatDate(testimony.date)}
               </p>
-
               <p className="mt-4 line-clamp-4 text-warm-600 leading-relaxed">
                 {testimony.content}
               </p>
@@ -342,21 +422,21 @@ export default function MediaPage() {
     <>
       <PageHero
         title={<EditableText id="media.hero.title" fallback="Media Center" as="span" />}
-        subtitle={<EditableText id="media.hero.subtitle" fallback="Sermons, music, and testimonies to feed your spirit" as="span" />}
+        subtitle={<EditableText id="media.hero.subtitle" fallback="Worship services, music, and testimonies to feed your spirit" as="span" />}
         breadcrumbs={[{ label: "Media" }]}
       />
 
       <section className="section-padding">
         <div className="container-wide">
           <FadeIn>
-            <Tabs defaultValue="sermons" className="w-full">
+            <Tabs defaultValue="services" className="w-full">
               <TabsList className="mb-8 flex w-full flex-wrap gap-1 bg-warm-100 p-1.5 rounded-xl h-auto">
                 <TabsTrigger
-                  value="sermons"
+                  value="services"
                   className="flex-1 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
                 >
-                  <Mic2 className="h-4 w-4" />
-                  Sermons
+                  <Video className="h-4 w-4" />
+                  Services
                 </TabsTrigger>
                 <TabsTrigger
                   value="music"
@@ -381,8 +461,8 @@ export default function MediaPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="sermons">
-                <SermonsTab />
+              <TabsContent value="services">
+                <ServicesTab />
               </TabsContent>
 
               <TabsContent value="music">

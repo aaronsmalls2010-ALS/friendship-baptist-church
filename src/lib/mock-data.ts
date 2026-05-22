@@ -19,6 +19,7 @@ import type {
   FamilyMember,
   MinistryMember,
   MinistryMessage,
+  WorshipService,
 } from "@/types";
 
 // ─── Wards ──────────────────────────────────────────────────────────
@@ -160,40 +161,262 @@ export const MOCK_EVENTS: Event[] = [
   },
 ];
 
-// ─── Sermons ────────────────────────────────────────────────────────
-export const MOCK_SERMONS: Sermon[] = [
-  {
-    id: "s1", title: "Walking by Faith, Not by Sight", speaker: "Pastor Isiah Smalls", date: "2026-05-18",
-    scripture: "2 Corinthians 5:7", topics: ["Faith", "Trust", "Perseverance"], duration: 2640, created_at: "2024-01-01",
-  },
-  {
-    id: "s2", title: "The Power of a Praying Church", speaker: "Pastor Isiah Smalls", date: "2026-05-11",
-    scripture: "James 5:16", topics: ["Prayer", "Community", "Healing"], duration: 2880, created_at: "2024-01-01",
-  },
-  {
-    id: "s3", title: "Rooted and Grounded in Love", speaker: "Pastor Isiah Smalls", date: "2026-05-04",
-    scripture: "Ephesians 3:17-19", topics: ["Love", "Foundation", "Growth"], duration: 2400, created_at: "2024-01-01",
-  },
-  {
-    id: "s4", title: "God's Purpose for Your Storm", speaker: "Pastor Isiah Smalls", date: "2026-04-27",
-    scripture: "Mark 4:35-41", topics: ["Trials", "Faith", "Purpose"], duration: 3000, created_at: "2024-01-01",
-  },
-  {
-    id: "s5", title: "The Heritage of the Faithful", speaker: "Rev. Dr. Calvin Harris", date: "2026-03-18",
-    scripture: "Psalm 78:1-7", topics: ["Heritage", "Legacy", "Teaching"], duration: 3120, created_at: "2024-01-01",
-  },
-  {
-    id: "s6", title: "A New Thing in the Land", speaker: "Pastor Isiah Smalls", date: "2026-04-20",
-    scripture: "Isaiah 43:19", topics: ["Renewal", "Hope", "Vision"], duration: 2700, created_at: "2024-01-01",
-  },
+// ─── Worship Services (real data from WordPress archive) ────────────
+// YouTube IDs will be added after videos are uploaded to the church's YouTube channel.
+// Until then, videos show "Coming Soon" placeholder.
+export const WORSHIP_SERVICES: WorshipService[] = [
+  { id: "ws01", date: "2021-04-11", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-04-11_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-04-11_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-04-11_Sermon.mp4" },
+  ]},
+  { id: "ws02", date: "2021-04-04", title: "Easter Sunday Worship", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-04-04_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-04-04_Scripture.mp4" },
+    { type: "sermon", label: "Easter Sermon", local_filename: "2021-04-04_Sermon.mp4" },
+  ]},
+  { id: "ws03", date: "2021-03-28", title: "Palm Sunday Worship", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-03-28_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-03-28_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-03-28_Sermon.mp4" },
+    { type: "special", label: "Greeting & Reading", local_filename: "2021-03-28_GreetingAndReading.mp4" },
+  ]},
+  { id: "ws04", date: "2021-03-14", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-03-14_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-03-14_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-03-14_Sermon.mp4" },
+  ]},
+  { id: "ws05", date: "2021-03-07", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-03-07_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-03-07_Scripture.mp4" },
+  ]},
+  { id: "ws06", date: "2021-02-28", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-02-28_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-02-28_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-02-28_Sermon.mp4" },
+  ]},
+  { id: "ws07", date: "2021-02-07", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-02-07_Sermon.mp4" },
+  ]},
+  { id: "ws08", date: "2021-01-31", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-01-31_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-01-31_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-01-31_Sermon.mp4" },
+  ]},
+  { id: "ws09", date: "2021-01-24", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-01-24_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-01-24_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-01-24_Sermon.mp4" },
+  ]},
+  { id: "ws10", date: "2021-01-17", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-01-17_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-01-17_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-01-17_Sermon.mp4" },
+  ]},
+  { id: "ws11", date: "2021-01-10", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-01-10_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-01-10_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-01-10_Sermon.mp4" },
+  ]},
+  { id: "ws12", date: "2021-01-03", title: "New Year Sunday Worship", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2021-01-03_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2021-01-03_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-01-03_Sermon.mp4" },
+  ]},
+  { id: "ws13", date: "2020-12-27", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-12-27_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-12-27_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-12-27_Sermon.mp4" },
+  ]},
+  { id: "ws14", date: "2020-12-20", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-12-20_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-12-20_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-12-20_Sermon.mp4" },
+  ]},
+  { id: "ws15", date: "2020-12-13", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-12-13_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-12-13_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-12-13_Sermon.mp4" },
+  ]},
+  { id: "ws16", date: "2020-12-07", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-12-07_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-12-07_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-12-07_Sermon.mp4" },
+  ]},
+  { id: "ws17", date: "2020-11-29", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-29_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-29_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-29_Sermon.mp4" },
+  ]},
+  { id: "ws18", date: "2020-11-22", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-22_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-22_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-22_Sermon.mp4" },
+  ]},
+  { id: "ws19", date: "2020-11-15", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-15_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-15_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-15_Sermon.mp4" },
+  ]},
+  { id: "ws20", date: "2020-11-08", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-08_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-08_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-08_Sermon.mp4" },
+  ]},
+  { id: "ws21", date: "2020-11-01", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-01_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-01_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-01_Sermon.mp4" },
+  ]},
+  { id: "ws22", date: "2020-10-25", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-25_Prayer.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-10-25_Sermon.mp4" },
+  ]},
+  { id: "ws23", date: "2020-10-18", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-18_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-18_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-10-18_Sermon.mp4" },
+  ]},
+  { id: "ws24", date: "2020-10-11", title: "Pastor Appreciation Sunday", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-11_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-11_Scripture.mp4" },
+    { type: "special", label: "Pastor Appreciation Part 1", local_filename: "2020-10-11_PastorAppreciation1.mp4" },
+    { type: "special", label: "Pastor Appreciation Part 2", local_filename: "2020-10-11_PastorAppreciation2.mp4" },
+    { type: "special", label: "Pastor Thank You", local_filename: "2020-10-11_PastorThankYou.mp4" },
+    { type: "special", label: "Pastor Parade & Outro", local_filename: "2020-10-11_PastorParade_Outro.mp4" },
+  ]},
+  { id: "ws25", date: "2020-10-04", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-04_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-04_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-10-04_Sermon.mp4" },
+  ]},
+  { id: "ws26", date: "2020-09-27", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-27_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-09-27_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-27_Sermon.mp4" },
+  ]},
+  { id: "ws27", date: "2020-09-20", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-20_Prayer.mp4" },
+    { type: "scripture", label: "Scripture & Testimony", local_filename: "2020-09-20_Scripture-Testimony.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-20_Sermon.mp4" },
+  ]},
+  { id: "ws28", date: "2020-09-13", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-13_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-09-13_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-13_Sermon.mp4" },
+  ]},
+  { id: "ws29", date: "2020-09-06", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-06_Sermon.mp4" },
+  ]},
+  { id: "ws30", date: "2020-08-30", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-30_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-30_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-30_Sermon.mp4" },
+  ]},
+  { id: "ws31", date: "2020-08-23", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-23_Sermon.mp4" },
+  ]},
+  { id: "ws32", date: "2020-08-16", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-16_Sermon.mp4" },
+  ]},
+  { id: "ws33", date: "2020-08-09", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-09_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-09_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-09_Sermon.mp4" },
+  ]},
+  { id: "ws34", date: "2020-08-02", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-02_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-02_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-02_Sermon.mp4" },
+  ]},
+  { id: "ws35", date: "2020-07-25", title: "Sunday Worship Service", speaker: "Guest Speaker", videos: [
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-07-25_Sermon_Doe.mp4" },
+  ]},
+  { id: "ws36", date: "2020-05-24", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-24_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-05-24_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-05-24_Sermon.mp4" },
+  ]},
+  { id: "ws37", date: "2020-05-17", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-17_Prayer.mp4" },
+  ]},
+  { id: "ws38", date: "2020-05-10", title: "Mother's Day Worship", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-10_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-05-10_Scripture.mp4" },
+    { type: "sermon", label: "Mother's Day Sermon", local_filename: "2020-05-10_Sermon.mp4" },
+  ]},
+  { id: "ws39", date: "2020-04-26", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-26_Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-04-26_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-04-26_Sermon_small.mp4" },
+  ]},
+  { id: "ws40", date: "2020-04-19", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-19-Prayer.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-04-19-Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-04-19-Sermon.mp4" },
+  ]},
+  { id: "ws41", date: "2020-04-12", title: "Resurrection Sunday Worship", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
+    { type: "sermon", label: "Resurrection Sunday Sermon", local_filename: "ResurrectionSundaySermon.mp4" },
+  ]},
+  { id: "ws42", date: "2020-04-05", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-05_FBC-Prayer_OSmalls.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-04-05_FBC-Sermon.mp4" },
+  ]},
+  { id: "ws43", date: "2020-03-29", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "20200329_Prayer.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "20200329_Sermon.mp4" },
+  ]},
 ];
 
-// ─── Music Tracks ───────────────────────────────────────────────────
+// Keep MOCK_SERMONS for backward compatibility (derived from real services)
+export const MOCK_SERMONS: Sermon[] = WORSHIP_SERVICES
+  .filter(ws => ws.videos.some(v => v.type === "sermon"))
+  .slice(0, 6)
+  .map((ws, i) => ({
+    id: `s${i + 1}`,
+    title: ws.title,
+    speaker: ws.speaker,
+    date: ws.date,
+    video_url: ws.videos.find(v => v.type === "sermon")?.youtube_id
+      ? `https://www.youtube.com/watch?v=${ws.videos.find(v => v.type === "sermon")?.youtube_id}`
+      : undefined,
+    topics: ws.is_special ? ["Special Service"] : ["Worship"],
+    created_at: ws.date,
+  }));
+
+// ─── Music Tracks (real worship music from church collection) ───────
 export const MOCK_MUSIC_TRACKS: MusicTrack[] = [
-  { id: "mt1", title: "Oh Lord I Want You to Help Me", artist: "Shirley Caesar", album: "Gospel Classics", audio_url: "/music/Shirley Caesar 1975 Oh Lord I Want You To Help Me.mp3", duration: 285, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt2", title: "Amazing Grace", artist: "FBC Mass Choir", album: "Sunday Morning Praise", audio_url: "", duration: 320, track_type: "hymn", created_at: "2024-01-01" },
-  { id: "mt3", title: "Total Praise", artist: "FBC Mass Choir", album: "Sunday Morning Praise", audio_url: "", duration: 290, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt4", title: "I Need You to Survive", artist: "FBC Praise Team", album: "Together in Worship", audio_url: "", duration: 345, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt1", title: "Oh Lord I Want You to Help Me", artist: "Shirley Caesar", album: "Gospel Classics", audio_url: "", duration: 285, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt2", title: "Be Right", artist: "Worship Collection", audio_url: "", duration: 300, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt3", title: "Bread of Heaven", artist: "Fred Hammond", audio_url: "", duration: 280, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt4", title: "Come See About Me", artist: "Lee Williams & The Spiritual QC's", audio_url: "", duration: 290, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt5", title: "Don't Call The Roll", artist: "Worship Collection", audio_url: "", duration: 310, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt6", title: "Faithful Is Our God", artist: "Hezekiah Walker", audio_url: "", duration: 280, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt7", title: "All I Need", artist: "George Dickens & The Gospel Disciples", audio_url: "", duration: 340, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt8", title: "Get Ready", artist: "Worship Collection", audio_url: "", duration: 300, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt9", title: "God's Got It", artist: "Trinity Inspirational Choir", audio_url: "", duration: 270, track_type: "choir", created_at: "2024-01-01" },
+  { id: "mt10", title: "God's Got A Blessing With My Name On It", artist: "Worship Collection", audio_url: "", duration: 320, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt11", title: "Have Mercy", artist: "Soul Purposed", audio_url: "", duration: 260, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt12", title: "Hosanna", artist: "Worship Collection", audio_url: "", duration: 290, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt13", title: "I Call Jesus My Rock", artist: "Bishop Dixon", audio_url: "", duration: 350, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt14", title: "I Call You Faithful", artist: "Donnie McClurkin", audio_url: "", duration: 290, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt15", title: "I Came To Tell You", artist: "Trinity Inspirational Choir", audio_url: "", duration: 340, track_type: "choir", created_at: "2024-01-01" },
+  { id: "mt16", title: "I Give Myself Away / Here I Am to Worship", artist: "William McDowell", audio_url: "", duration: 340, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt17", title: "I Pray We'll Be Ready", artist: "Chicago Mass Choir", audio_url: "", duration: 350, track_type: "choir", created_at: "2024-01-01" },
+  { id: "mt18", title: "I Won't Let You Fall", artist: "Helen Miller", audio_url: "", duration: 420, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt19", title: "Jesus Be A Fence Around Me", artist: "Fred Hammond", audio_url: "", duration: 350, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt20", title: "Jesus Is Alive And Well", artist: "Lee Williams & The Spiritual QC's", audio_url: "", duration: 350, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt21", title: "Jesus Is Real", artist: "Worship Collection", audio_url: "", duration: 300, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt22", title: "Let It Rise", artist: "William Murphy", audio_url: "", duration: 310, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt23", title: "Prayer Room", artist: "Worship Collection", audio_url: "", duration: 280, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt24", title: "Put A Praise On It", artist: "Tasha Cobbs", audio_url: "", duration: 260, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt25", title: "Jesus", artist: "Shekinah Glory Ministry", audio_url: "", duration: 350, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt26", title: "For Your Glory", artist: "Tasha Cobbs", audio_url: "", duration: 300, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt27", title: "Trust in You", artist: "Anthony Brown & Group TherAPy", audio_url: "", duration: 275, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt28", title: "You Are My Strength", artist: "William Murphy", audio_url: "", duration: 310, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt29", title: "You Fight On", artist: "Worship Collection", audio_url: "", duration: 320, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt30", title: "You Reign", artist: "William Murphy", audio_url: "", duration: 310, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt31", title: "You Don't Know", artist: "Zacardi Cortez", audio_url: "", duration: 270, track_type: "gospel", created_at: "2024-01-01" },
 ];
 
 // ─── Announcements ──────────────────────────────────────────────────

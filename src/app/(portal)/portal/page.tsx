@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -12,22 +12,20 @@ import {
   MapPin,
   Pin,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
+import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/utils";
 import {
-  MOCK_PROFILES,
   MOCK_EVENTS,
   MOCK_ANNOUNCEMENTS,
   MOCK_DONATIONS,
 } from "@/lib/mock-data";
-
-const currentUser = MOCK_PROFILES[0];
-const initials = `${currentUser.first_name[0]}${currentUser.last_name[0]}`;
 
 const quickActions = [
   { label: "Directory", icon: Users, href: "/portal/directory" },
@@ -62,6 +60,38 @@ const todayFormatted = new Intl.DateTimeFormat("en-US", {
 }).format(new Date());
 
 export default function MemberDashboardPage() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<{
+    first_name: string;
+    last_name: string;
+    photo_url?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await fetch("/api/portal/profile");
+        if (res.ok) {
+          const data = await res.json();
+          setProfile(data.profile);
+        }
+      } catch {
+        // Fall back to auth user_metadata
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  const firstName =
+    profile?.first_name ||
+    user?.user_metadata?.first_name ||
+    "Member";
+  const lastName =
+    profile?.last_name ||
+    user?.user_metadata?.last_name ||
+    "";
+  const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase();
+
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
@@ -73,7 +103,7 @@ export default function MemberDashboardPage() {
             </div>
             <div>
               <h1 className="text-fluid-2xl font-heading font-bold">
-                Welcome back, {currentUser.first_name}!
+                Welcome back, {firstName}!
               </h1>
               <p className="text-purple-200 mt-1">{todayFormatted}</p>
             </div>

@@ -150,7 +150,7 @@ export default function PastorPage() {
                 <div className="aspect-[3/4] w-full max-w-md relative rounded-2xl overflow-hidden shadow-glow-lg">
                   <EditableImage
                     id="pastor.welcome.photo"
-                    fallback="/images/pastor/pastor-headshot.png"
+                    fallback="/images/pastor/pastor-headshot.jpg"
                     alt="Pastor Isiah Smalls"
                     fill
                     className="object-cover object-top"
@@ -173,7 +173,7 @@ export default function PastorPage() {
                 <div className="aspect-[3/4] w-full max-w-md relative rounded-2xl overflow-hidden shadow-glow-lg">
                   <EditableImage
                     id="firstlady.photo"
-                    fallback="/images/pastor/first-lady.png"
+                    fallback="/images/pastor/first-lady.jpg"
                     alt="First Lady Marie Smalls"
                     fill
                     className="object-cover object-top"

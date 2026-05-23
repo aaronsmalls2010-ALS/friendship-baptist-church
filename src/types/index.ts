@@ -77,6 +77,7 @@ export interface ServiceVideo {
   label: string;
   youtube_id?: string;        // YouTube video ID (e.g. "dQw4w9WgXcQ")
   local_filename: string;     // Original file name for reference
+  description?: string;       // e.g. "Dea. Oscar Smalls leads us in prayer"
 }
 
 /** A complete worship service grouping prayer + scripture + sermon videos */
@@ -87,6 +88,10 @@ export interface WorshipService {
   speaker: string;
   videos: ServiceVideo[];
   is_special?: boolean;        // Pastor Appreciation, Easter, etc.
+  scripture?: string;          // e.g. "Ephesians 6:10", "Psalms 23"
+  sermon_title?: string;       // Specific sermon title when known
+  description?: string;        // Service description/context
+  special_notes?: string;      // Additional historical context
 }
 
 export interface MusicTrack {
@@ -276,6 +281,48 @@ export interface FamilyMember {
   photo_url?: string;
   email?: string;
   phone?: string;
+}
+
+// ─── Memorial / Loved Ones Gone Home ───────────────────────────────
+
+export interface MemorialComment {
+  id: string;
+  memorial_id: string;
+  profile_id: string;
+  author_name: string;
+  author_photo_url?: string;
+  body: string;
+  created_at: string;
+}
+
+export interface MemorialPhoto {
+  id: string;
+  memorial_id: string;
+  image_url: string;
+  caption?: string;
+  uploaded_by: string;
+  created_at: string;
+}
+
+export interface Memorial {
+  id: string;
+  created_by: string;           // profile_id of member who created
+  first_name: string;
+  last_name: string;
+  photo_url?: string;           // Main portrait photo
+  date_of_birth?: string;       // ISO date
+  date_of_passing: string;      // ISO date
+  obituary: string;             // Rich text / long-form biography
+  scripture?: string;           // Favorite scripture reference
+  scripture_text?: string;      // Full scripture text
+  favorite_hymn?: string;       // Favorite song/hymn
+  church_roles?: string[];      // e.g. ["Deacon", "Choir Member", "Usher"]
+  family_message?: string;      // Short message from the family
+  is_published: boolean;
+  photos: MemorialPhoto[];
+  comments: MemorialComment[];
+  created_at: string;
+  updated_at: string;
 }
 
 // ─── Ministry Messages ──────────────────────────────────────────────

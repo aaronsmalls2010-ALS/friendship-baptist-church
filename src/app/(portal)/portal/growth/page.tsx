@@ -6,6 +6,10 @@ import {
   Target,
   Trophy,
   Plus,
+  Minus,
+  Pencil,
+  Trash2,
+  CheckCircle2,
   BookOpen,
   HandHeart,
   Clock,
@@ -37,6 +41,7 @@ import {
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { MOCK_SPIRITUAL_GOALS } from "@/lib/mock-data";
+import type { SpiritualGoal } from "@/types";
 
 const typeConfig: Record<
   string,
@@ -87,13 +92,27 @@ const periodLabels: Record<string, string> = {
 };
 
 export default function SpiritualGrowthPage() {
+  const [goals, setGoals] = useState<SpiritualGoal[]>([...MOCK_SPIRITUAL_GOALS]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalType, setGoalType] = useState("");
   const [goalTarget, setGoalTarget] = useState("");
   const [goalPeriod, setGoalPeriod] = useState("");
 
-  const goals = MOCK_SPIRITUAL_GOALS;
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<SpiritualGoal | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editTarget, setEditTarget] = useState("");
+  const [editPeriod, setEditPeriod] = useState("");
+
+  // Delete confirmation state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Celebration state — tracks recently completed goal ids
+  const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
+
   const activeGoals = goals.filter((g) => !g.is_completed);
   const completedGoals = goals.filter((g) => g.is_completed);
   const averageProgress =
@@ -107,12 +126,93 @@ export default function SpiritualGrowthPage() {
       : 0;
 
   const handleCreateGoal = () => {
-    // In a real app, this would save to the backend
+    const newGoal: SpiritualGoal = {
+      id: `sg-${Date.now()}`,
+      profile_id: "p7",
+      type: goalType as SpiritualGoal["type"],
+      title: goalTitle,
+      target: parseInt(goalTarget, 10),
+      current: 0,
+      period: goalPeriod as SpiritualGoal["period"],
+      is_completed: false,
+      created_at: new Date().toISOString().split("T")[0],
+    };
+    setGoals((prev) => [...prev, newGoal]);
     setDialogOpen(false);
     setGoalTitle("");
     setGoalType("");
     setGoalTarget("");
     setGoalPeriod("");
+  };
+
+  const handleIncrement = (goalId: string) => {
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId || g.is_completed) return g;
+        const newCurrent = Math.min(g.current + 1, g.target);
+        const justCompleted = newCurrent >= g.target;
+        if (justCompleted) {
+          // Trigger celebration animation
+          setCelebratingIds((s) => new Set(s).add(goalId));
+          setTimeout(() => {
+            setCelebratingIds((s) => {
+              const next = new Set(s);
+              next.delete(goalId);
+              return next;
+            });
+          }, 2000);
+        }
+        return {
+          ...g,
+          current: newCurrent,
+          is_completed: justCompleted,
+        };
+      })
+    );
+  };
+
+  const handleDecrement = (goalId: string) => {
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId || g.is_completed) return g;
+        return { ...g, current: Math.max(g.current - 1, 0) };
+      })
+    );
+  };
+
+  const handleOpenEdit = (goal: SpiritualGoal) => {
+    setEditingGoal(goal);
+    setEditTitle(goal.title);
+    setEditType(goal.type);
+    setEditTarget(String(goal.target));
+    setEditPeriod(goal.period);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingGoal) return;
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== editingGoal.id) return g;
+        const newTarget = parseInt(editTarget, 10);
+        return {
+          ...g,
+          title: editTitle,
+          type: editType as SpiritualGoal["type"],
+          target: newTarget,
+          period: editPeriod as SpiritualGoal["period"],
+          // If new target is now <= current, mark complete
+          is_completed: g.current >= newTarget,
+        };
+      })
+    );
+    setEditDialogOpen(false);
+    setEditingGoal(null);
+  };
+
+  const handleDelete = (goalId: string) => {
+    setGoals((prev) => prev.filter((g) => g.id !== goalId));
+    setDeleteConfirmId(null);
   };
 
   return (
@@ -275,62 +375,324 @@ export default function SpiritualGrowthPage() {
         </div>
       </FadeIn>
 
-      {/* Goal Cards */}
-      <SlideUpContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {goals.map((goal, index) => {
-          const config = typeConfig[goal.type] || typeConfig.bible_reading;
-          const percentage = Math.round((goal.current / goal.target) * 100);
-          const IconComponent = config.icon;
+      {/* Active Goal Cards */}
+      {activeGoals.length > 0 ? (
+        <SlideUpContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {activeGoals.map((goal, index) => {
+            const config = typeConfig[goal.type] || typeConfig.bible_reading;
+            const percentage = Math.round((goal.current / goal.target) * 100);
+            const IconComponent = config.icon;
+            const isCelebrating = celebratingIds.has(goal.id);
 
-          return (
-            <SlideUpItem key={goal.id}>
-              <FadeIn direction="up" delay={0.25 + index * 0.05}>
-                <div className="bg-white rounded-xl p-6 border border-warm-100 hover:shadow-card-hover transition-shadow">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={`flex h-8 w-8 items-center justify-center rounded-lg ${config.bgColor}`}
-                      >
-                        <IconComponent
-                          className={`h-4 w-4 ${config.color}`}
-                        />
+            return (
+              <SlideUpItem key={goal.id}>
+                <FadeIn direction="up" delay={0.25 + index * 0.05}>
+                  <div
+                    className={`bg-white rounded-xl p-6 border transition-all ${
+                      isCelebrating
+                        ? "border-green-300 shadow-lg ring-2 ring-green-200"
+                        : "border-warm-100 hover:shadow-card-hover"
+                    }`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-lg ${config.bgColor}`}
+                        >
+                          <IconComponent
+                            className={`h-4 w-4 ${config.color}`}
+                          />
+                        </div>
+                        <Badge
+                          className={`${config.bgColor} ${config.color} border-0 text-xs`}
+                        >
+                          {config.label}
+                        </Badge>
                       </div>
-                      <Badge
-                        className={`${config.bgColor} ${config.color} border-0 text-xs`}
-                      >
-                        {config.label}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-warm-400 hover:text-purple-600"
+                          onClick={() => handleOpenEdit(goal)}
+                          title="Edit goal"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        {deleteConfirmId === goal.id ? (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDelete(goal.id)}
+                            >
+                              Delete
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-warm-500 hover:text-warm-700"
+                              onClick={() => setDeleteConfirmId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-warm-400 hover:text-red-500"
+                            onClick={() => setDeleteConfirmId(goal.id)}
+                            title="Delete goal"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    <Badge variant="outline" className="text-xs text-warm-500">
+
+                    {/* Title */}
+                    <h3 className="font-bold text-warm-800 mb-1">{goal.title}</h3>
+                    <Badge variant="outline" className="text-xs text-warm-500 mb-3">
                       {periodLabels[goal.period]}
                     </Badge>
-                  </div>
 
-                  {/* Title */}
-                  <h3 className="font-bold text-warm-800 mb-3">{goal.title}</h3>
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <Progress
+                        value={percentage}
+                        className="h-2.5 bg-warm-100"
+                      />
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-warm-500">
+                          {goal.current} of {goal.target}
+                        </span>
+                        <span className="text-sm font-bold text-warm-800">
+                          {percentage}%
+                        </span>
+                      </div>
+                    </div>
 
-                  {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <Progress
-                      value={percentage}
-                      className="h-2.5 bg-warm-100"
-                    />
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-warm-500">
-                        {goal.current} of {goal.target}
+                    {/* Progress +/- Buttons */}
+                    <div className="flex items-center justify-center gap-3 mt-4 pt-3 border-t border-warm-100">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0 rounded-full"
+                        onClick={() => handleDecrement(goal.id)}
+                        disabled={goal.current <= 0}
+                        title="Decrease progress"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <span className="text-lg font-bold text-warm-800 min-w-[3rem] text-center">
+                        {goal.current}
                       </span>
-                      <span className="text-sm font-bold text-warm-800">
-                        {percentage}%
-                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0 rounded-full border-purple-300 text-purple-700 hover:bg-purple-50"
+                        onClick={() => handleIncrement(goal.id)}
+                        disabled={goal.current >= goal.target}
+                        title="Increase progress"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                </div>
-              </FadeIn>
-            </SlideUpItem>
-          );
-        })}
-      </SlideUpContainer>
+                </FadeIn>
+              </SlideUpItem>
+            );
+          })}
+        </SlideUpContainer>
+      ) : (
+        <FadeIn direction="up" delay={0.25}>
+          <div className="text-center py-10 bg-white rounded-xl border border-warm-100">
+            <Target className="h-12 w-12 text-warm-300 mx-auto mb-3" />
+            <p className="text-warm-500">No active goals. Create one to start tracking your growth!</p>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Completed Goals Section */}
+      {completedGoals.length > 0 && (
+        <FadeIn direction="up" delay={0.3}>
+          <div className="space-y-4">
+            <h2 className="font-heading font-bold text-fluid-lg text-warm-800 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-gold-600" />
+              Completed Goals
+            </h2>
+            <SlideUpContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {completedGoals.map((goal, index) => {
+                const config = typeConfig[goal.type] || typeConfig.bible_reading;
+                const IconComponent = config.icon;
+
+                return (
+                  <SlideUpItem key={goal.id}>
+                    <FadeIn direction="up" delay={0.35 + index * 0.05}>
+                      <div className="bg-green-50 rounded-xl p-6 border border-green-200 relative overflow-hidden">
+                        {/* Completed badge */}
+                        <div className="absolute top-3 right-3">
+                          <CheckCircle2 className="h-6 w-6 text-green-600" />
+                        </div>
+
+                        {/* Header */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <div
+                            className={`flex h-8 w-8 items-center justify-center rounded-lg ${config.bgColor}`}
+                          >
+                            <IconComponent
+                              className={`h-4 w-4 ${config.color}`}
+                            />
+                          </div>
+                          <Badge
+                            className={`${config.bgColor} ${config.color} border-0 text-xs`}
+                          >
+                            {config.label}
+                          </Badge>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="font-bold text-warm-800 mb-1">{goal.title}</h3>
+                        <Badge variant="outline" className="text-xs text-warm-500 mb-3">
+                          {periodLabels[goal.period]}
+                        </Badge>
+
+                        {/* Completed progress */}
+                        <div className="space-y-2">
+                          <Progress value={100} className="h-2.5 bg-green-100" />
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-green-700 font-medium">
+                              {goal.target} of {goal.target}
+                            </span>
+                            <span className="text-sm font-bold text-green-700">
+                              100%
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Delete button for completed goals */}
+                        <div className="mt-3 pt-3 border-t border-green-200 flex justify-end">
+                          {deleteConfirmId === goal.id ? (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleDelete(goal.id)}
+                              >
+                                Delete
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs text-warm-500 hover:text-warm-700"
+                                onClick={() => setDeleteConfirmId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-warm-400 hover:text-red-500"
+                              onClick={() => setDeleteConfirmId(goal.id)}
+                              title="Delete goal"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </FadeIn>
+                  </SlideUpItem>
+                );
+              })}
+            </SlideUpContainer>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Edit Goal Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Edit Goal</DialogTitle>
+            <DialogDescription>
+              Update your spiritual growth goal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal-title">Goal Title</Label>
+              <Input
+                id="edit-goal-title"
+                placeholder="e.g., Read the Book of Psalms"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal-type">Type</Label>
+              <Select value={editType} onValueChange={setEditType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bible_reading">Bible Reading</SelectItem>
+                  <SelectItem value="prayer">Prayer</SelectItem>
+                  <SelectItem value="service_hours">Service Hours</SelectItem>
+                  <SelectItem value="giving">Giving</SelectItem>
+                  <SelectItem value="fasting">Fasting</SelectItem>
+                  <SelectItem value="study">Study</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal-target">Target</Label>
+              <Input
+                id="edit-goal-target"
+                type="number"
+                placeholder="e.g., 30"
+                min={1}
+                value={editTarget}
+                onChange={(e) => setEditTarget(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-goal-period">Period</Label>
+              <Select value={editPeriod} onValueChange={setEditPeriod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="yearly">Yearly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              className="bg-purple-700 hover:bg-purple-800"
+              disabled={!editTitle || !editType || !editTarget || !editPeriod}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Encouragement */}
       <FadeIn direction="up" delay={0.4}>

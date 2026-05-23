@@ -81,7 +81,7 @@ export function useAuth() {
           isAuthenticated: false,
           role: "member",
         });
-        window.location.href = "/";
+        window.location.href = "/auth/login";
       }
     } catch (err) {
       console.error("Sign out error:", err);

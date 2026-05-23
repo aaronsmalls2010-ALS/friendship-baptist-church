@@ -41,6 +41,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { FadeIn } from "@/components/motion/fade-in";
+import { ProfilePictureUpload } from "@/components/portal/profile-picture-upload";
 import { formatDate } from "@/lib/utils";
 import { MOCK_DONATIONS } from "@/lib/mock-data";
 import type {
@@ -349,9 +350,15 @@ export default function MyProfilePage() {
   }
 
   // ── Save preferences ───────────────────────────────────────────
+  const [savingPreferences, setSavingPreferences] = useState(false);
+
   function handleSavePreferences() {
-    // Preferences are local for now (no API endpoint yet)
-    setToast({ type: "success", message: "Preferences saved." });
+    setSavingPreferences(true);
+    // Simulate a brief network delay since there's no backend yet
+    setTimeout(() => {
+      setSavingPreferences(false);
+      setToast({ type: "success", message: "Preferences saved successfully" });
+    }, 600);
   }
 
   // ── Create family ───────────────────────────────────────────────
@@ -576,19 +583,16 @@ export default function MyProfilePage() {
       <FadeIn direction="up">
         <Card className="p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            {/* Avatar */}
-            <div className="relative">
-              {profile.photo_url ? (
-                <img
-                  src={profile.photo_url}
-                  alt={`${profile.first_name} ${profile.last_name}`}
-                  className="h-20 w-20 rounded-full object-cover border-2 border-purple-200"
-                />
-              ) : (
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-purple-700 text-white text-2xl font-bold">
-                  {initials}
-                </div>
-              )}
+            {/* Avatar with upload */}
+            <div className="flex flex-col items-center">
+              <ProfilePictureUpload
+                currentPhotoUrl={profile.photo_url}
+                initials={initials}
+                onSave={(croppedDataUrl) => {
+                  setProfile({ ...profile, photo_url: croppedDataUrl });
+                  setToast({ type: "success", message: "Profile picture updated!" });
+                }}
+              />
             </div>
 
             {/* Info */}
@@ -1447,9 +1451,14 @@ export default function MyProfilePage() {
                 <Button
                   className="bg-purple-700 hover:bg-purple-800"
                   onClick={handleSavePreferences}
+                  disabled={savingPreferences}
                 >
-                  <Check className="h-4 w-4 mr-2" />
-                  Save Changes
+                  {savingPreferences ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Check className="h-4 w-4 mr-2" />
+                  )}
+                  {savingPreferences ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
             </TabsContent>

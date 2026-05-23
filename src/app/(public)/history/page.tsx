@@ -166,6 +166,27 @@ export default function HistoryPage() {
         reference="Deuteronomy 32:7"
       />
 
+      {/* Loved Ones Gone Home CTA */}
+      <section className="section-padding bg-warm-50">
+        <div className="container-narrow text-center">
+          <FadeIn>
+            <Heart className="mx-auto mb-4 h-8 w-8 text-purple-400" />
+            <h2 className="font-heading text-fluid-2xl font-bold text-warm-900">
+              Loved Ones Gone Home
+            </h2>
+            <p className="mt-3 mx-auto max-w-xl text-warm-500 leading-relaxed">
+              Visit our Hall of Angels to honor and remember the cherished members
+              of our church family who have gone home to be with the Lord.
+            </p>
+            <div className="mt-6">
+              <CTAButton href="/history/loved-ones" variant="primary" size="lg" icon={<Heart className="h-5 w-5" />}>
+                Hall of Angels
+              </CTAButton>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="section-padding bg-white">
         <div className="container-narrow">

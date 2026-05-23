@@ -15,6 +15,7 @@ import {
   DollarSign,
   FileText,
   BarChart3,
+  ClipboardList,
   Settings,
   LogOut,
   ChevronLeft,
@@ -38,6 +39,7 @@ const navItems = [
   { label: "SMS Center", href: "/admin/sms", icon: MessageSquare },
   { label: "Donations", href: "/admin/donations", icon: DollarSign },
   { label: "Content", href: "/admin/content", icon: FileText },
+  { label: "Reports", href: "/admin/reports", icon: ClipboardList },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];

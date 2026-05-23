@@ -20,6 +20,7 @@ import type {
   MinistryMember,
   MinistryMessage,
   WorshipService,
+  Memorial,
 } from "@/types";
 
 // ─── Wards ──────────────────────────────────────────────────────────
@@ -164,7 +165,9 @@ export const MOCK_EVENTS: Event[] = [
 // ─── Worship Services (real data from WordPress archive) ────────────
 // YouTube IDs will be added after videos are uploaded to the church's YouTube channel.
 // Until then, videos show "Coming Soon" placeholder.
+// Metadata enriched from cached WordPress pages (scripture refs, deacon names, descriptions).
 export const WORSHIP_SERVICES: WorshipService[] = [
+  // ── 2021 ──────────────────────────────────────────────────────────
   { id: "ws01", date: "2021-04-11", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "prayer", label: "Opening Prayer", local_filename: "2021-04-11_Prayer.mp4" },
     { type: "scripture", label: "Scripture Reading", local_filename: "2021-04-11_Scripture.mp4" },
@@ -174,13 +177,13 @@ export const WORSHIP_SERVICES: WorshipService[] = [
     { type: "prayer", label: "Opening Prayer", local_filename: "2021-04-04_Prayer.mp4" },
     { type: "scripture", label: "Scripture Reading", local_filename: "2021-04-04_Scripture.mp4" },
     { type: "sermon", label: "Easter Sermon", local_filename: "2021-04-04_Sermon.mp4" },
-  ]},
+  ], special_notes: "Easter Sunday 2021" },
   { id: "ws03", date: "2021-03-28", title: "Palm Sunday Worship", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
     { type: "prayer", label: "Opening Prayer", local_filename: "2021-03-28_Prayer.mp4" },
     { type: "scripture", label: "Scripture Reading", local_filename: "2021-03-28_Scripture.mp4" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2021-03-28_Sermon.mp4" },
     { type: "special", label: "Greeting & Reading", local_filename: "2021-03-28_GreetingAndReading.mp4" },
-  ]},
+  ], special_notes: "Includes a separate Greeting and Reading video" },
   { id: "ws04", date: "2021-03-14", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "prayer", label: "Opening Prayer", local_filename: "2021-03-14_Prayer.mp4" },
     { type: "scripture", label: "Scripture Reading", local_filename: "2021-03-14_Scripture.mp4" },
@@ -189,6 +192,7 @@ export const WORSHIP_SERVICES: WorshipService[] = [
   { id: "ws05", date: "2021-03-07", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "prayer", label: "Opening Prayer", local_filename: "2021-03-07_Prayer.mp4" },
     { type: "scripture", label: "Scripture Reading", local_filename: "2021-03-07_Scripture.mp4" },
+    { type: "sermon", label: "Sunday Sermon", local_filename: "2021-03-07_Sermon.mp4" },
   ]},
   { id: "ws06", date: "2021-02-28", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "prayer", label: "Opening Prayer", local_filename: "2021-02-28_Prayer.mp4" },
@@ -223,6 +227,8 @@ export const WORSHIP_SERVICES: WorshipService[] = [
     { type: "scripture", label: "Scripture Reading", local_filename: "2021-01-03_Scripture.mp4" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2021-01-03_Sermon.mp4" },
   ]},
+
+  // ── December 2020 ─────────────────────────────────────────────────
   { id: "ws13", date: "2020-12-27", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "prayer", label: "Opening Prayer", local_filename: "2020-12-27_Prayer.mp4" },
     { type: "scripture", label: "Scripture Reading", local_filename: "2020-12-27_Scripture.mp4" },
@@ -239,132 +245,156 @@ export const WORSHIP_SERVICES: WorshipService[] = [
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-12-13_Sermon.mp4" },
   ]},
   { id: "ws16", date: "2020-12-07", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-12-07_Prayer.mp4" },
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-12-07_Prayer.mp4", description: "Prayer by Deacon Oscar Smalls" },
     { type: "scripture", label: "Scripture Reading", local_filename: "2020-12-07_Scripture.mp4" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-12-07_Sermon.mp4" },
   ]},
-  { id: "ws17", date: "2020-11-29", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-29_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-29_Scripture.mp4" },
+
+  // ── November 2020 ─────────────────────────────────────────────────
+  { id: "ws17", date: "2020-11-29", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Psalms 27", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-29_Prayer.mp4", description: "Prayer by Deacon Leon Moultrie" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-29_Scripture.mp4", description: "Deacon Edward Simmons reads Psalms 27" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-29_Sermon.mp4" },
   ]},
-  { id: "ws18", date: "2020-11-22", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-22_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-22_Scripture.mp4" },
+  { id: "ws18", date: "2020-11-22", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Psalms 23", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-22_Prayer.mp4", description: "Prayer by Deacon Oscar Smalls" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-22_Scripture.mp4", description: "Deacon Terry Grant reads the 23rd Psalms" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-22_Sermon.mp4" },
   ]},
-  { id: "ws19", date: "2020-11-15", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-15_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-15_Scripture.mp4" },
+  { id: "ws19", date: "2020-11-15", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "1 John 4:12-21", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-15_Prayer.mp4", description: "Word of Prayer by Deacon Leon Moultrie" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-15_Scripture.mp4", description: "Deacon Oscar Smalls reads 1 John 4:12-21" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-15_Sermon.mp4" },
   ]},
-  { id: "ws20", date: "2020-11-08", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-08_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-08_Scripture.mp4" },
+  { id: "ws20", date: "2020-11-08", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Psalms 27", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-08_Prayer.mp4", description: "Word of Prayer by Deacon Leon Moultrie" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-08_Scripture.mp4", description: "Deacon Edward Simmons reads Psalms 27" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-08_Sermon.mp4" },
   ]},
-  { id: "ws21", date: "2020-11-01", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-01_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-01_Scripture.mp4" },
+  { id: "ws21", date: "2020-11-01", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Isaiah 12", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-11-01_Prayer.mp4", description: "Word of Prayer by Deacon Oscar Smalls" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-11-01_Scripture.mp4", description: "Deacon Edward Simmons reads Isaiah 12" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-11-01_Sermon.mp4" },
   ]},
+
+  // ── October 2020 ──────────────────────────────────────────────────
   { id: "ws22", date: "2020-10-25", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-25_Prayer.mp4" },
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-25_Prayer.mp4", description: "Word of Prayer by Deacon Oscar Smalls" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-10-25_Sermon.mp4" },
   ]},
-  { id: "ws23", date: "2020-10-18", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-18_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-18_Scripture.mp4" },
+  { id: "ws23", date: "2020-10-18", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "John 1", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-18_Prayer.mp4", description: "Word of Prayer by Deacon Edward Simmons" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-18_Scripture.mp4", description: "Deacon Oscar Smalls reads The Gospel of John 1" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-10-18_Sermon.mp4" },
   ]},
-  { id: "ws24", date: "2020-10-11", title: "Pastor Appreciation Sunday", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-11_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-11_Scripture.mp4" },
+  { id: "ws24", date: "2020-10-11", title: "Pastor Appreciation Sunday", speaker: "Pastor Isiah Smalls", is_special: true,
+    description: "Pastor Appreciation Day with special presentations from congregation members",
+    special_notes: "Participants: Sister Katie Calloway, Deacon Oscar Smalls, Deacon Edward Simmons, Deacon Terry Grant, Deacon Aaron Smalls. Includes intro, appreciation presentations, thank you message, and pastor parade.",
+    videos: [
+    { type: "special", label: "Introduction", local_filename: "Intro.mp4" },
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-11_Prayer.mp4", description: "Word of Prayer from Deacon Edward Simmons" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-11_Scripture.mp4", description: "Scripture from Deacon Oscar Smalls" },
     { type: "special", label: "Pastor Appreciation Part 1", local_filename: "2020-10-11_PastorAppreciation1.mp4" },
     { type: "special", label: "Pastor Appreciation Part 2", local_filename: "2020-10-11_PastorAppreciation2.mp4" },
     { type: "special", label: "Pastor Thank You", local_filename: "2020-10-11_PastorThankYou.mp4" },
     { type: "special", label: "Pastor Parade & Outro", local_filename: "2020-10-11_PastorParade_Outro.mp4" },
   ]},
-  { id: "ws25", date: "2020-10-04", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-04_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-04_Scripture.mp4" },
-    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-10-04_Sermon.mp4" },
+  { id: "ws25", date: "2020-10-04", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Hebrews 13", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-10-04_Prayer.mp4", description: "Word of Prayer by Deacon Oscar Smalls" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-10-04_Scripture.mp4", description: "Deacon Edward Simmons reads Hebrews 13" },
   ]},
-  { id: "ws26", date: "2020-09-27", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-27_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-09-27_Scripture.mp4" },
+
+  // ── September 2020 ────────────────────────────────────────────────
+  { id: "ws26", date: "2020-09-27", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "1 Corinthians 13", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-27_Prayer.mp4", description: "Word of Prayer by Deacon Oscar Smalls" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-09-27_Scripture.mp4", description: "Deacon Edward Simmons reads 1 Corinthians 13" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-27_Sermon.mp4" },
   ]},
   { id: "ws27", date: "2020-09-20", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-20_Prayer.mp4" },
-    { type: "scripture", label: "Scripture & Testimony", local_filename: "2020-09-20_Scripture-Testimony.mp4" },
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-20_Prayer.mp4", description: "Prayer by Deacon Edward Simmons" },
+    { type: "scripture", label: "Scripture & Testimony", local_filename: "2020-09-20_Scripture-Testimony.mp4", description: "Deacon Oscar Smalls gives a testimony" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-20_Sermon.mp4" },
-  ]},
-  { id: "ws28", date: "2020-09-13", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-13_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-09-13_Scripture.mp4" },
+  ], special_notes: "Scripture reading combined with testimony" },
+  { id: "ws28", date: "2020-09-13", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Ephesians 6:10", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-09-13_Prayer.mp4", description: "Dea. Terry Grant leads us in prayer" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-09-13_Scripture.mp4", description: "Deacon Oscar Smalls reads Ephesians 6:10" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-13_Sermon.mp4" },
   ]},
   { id: "ws29", date: "2020-09-06", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-09-06_Sermon.mp4" },
   ]},
-  { id: "ws30", date: "2020-08-30", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-30_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-30_Scripture.mp4" },
+
+  // ── August 2020 ───────────────────────────────────────────────────
+  { id: "ws30", date: "2020-08-30", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Psalms 67", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-30_Prayer.mp4", description: "Dea. Terry Grant leads us in prayer" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-30_Scripture.mp4", description: "Deacon Edward Simmons reads Psalms 67" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-30_Sermon.mp4" },
   ]},
   { id: "ws31", date: "2020-08-23", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-23_Sermon.mp4" },
   ]},
-  { id: "ws32", date: "2020-08-16", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
+  { id: "ws32", date: "2020-08-16", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Psalms 16", videos: [
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-16_Sermon.mp4" },
-  ]},
+  ], special_notes: "Prayer by Dea. Oscar Smalls; Scripture read by Deacon Edward Simmons — prayer and scripture videos not available" },
   { id: "ws33", date: "2020-08-09", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
     { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-09_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-09_Scripture.mp4" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-09_Scripture-1.mp4" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-09_Sermon.mp4" },
   ]},
-  { id: "ws34", date: "2020-08-02", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-02_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-02_Scripture.mp4" },
+  { id: "ws34", date: "2020-08-02", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Ephesians 6", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-08-02_Prayer.mp4", description: "Dea. Edward Simmons leads us in prayer" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-08-02_Scripture.mp4", description: "Deacon Oscar Smalls reads Ephesians 6" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-08-02_Sermon.mp4" },
   ]},
-  { id: "ws35", date: "2020-07-25", title: "Sunday Worship Service", speaker: "Guest Speaker", videos: [
-    { type: "sermon", label: "Sunday Sermon", local_filename: "2020-07-25_Sermon_Doe.mp4" },
-  ]},
-  { id: "ws36", date: "2020-05-24", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-24_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-05-24_Scripture.mp4" },
+
+  // ── July 2020 ─────────────────────────────────────────────────────
+  { id: "ws35", date: "2020-07-25", title: "Summer Revival", speaker: "Guest Speaker", is_special: true, videos: [
+    { type: "sermon", label: "Revival Sermon", local_filename: "2020-07-25_Sermon_Doe.mp4" },
+  ], special_notes: "Summer Revival service with guest speaker" },
+
+  // ── May 2020 ──────────────────────────────────────────────────────
+  { id: "ws36", date: "2020-05-24", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Romans 14", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-24_Prayer.mp4", description: "Dea. Oscar Smalls leads us in prayer" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-05-24_Sermon.mp4" },
   ]},
-  { id: "ws37", date: "2020-05-17", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-17_Prayer.mp4" },
-  ]},
-  { id: "ws38", date: "2020-05-10", title: "Mother's Day Worship", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-10_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-05-10_Scripture.mp4" },
+  { id: "ws37", date: "2020-05-10", title: "Mother's Day Worship", speaker: "Pastor Isiah Smalls", is_special: true, scripture: "Romans 14", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-05-10_Prayer.mp4", description: "Dea. Oscar Smalls leads us in prayer" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-05-10_Scripture.mp4", description: "Deacon Edward Simmons reads Romans 14" },
     { type: "sermon", label: "Mother's Day Sermon", local_filename: "2020-05-10_Sermon.mp4" },
   ]},
-  { id: "ws39", date: "2020-04-26", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-26_Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-04-26_Scripture.mp4" },
+
+  // ── April 2020 ────────────────────────────────────────────────────
+  { id: "ws38", date: "2020-04-26", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Philippians 4", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-26_Prayer.mp4", description: "Dea. Terry Grant leads us in prayer" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-04-26_Scripture.mp4", description: "Deacon Edward Simmons reads Philippians 4" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-04-26_Sermon_small.mp4" },
   ]},
-  { id: "ws40", date: "2020-04-19", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-19-Prayer.mp4" },
-    { type: "scripture", label: "Scripture Reading", local_filename: "2020-04-19-Scripture.mp4" },
+  { id: "ws39", date: "2020-04-19", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", scripture: "Ephesians 6", videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-19-Prayer.mp4", description: "Dea. Terry Grant leads us in prayer" },
+    { type: "scripture", label: "Scripture Reading", local_filename: "2020-04-19-Scripture.mp4", description: "Deacon Edward Simmons reads Ephesians 6" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-04-19-Sermon.mp4" },
   ]},
-  { id: "ws41", date: "2020-04-12", title: "Resurrection Sunday Worship", speaker: "Pastor Isiah Smalls", is_special: true, videos: [
+  { id: "ws40", date: "2020-04-12", title: "Resurrection Sunday Worship", speaker: "Pastor Isiah Smalls", is_special: true,
+    sermon_title: "Resurrection Sunday Sermon",
+    special_notes: "Easter / Resurrection Sunday service",
+    videos: [
     { type: "sermon", label: "Resurrection Sunday Sermon", local_filename: "ResurrectionSundaySermon.mp4" },
   ]},
-  { id: "ws42", date: "2020-04-05", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-05_FBC-Prayer_OSmalls.mp4" },
+  { id: "ws41", date: "2020-04-05", title: "First Parking Lot Service", speaker: "Pastor Isiah Smalls", is_special: true,
+    description: "Our First Ever Parking Lot Service",
+    special_notes: "Historic first parking lot service during COVID-19 pandemic",
+    videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "2020-04-05_FBC-Prayer_OSmalls.mp4", description: "Dea. Oscar Smalls leads us in prayer" },
     { type: "sermon", label: "Sunday Sermon", local_filename: "2020-04-05_FBC-Sermon.mp4" },
   ]},
-  { id: "ws43", date: "2020-03-29", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls", videos: [
-    { type: "prayer", label: "Opening Prayer", local_filename: "20200329_Prayer.mp4" },
-    { type: "sermon", label: "Sunday Sermon", local_filename: "20200329_Sermon.mp4" },
+
+  // ── March 2020 ────────────────────────────────────────────────────
+  { id: "ws42", date: "2020-03-29", title: "Sunday Worship Service", speaker: "Pastor Isiah Smalls",
+    sermon_title: "Humbleness, Obedience, and Prayer Gets Results!",
+    special_notes: "Earliest recorded service during COVID-19 pandemic",
+    videos: [
+    { type: "prayer", label: "Opening Prayer", local_filename: "20200329_Prayer_HD.mp4", description: "Join Pastor Isiah Smalls in a word of prayer" },
+    { type: "sermon", label: "Humbleness, Obedience, and Prayer Gets Results!", local_filename: "20200329_Sermon_HD.mp4" },
   ]},
 ];
 
@@ -374,13 +404,14 @@ export const MOCK_SERMONS: Sermon[] = WORSHIP_SERVICES
   .slice(0, 6)
   .map((ws, i) => ({
     id: `s${i + 1}`,
-    title: ws.title,
+    title: ws.sermon_title || ws.title,
     speaker: ws.speaker,
     date: ws.date,
+    scripture: ws.scripture,
     video_url: ws.videos.find(v => v.type === "sermon")?.youtube_id
       ? `https://www.youtube.com/watch?v=${ws.videos.find(v => v.type === "sermon")?.youtube_id}`
       : undefined,
-    topics: ws.is_special ? ["Special Service"] : ["Worship"],
+    topics: ws.is_special ? ["Special Service"] : ws.scripture ? [ws.scripture] : ["Worship"],
     created_at: ws.date,
   }));
 
@@ -608,4 +639,109 @@ export const MOCK_MINISTRY_MESSAGES: MinistryMessage[] = [
   { id: "msg1", ministry_id: "m1", sent_by: "p7", subject: "Usher Board Meeting Reminder", body: "Reminder: Our monthly usher board meeting is this Saturday at 10 AM in the fellowship hall. Please make every effort to attend as we'll be discussing assignments for the anniversary celebration.", sent_at: "2026-05-20T14:00:00", sender_name: "Martha Washington", ministry_name: "Usher Board" },
   { id: "msg2", ministry_id: "m2", sent_by: "p8", subject: "New Songs for Anniversary", body: "Choir family, we have three new songs to learn for the anniversary celebration. Please come to Thursday rehearsal prepared. Sheet music will be distributed.", sent_at: "2026-05-19T18:00:00", sender_name: "James Singleton", ministry_name: "Choir" },
   { id: "msg3", ministry_id: "m3", sent_by: "p9", subject: "VBS Planning Update", body: "Youth Ministry team, VBS planning is in full swing! We need volunteers for crafts, snacks, and Bible study stations. Please let me know your availability.", sent_at: "2026-05-18T10:00:00", sender_name: "Crystal Young", ministry_name: "Youth Ministry" },
+];
+
+// ─── Memorials (Loved Ones Gone Home) ─────────────────────────────
+export const MOCK_MEMORIALS: Memorial[] = [
+  {
+    id: "mem1",
+    created_by: "p7",
+    first_name: "Reverend James",
+    last_name: "Washington Sr.",
+    photo_url: undefined,
+    date_of_birth: "1938-03-15",
+    date_of_passing: "2019-11-22",
+    obituary: "Reverend James Washington Sr. was a beloved pillar of Friendship Baptist Church for over fifty years. Born and raised in the Lowcountry, he dedicated his life to serving God and his community. He served as a deacon for twenty years before answering his call to preach, leading Bible study every Wednesday evening and mentoring countless young men in the faith. Known for his booming laugh and his tender heart, Rev. Washington touched the lives of everyone he met. He leaves behind a legacy of love, service, and unwavering devotion to the Lord.",
+    scripture: "Psalm 116:15",
+    scripture_text: "Precious in the sight of the Lord is the death of his faithful servants.",
+    favorite_hymn: "Amazing Grace",
+    church_roles: ["Deacon", "Bible Study Leader", "Trustee Board"],
+    family_message: "Daddy, your love and wisdom guide us still. Until we meet again at the feet of Jesus.",
+    is_published: true,
+    photos: [
+      { id: "mp1", memorial_id: "mem1", image_url: "/images/placeholder-memorial.jpg", caption: "Rev. Washington at the 2015 Church Anniversary", uploaded_by: "p7", created_at: "2019-12-01" },
+      { id: "mp2", memorial_id: "mem1", image_url: "/images/placeholder-memorial.jpg", caption: "Leading Bible Study, 2018", uploaded_by: "p7", created_at: "2019-12-01" },
+    ],
+    comments: [
+      { id: "mc1", memorial_id: "mem1", profile_id: "p10", author_name: "Mae Robinson", body: "Rev. Washington was like a father to so many of us. His prayers could move mountains. We miss you dearly.", created_at: "2019-12-05" },
+      { id: "mc2", memorial_id: "mem1", profile_id: "p8", author_name: "James Singleton", body: "He always had a word of encouragement. The church feels different without his presence, but his spirit lives on.", created_at: "2019-12-08" },
+    ],
+    created_at: "2019-11-28",
+    updated_at: "2019-12-08",
+  },
+  {
+    id: "mem2",
+    created_by: "p10",
+    first_name: "Mother Eloise",
+    last_name: "Robinson",
+    photo_url: undefined,
+    date_of_birth: "1932-07-04",
+    date_of_passing: "2023-02-14",
+    obituary: "Mother Eloise Robinson was the heartbeat of Friendship Baptist Church. For over sixty years, she graced the pews with her radiant smile and spirit-filled praise. As the oldest member of the Missionary Society, she organized countless outreach programs that fed the hungry and clothed the needy throughout Beaufort County. Her kitchen was always open, her prayers were always fervent, and her love was always unconditional. Mother Robinson raised seven children, all of whom credit her faith as the foundation of their lives.",
+    scripture: "Proverbs 31:28-29",
+    scripture_text: "Her children arise and call her blessed; her husband also, and he praises her: Many women do noble things, but you surpass them all.",
+    favorite_hymn: "His Eye Is on the Sparrow",
+    church_roles: ["Missionary Society", "Kitchen Ministry", "Mother Board"],
+    family_message: "Mama, you showed us what it means to live for Christ. Your hands fed thousands and your prayers covered us all. Rest well, Queen.",
+    is_published: true,
+    photos: [
+      { id: "mp3", memorial_id: "mem2", image_url: "/images/placeholder-memorial.jpg", caption: "Mother Robinson at the Annual Fish Fry, 2021", uploaded_by: "p10", created_at: "2023-03-01" },
+    ],
+    comments: [
+      { id: "mc3", memorial_id: "mem2", profile_id: "p7", author_name: "Martha Washington", body: "Mother Robinson taught me how to pray. She would grab your hands and you could feel the Holy Spirit moving. What a woman of God.", created_at: "2023-02-20" },
+      { id: "mc4", memorial_id: "mem2", profile_id: "p9", author_name: "Crystal Young", body: "She always made sure every child had a plate. The love she showed our youth will never be forgotten.", created_at: "2023-02-22" },
+      { id: "mc5", memorial_id: "mem2", profile_id: "p12", author_name: "Henry Baker", body: "A true servant of the Lord. Her legacy of faith and service will inspire generations to come.", created_at: "2023-03-01" },
+    ],
+    created_at: "2023-02-18",
+    updated_at: "2023-03-01",
+  },
+  {
+    id: "mem3",
+    created_by: "p9",
+    first_name: "Deacon Willie",
+    last_name: "Grant",
+    photo_url: undefined,
+    date_of_birth: "1945-09-30",
+    date_of_passing: "2021-08-17",
+    obituary: "Deacon Willie Grant served Friendship Baptist Church with quiet strength and deep faithfulness. Ordained as a deacon in 1985, he spent nearly four decades visiting the sick, comforting the bereaved, and being a steady hand of support for every pastor who led the congregation. A retired Marine and proud veteran, Deacon Grant brought the same discipline and dedication to his church service that he brought to his country. He was a man of few words but mighty actions.",
+    scripture: "2 Timothy 4:7",
+    scripture_text: "I have fought the good fight, I have finished the race, I have kept the faith.",
+    favorite_hymn: "Blessed Assurance",
+    church_roles: ["Deacon Board", "Usher Board", "Men's Ministry"],
+    family_message: "Dad served his Lord, his country, and his family with everything he had. We are proud to be his children.",
+    is_published: true,
+    photos: [],
+    comments: [
+      { id: "mc6", memorial_id: "mem3", profile_id: "p7", author_name: "Martha Washington", body: "Deacon Grant was always the first to arrive and the last to leave. His dedication was unmatched.", created_at: "2021-08-25" },
+    ],
+    created_at: "2021-08-20",
+    updated_at: "2021-08-25",
+  },
+  {
+    id: "mem4",
+    created_by: "p8",
+    first_name: "Sister Carolyn",
+    last_name: "Singleton",
+    photo_url: undefined,
+    date_of_birth: "1950-12-25",
+    date_of_passing: "2024-06-03",
+    obituary: "Sister Carolyn Singleton blessed Friendship Baptist Church with her golden voice for over thirty years. As a founding member of the Gospel Choir, her soprano could lift the entire congregation to their feet. Born on Christmas Day, she was a gift to everyone who knew her. Beyond her musical talents, Sister Singleton served faithfully in the Deaconess Board and was known throughout the community for her ministry of encouragement — never letting a birthday, anniversary, or achievement pass without a handwritten card and a phone call.",
+    scripture: "Psalm 95:1",
+    scripture_text: "Come, let us sing for joy to the Lord; let us shout aloud to the Rock of our salvation.",
+    favorite_hymn: "Total Praise",
+    church_roles: ["Gospel Choir", "Deaconess Board", "Hospitality Ministry"],
+    family_message: "Mom sang her way into heaven. We know she’s leading the angel choir now. We love you forever.",
+    is_published: true,
+    photos: [
+      { id: "mp4", memorial_id: "mem4", image_url: "/images/placeholder-memorial.jpg", caption: "Sister Singleton leading the choir, Easter 2022", uploaded_by: "p8", created_at: "2024-06-10" },
+      { id: "mp5", memorial_id: "mem4", image_url: "/images/placeholder-memorial.jpg", caption: "Christmas Cantata, 2019", uploaded_by: "p8", created_at: "2024-06-10" },
+      { id: "mp6", memorial_id: "mem4", image_url: "/images/placeholder-memorial.jpg", caption: "With the Deaconess Board, Church Anniversary 2023", uploaded_by: "p8", created_at: "2024-06-10" },
+    ],
+    comments: [
+      { id: "mc7", memorial_id: "mem4", profile_id: "p10", author_name: "Mae Robinson", body: "When Carolyn sang, you could feel heaven open up. The choir will never sound the same without her.", created_at: "2024-06-08" },
+      { id: "mc8", memorial_id: "mem4", profile_id: "p13", author_name: "Gloria Campbell", body: "She sent me a card for every single birthday since I was born. That kind of love is rare. Rest in peace, Sister Singleton.", created_at: "2024-06-12" },
+    ],
+    created_at: "2024-06-07",
+    updated_at: "2024-06-12",
+  },
 ];

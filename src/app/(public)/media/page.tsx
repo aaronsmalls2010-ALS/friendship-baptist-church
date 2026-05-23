@@ -56,7 +56,11 @@ function ServicesTab() {
         !searchTerm ||
         ws.title.toLowerCase().includes(term) ||
         ws.speaker.toLowerCase().includes(term) ||
-        ws.date.includes(term);
+        ws.date.includes(term) ||
+        ws.scripture?.toLowerCase().includes(term) ||
+        ws.sermon_title?.toLowerCase().includes(term) ||
+        ws.description?.toLowerCase().includes(term) ||
+        ws.videos.some((v) => v.description?.toLowerCase().includes(term));
 
       const matchesYear = !activeYear || ws.date.startsWith(activeYear);
 
@@ -75,7 +79,7 @@ function ServicesTab() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
             <Input
               type="text"
-              placeholder="Search services by title, speaker, or date..."
+              placeholder="Search by title, speaker, scripture, or date..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 rounded-xl border-warm-200 bg-white focus-visible:ring-purple-500"
@@ -160,8 +164,19 @@ function ServicesTab() {
                             Special
                           </Badge>
                         )}
+                        {service.scripture && (
+                          <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50 text-xs">
+                            <BookOpen className="mr-1 h-3 w-3" />
+                            {service.scripture}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="mt-1 flex items-center gap-4 text-sm text-warm-500">
+                      {service.sermon_title && service.sermon_title !== service.title && (
+                        <p className="mt-0.5 text-sm font-medium text-purple-700 italic">
+                          &ldquo;{service.sermon_title}&rdquo;
+                        </p>
+                      )}
+                      <div className="mt-1 flex items-center gap-4 text-sm text-warm-500 flex-wrap">
                         <span className="flex items-center gap-1">
                           <User className="h-3.5 w-3.5" />
                           {service.speaker}
@@ -170,6 +185,9 @@ function ServicesTab() {
                           <Calendar className="h-3.5 w-3.5" />
                           {formatDate(service.date)}
                         </span>
+                        {service.description && (
+                          <span className="text-warm-400">&mdash; {service.description}</span>
+                        )}
                       </div>
                     </div>
 
@@ -190,6 +208,14 @@ function ServicesTab() {
                   {/* Expanded Content */}
                   {isExpanded && (
                     <div className="border-t border-warm-100 bg-warm-50/50 p-5">
+                      {/* Service description & special notes */}
+                      {service.special_notes && (
+                        <div className="mb-4 flex items-start gap-2 rounded-lg bg-purple-50 border border-purple-100 p-3">
+                          <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-400" />
+                          <p className="text-sm text-purple-700">{service.special_notes}</p>
+                        </div>
+                      )}
+
                       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                         {service.videos.map((video, idx) => (
                           <div
@@ -234,6 +260,9 @@ function ServicesTab() {
                               </Badge>
                               <span className="text-sm font-medium text-warm-700">{video.label}</span>
                             </div>
+                            {video.description && (
+                              <p className="mt-2 text-xs text-warm-500 italic">{video.description}</p>
+                            )}
                           </div>
                         ))}
                       </div>

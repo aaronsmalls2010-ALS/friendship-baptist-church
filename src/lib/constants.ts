@@ -33,6 +33,7 @@ export const PUBLIC_NAV: NavItem[] = [
       { label: "Church History", href: "/history" },
       { label: "Pastor Smalls", href: "/pastor" },
       { label: "Deacons", href: "/deacons" },
+      { label: "Hall of Angels", href: "/loved-ones" },
     ],
   },
   {

@@ -164,6 +164,68 @@ export default function PastorPage() {
         </div>
       </section>
 
+      {/* First Lady Marie Smalls */}
+      <section className="section-padding bg-warm-50 dark:bg-warm-950">
+        <div className="container-wide">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <FadeIn direction="left" delay={0.1}>
+              <div className="relative flex justify-center order-2 lg:order-1">
+                <div className="aspect-[3/4] w-full max-w-md relative rounded-2xl overflow-hidden shadow-glow-lg">
+                  <EditableImage
+                    id="firstlady.photo"
+                    fallback="/images/pastor/first-lady.png"
+                    alt="First Lady Marie Smalls"
+                    fill
+                    className="object-cover object-top"
+                    sizes="(max-width: 768px) 100vw, 400px"
+                  />
+                </div>
+                <div className="absolute -bottom-4 -left-4 w-20 h-20 bg-peach-300 rounded-2xl -z-10" />
+              </div>
+            </FadeIn>
+
+            <FadeIn direction="right" delay={0.2}>
+              <div className="order-1 lg:order-2">
+                <p className="font-scripture italic text-peach-500 text-fluid-lg mb-2">
+                  Our First Lady
+                </p>
+                <h2 className="font-heading text-fluid-3xl font-bold text-warm-900 dark:text-warm-50 mb-4">
+                  Marie Smalls
+                </h2>
+                <EditableText
+                  id="firstlady.intro"
+                  as="p"
+                  multiline
+                  className="text-warm-600 dark:text-warm-400 leading-relaxed mb-4"
+                  fallback="Behind every great ministry stands a partnership rooted in faith, love, and shared calling. First Lady Marie Smalls is not simply beside Pastor Smalls — she walks with him in purpose. Together, they carry the vision God has placed on Friendship Baptist Church, each one strengthening what the other builds."
+                />
+                <EditableText
+                  id="firstlady.heart"
+                  as="p"
+                  multiline
+                  className="text-warm-600 dark:text-warm-400 leading-relaxed mb-4"
+                  fallback="Known for her warmth, her grace, and her genuine love for every person who walks through the doors of the church, First Lady Smalls has a gift for making people feel seen and valued. Whether offering a word of encouragement to a young mother, organizing fellowship events, or quietly praying over a family in need, her ministry touches lives in ways both seen and unseen."
+                />
+                <EditableText
+                  id="firstlady.legacy"
+                  as="p"
+                  multiline
+                  className="text-warm-600 dark:text-warm-400 leading-relaxed mb-6"
+                  fallback="She and Pastor Smalls share a deep conviction that the church is a family — and they lead it as one. Their partnership is a living example of what it means to serve the Lord together, building each other up and pouring into the congregation with a unified heart. Where he preaches the Word, she nurtures the people. Where he casts the vision, she helps carry it forward. They are, in every sense, a team."
+                />
+                <EditableText
+                  id="firstlady.scripture"
+                  as="p"
+                  multiline
+                  className="font-scripture italic text-fluid-base text-purple-700 dark:text-purple-400"
+                  fallback={`"Two are better than one, because they have a good return for their labor: If either of them falls down, one can help the other up." — Ecclesiastes 4:9–10`}
+                />
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
       {/* Scripture Divider */}
       <ScriptureDivider
         text="I will give you shepherds after my own heart, who will lead you with knowledge and understanding."

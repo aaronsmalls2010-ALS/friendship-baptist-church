@@ -179,7 +179,7 @@ export default function HistoryPage() {
               of our church family who have gone home to be with the Lord.
             </p>
             <div className="mt-6">
-              <CTAButton href="/history/loved-ones" variant="primary" size="lg" icon={<Heart className="h-5 w-5" />}>
+              <CTAButton href="/loved-ones" variant="primary" size="lg" icon={<Heart className="h-5 w-5" />}>
                 Hall of Angels
               </CTAButton>
             </div>

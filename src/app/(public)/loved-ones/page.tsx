@@ -82,7 +82,6 @@ export default function LovedOnesPage() {
         subtitle="Hall of Angels"
         overlay="warm"
         breadcrumbs={[
-          { label: "History", href: "/history" },
           { label: "Loved Ones Gone Home" },
         ]}
       />
@@ -153,7 +152,7 @@ export default function LovedOnesPage() {
                     layout
                   >
                     <Link
-                      href={`/history/loved-ones/${memorial.id}`}
+                      href={`/loved-ones/${memorial.id}`}
                       className="group block"
                     >
                       <div className="relative overflow-hidden rounded-2xl border border-warm-200 bg-white shadow-sm transition-all duration-500 hover:shadow-xl hover:border-purple-200">

@@ -91,8 +91,7 @@ export default function MemorialProfilePage() {
           title="Memorial Not Found"
           overlay="warm"
           breadcrumbs={[
-            { label: "History", href: "/history" },
-            { label: "Loved Ones", href: "/history/loved-ones" },
+                        { label: "Loved Ones", href: "/loved-ones" },
           ]}
         />
         <section className="section-padding bg-white">
@@ -100,7 +99,7 @@ export default function MemorialProfilePage() {
             <Heart className="mx-auto mb-4 h-12 w-12 text-warm-300" />
             <p className="text-warm-500">This memorial could not be found.</p>
             <Link
-              href="/history/loved-ones"
+              href="/loved-ones"
               className="mt-6 inline-flex items-center gap-2 text-purple-700 hover:text-purple-600"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -131,8 +130,7 @@ export default function MemorialProfilePage() {
         subtitle={`${dates.birth} — ${dates.passing}`}
         overlay="warm"
         breadcrumbs={[
-          { label: "History", href: "/history" },
-          { label: "Loved Ones", href: "/history/loved-ones" },
+                    { label: "Loved Ones", href: "/loved-ones" },
           { label: fullName },
         ]}
       />
@@ -464,7 +462,7 @@ export default function MemorialProfilePage() {
           <div className="container-wide text-center">
             <FadeIn>
               <Link
-                href="/history/loved-ones"
+                href="/loved-ones"
                 className="inline-flex items-center gap-2 rounded-xl border border-warm-200 px-6 py-3 text-sm font-medium text-warm-600 transition-all hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
               >
                 <ArrowLeft className="h-4 w-4" />

@@ -1,0 +1,805 @@
+[
+  {
+    "date": "2020-03-29",
+    "page_source": "2020MarchVideos",
+    "service_title": "March 29th 2020 Worship Service",
+    "sermon_title": "Humbleness, Obedience, and Prayer Gets Results!",
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Join Pastor Isiah Smalls in a word of prayer.",
+    "scripture_reading_description": null,
+    "video_files": [
+      "20200329_Prayer_HD.mp4",
+      "20200329_Sermon_HD.mp4"
+    ],
+    "special_notes": "Earliest recorded service during COVID-19 pandemic"
+  },
+  {
+    "date": "2020-04-05",
+    "page_source": "2020AprilVideos",
+    "service_title": "April 5th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": "Our First Ever Parking Lot Service",
+    "prayer_description": "Dea. Oscar Smalls leads us in prayer.",
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-04-05_FBC-Prayer_OSmalls.mp4",
+      "2020-04-05_FBC-Sermon.mp4"
+    ],
+    "special_notes": "First ever parking lot service"
+  },
+  {
+    "date": "2020-04-12",
+    "page_source": "2020AprilVideos",
+    "service_title": "Happy Easter - April 12th 2020",
+    "sermon_title": "Resurrection Sunday Sermon",
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "20200412_102918.mp4",
+      "ResurrectionSundaySermon.mp4"
+    ],
+    "special_notes": "Easter / Resurrection Sunday service"
+  },
+  {
+    "date": "2020-04-19",
+    "page_source": "2020AprilVideos",
+    "service_title": "April 19th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Ephesians 6",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Terry Grant leads us in prayer",
+    "scripture_reading_description": "Deacon Edward Simmons reads Ephesians 6",
+    "video_files": [
+      "2020-04-19-Scripture.mp4",
+      "2020-04-19-Prayer.mp4",
+      "2020-04-19-Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-04-26",
+    "page_source": "2020AprilVideos",
+    "service_title": "April 26th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Philippians 4",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Terry Grant leads us in prayer",
+    "scripture_reading_description": "Deacon Edward Simmons reads Philippians 4",
+    "video_files": [
+      "2020-04-26_Scripture.mp4",
+      "2020-04-26_Prayer.mp4",
+      "2020-04-26_Sermon_small.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-05-10",
+    "page_source": "2020MayVideos",
+    "service_title": "May 10th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Romans 14",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Oscar Smalls leads us in prayer",
+    "scripture_reading_description": "Deacon Edward Simmons reads Romans 14",
+    "video_files": [
+      "2020-05-10_Scripture.mp4",
+      "2020-05-10_Prayer.mp4",
+      "2020-05-10_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-05-17",
+    "page_source": "2020MayVideos",
+    "service_title": "May 17th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Romans 14",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Oscar Smalls leads us in prayer",
+    "scripture_reading_description": "Deacon Edward Simmons reads Romans 14",
+    "video_files": [],
+    "special_notes": "Date heading present but no unique video files found separate from May 10th and May 24th"
+  },
+  {
+    "date": "2020-05-24",
+    "page_source": "2020MayVideos",
+    "service_title": "May 24th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Romans 14",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Oscar Smalls leads us in prayer",
+    "scripture_reading_description": "Deacon Edward Simmons reads Romans 14",
+    "video_files": [
+      "2020-05-24_Prayer.mp4",
+      "2020-05-24_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": null,
+    "page_source": "2020JuneVideos",
+    "service_title": "Sorry No Content",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": null,
+    "description": "Page explicitly states: Sorry No Content",
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [],
+    "special_notes": "June 2020 page has no video content"
+  },
+  {
+    "date": "2020-07-25",
+    "page_source": "2020julyvideos",
+    "service_title": "July 25th 2020 - Summer Revival",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": null,
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-07-25_Sermon_Doe.mp4"
+    ],
+    "special_notes": "Summer Revival service. Sermon filename contains 'Doe' which may indicate a guest speaker"
+  },
+  {
+    "date": "2020-08-02",
+    "page_source": "2020AugustVideos",
+    "service_title": "August 2nd 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Ephesians 6",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Edward Simmons leads us in prayer",
+    "scripture_reading_description": "Deacon Oscar Smalls reads Ephesians 6",
+    "video_files": [
+      "2020-08-02_Scripture.mp4",
+      "2020-08-02_Prayer.mp4",
+      "2020-08-02_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-08-09",
+    "page_source": "2020AugustVideos",
+    "service_title": "August 9th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-08-09_Scripture-1.mp4",
+      "2020-08-09_Prayer.mp4",
+      "2020-08-09_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-08-16",
+    "page_source": "2020AugustVideos",
+    "service_title": "August 16th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Psalms 16",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Oscar Smalls with a heart-felt prayer",
+    "scripture_reading_description": "Deacon Edward Simmons reads Psalms 16",
+    "video_files": [
+      "2020-08-16_Sermon.mp4"
+    ],
+    "special_notes": "Only sermon video available; scripture and prayer videos not found"
+  },
+  {
+    "date": "2020-08-23",
+    "page_source": "2020AugustVideos",
+    "service_title": "August 23rd 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-08-23_Sermon.mp4"
+    ],
+    "special_notes": "Only sermon video available"
+  },
+  {
+    "date": "2020-08-30",
+    "page_source": "2020AugustVideos",
+    "service_title": "August 30th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Psalms 67",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Terry Grant leads us in prayer.",
+    "scripture_reading_description": "Deacon Edward Simmons reads Psalms 67",
+    "video_files": [
+      "2020-08-30_Scripture.mp4",
+      "2020-08-30_Prayer.mp4",
+      "2020-08-30_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-09-06",
+    "page_source": "2020septembervideos",
+    "service_title": "September 6th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-09-06_Sermon.mp4"
+    ],
+    "special_notes": "Only sermon video available"
+  },
+  {
+    "date": "2020-09-13",
+    "page_source": "2020septembervideos",
+    "service_title": "September 13th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Ephesians 6:10",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Dea. Terry Grant leads us in prayer.",
+    "scripture_reading_description": "Deacon Oscar Smalls reads Ephesians 6:10",
+    "video_files": [
+      "2020-09-13_Scripture.mp4",
+      "2020-09-13_Prayer.mp4",
+      "2020-09-13_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-09-20",
+    "page_source": "2020septembervideos",
+    "service_title": "September 20th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Prayer by Deacon Edward Simmons",
+    "scripture_reading_description": "Deacon Oscar Smalls gives a testimony",
+    "video_files": [
+      "2020-09-20_Scripture-Testimony.mp4",
+      "2020-09-20_Prayer.mp4",
+      "2020-09-20_Sermon.mp4"
+    ],
+    "special_notes": "Scripture reading combined with testimony"
+  },
+  {
+    "date": "2020-09-27",
+    "page_source": "2020septembervideos",
+    "service_title": "September 27th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "1 Corinthians 13",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Word of Prayer by Deacon Oscar Smalls",
+    "scripture_reading_description": "Deacon Edward Simmons Reads 1 Cor. 13",
+    "video_files": [
+      "2020-09-27_Scripture.mp4",
+      "2020-09-27_Prayer.mp4",
+      "2020-09-27_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-10-04",
+    "page_source": "2020octobervideos",
+    "service_title": "October 4th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Hebrews 13",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Word of Prayer by Deacon Oscar Smalls",
+    "scripture_reading_description": "Deacon Edward Simmons Reads Hebrews 13",
+    "video_files": [
+      "2020-10-04_Scripture.mp4",
+      "2020-10-04_Prayer.mp4"
+    ],
+    "special_notes": "No separate sermon video for this date; the sermon video linked appears to be from 2020-09-27"
+  },
+  {
+    "date": "2020-10-11",
+    "page_source": "2020octobervideos",
+    "service_title": "October 11th 2020 - Pastor Appreciation Day",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": "Pastor Appreciation Day with special presentations from congregation members",
+    "prayer_description": "Word of Prayer from Deacon Edward Simmons",
+    "scripture_reading_description": "Scripture from Deacon Oscar Smalls",
+    "video_files": [
+      "Intro.mp4",
+      "2020-10-11_Scripture.mp4",
+      "2020-10-11_Prayer.mp4",
+      "2020-10-11_PastorAppreciation1.mp4",
+      "2020-10-11_PastorAppreciation2.mp4",
+      "2020-10-11_PastorThankYou.mp4",
+      "2020-10-11_PastorParade_Outro.mp4"
+    ],
+    "special_notes": "Pastor Appreciation Day. Participants mentioned: Sister Katie Calloway, Deacon Oscar Smalls, Deacon Edward Simmons, Deacon Terry Grant, Deacon Aaron Smalls. Includes intro video, two appreciation videos, a thank you message, and pastor parade outro."
+  },
+  {
+    "date": "2020-10-18",
+    "page_source": "2020octobervideos",
+    "service_title": "October 18th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "John 1",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Word of Prayer by Deacon Edward Simmons",
+    "scripture_reading_description": "Deacon Oscar Smalls Reads The Gospel of John 1",
+    "video_files": [
+      "2020-10-18_Scripture.mp4",
+      "2020-10-18_Prayer.mp4",
+      "2020-10-18_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-10-25",
+    "page_source": "2020octobervideos",
+    "service_title": "October 25th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Word of Prayer by Deacon Oscar Smalls",
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-10-25_Prayer.mp4",
+      "2020-10-25_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-11-01",
+    "page_source": "2020novembervideos",
+    "service_title": "November 1st 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Isaiah 12",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Word of Prayer by Deacon Oscar Smalls",
+    "scripture_reading_description": "Deacon Edward Simmons reads Isaiah 12",
+    "video_files": [
+      "2020-11-01_Scripture.mp4",
+      "2020-11-01_Prayer.mp4",
+      "2020-11-01_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-11-08",
+    "page_source": "2020novembervideos",
+    "service_title": "November 8th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Psalms 27",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Word of Prayer by Deacon Leon Moultrie",
+    "scripture_reading_description": "Deacon Edward Simmons reads Psalms 27",
+    "video_files": [
+      "2020-11-08_Scripture.mp4",
+      "2020-11-08_Prayer.mp4",
+      "2020-11-08_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-11-15",
+    "page_source": "2020novembervideos",
+    "service_title": "November 15th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "1 John 4:12-21",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Word of Prayer by Deacon Leon Moultrie",
+    "scripture_reading_description": "Deacon Oscar Smalls reads 1 John 4:12-21",
+    "video_files": [
+      "2020-11-15_Scripture.mp4",
+      "2020-11-15_Prayer.mp4",
+      "2020-11-15_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-11-22",
+    "page_source": "2020novembervideos",
+    "service_title": "November 22nd 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Psalms 23",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Prayer by Deacon Oscar Smalls",
+    "scripture_reading_description": "Deacon Terry Grant reads the 23rd Psalms",
+    "video_files": [],
+    "special_notes": "Date heading present in November page but video files appear to be the same as November 29th entries; content may have been duplicated"
+  },
+  {
+    "date": "2020-11-29",
+    "page_source": "2020novembervideos",
+    "service_title": "November 29th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": "Psalms 27",
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Prayer by Deacon Leon Moultrie",
+    "scripture_reading_description": "Deacon Edward Simmons reads Psalms 27",
+    "video_files": [
+      "2020-11-29_Scripture.mp4",
+      "2020-11-29_Prayer.mp4",
+      "2020-11-29_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-12-06",
+    "page_source": "2020DecemberVideos",
+    "service_title": "December 6th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [],
+    "special_notes": "Date heading present in main December page (which is actually a full 2020 archive page) but December 6th has no unique video files separate from the archive content"
+  },
+  {
+    "date": "2020-12-07",
+    "page_source": "2020decembervideos-2",
+    "service_title": "December 7th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": "Prayer by Deacon Oscar Smalls",
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-12-07_Scripture.mp4",
+      "2020-12-07_Prayer.mp4",
+      "2020-12-07_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-12-13",
+    "page_source": "2020decembervideos-2",
+    "service_title": "December 13th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-12-13_Scripture.mp4",
+      "2020-12-13_Prayer.mp4",
+      "2020-12-13_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-12-20",
+    "page_source": "2020decembervideos-2",
+    "service_title": "December 20th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-12-20_Scripture.mp4",
+      "2020-12-20_Prayer.mp4",
+      "2020-12-20_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-12-27",
+    "page_source": "2020decembervideos-2",
+    "service_title": "December 27th 2020 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2020-12-27_Scripture.mp4",
+      "2020-12-27_Prayer.mp4",
+      "2020-12-27_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-01-03",
+    "page_source": "2021januaryvideos",
+    "service_title": "January 3rd 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-01-03_Scripture.mp4",
+      "2021-01-03_Prayer.mp4",
+      "2021-01-03_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-01-10",
+    "page_source": "2021januaryvideos",
+    "service_title": "January 10th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-01-10_Scripture.mp4",
+      "2021-01-10_Prayer.mp4",
+      "2021-01-10_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-01-17",
+    "page_source": "2021januaryvideos",
+    "service_title": "January 17th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-01-17_Scripture.mp4",
+      "2021-01-17_Prayer.mp4",
+      "2021-01-17_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-01-24",
+    "page_source": "2021januaryvideos",
+    "service_title": "January 24th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-01-24_Scripture.mp4",
+      "2021-01-24_Prayer.mp4",
+      "2021-01-24_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-01-31",
+    "page_source": "2021januaryvideos",
+    "service_title": "January 31st 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-01-31_Scripture.mp4",
+      "2021-01-31_Prayer.mp4",
+      "2021-01-31_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-02-07",
+    "page_source": "2021FebruaryVideos",
+    "service_title": "February 7th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-02-07_Sermon.mp4"
+    ],
+    "special_notes": "Only sermon video available"
+  },
+  {
+    "date": "2021-02-28",
+    "page_source": "2021FebruaryVideos",
+    "service_title": "February 28th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-02-28_Scripture.mp4",
+      "2021-02-28_Prayer.mp4",
+      "2021-02-28_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-03-07",
+    "page_source": "2021marchvideos",
+    "service_title": "March 7th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-03-07_Scripture.mp4",
+      "2021-03-07_Prayer.mp4",
+      "2021-03-07_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-03-14",
+    "page_source": "2021marchvideos",
+    "service_title": "March 14th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-03-14_Scripture.mp4",
+      "2021-03-14_Prayer.mp4",
+      "2021-03-14_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2021-03-28",
+    "page_source": "2021marchvideos",
+    "service_title": "March 28th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-03-28_Scripture.mp4",
+      "2021-03-28_Prayer.mp4",
+      "2021-03-28_GreetingAndReading.mp4",
+      "2021-03-28_Sermon.mp4"
+    ],
+    "special_notes": "Includes a separate Greeting and Reading video"
+  },
+  {
+    "date": "2021-04-04",
+    "page_source": "2021aprilvideos",
+    "service_title": "April 4th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-04-04_Scripture.mp4",
+      "2021-04-04_Prayer.mp4",
+      "2021-04-04_Sermon.mp4"
+    ],
+    "special_notes": "Easter Sunday 2021 (April 4, 2021)"
+  },
+  {
+    "date": "2021-04-11",
+    "page_source": "2021aprilvideos",
+    "service_title": "April 11th 2021 Worship Service",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": null,
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [
+      "2021-04-11_Scripture.mp4",
+      "2021-04-11_Prayer.mp4",
+      "2021-04-11_Sermon.mp4"
+    ],
+    "special_notes": null
+  },
+  {
+    "date": "2020-04-12",
+    "page_source": "aiovg_videos/resurrection-sunday-sermon",
+    "service_title": "Resurrection Sunday Sermon",
+    "sermon_title": "Resurrection Sunday Sermon",
+    "scripture": null,
+    "speaker": "Pastor Isiah Smalls",
+    "description": "Standalone video post for the Resurrection Sunday (Easter) sermon",
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [],
+    "special_notes": "AIOVG video player post (post ID 1615). Video embedded via iframe at /id/1615/. This is the same Easter 2020 sermon also referenced in 2020AprilVideos as ResurrectionSundaySermon.mp4"
+  },
+  {
+    "date": null,
+    "page_source": "2020videos",
+    "service_title": "2020 VIDEO COLLECTION",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": null,
+    "description": "Index page linking to all 2020 monthly video pages (March through December)",
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [],
+    "special_notes": "Navigation/index page only - no video content. Links to: March 2020, April 2020, May 2020, June 2020, July 2020, August 2020, September 2020, October 2020, November 2020, December 2020"
+  },
+  {
+    "date": null,
+    "page_source": "2021videos",
+    "service_title": "2021 VIDEO COLLECTION",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": null,
+    "description": "Index page linking to all 2021 monthly video pages (January through April)",
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [],
+    "special_notes": "Navigation/index page only - no video content. Links to: January 2021, February 2021, March 2021, April 2021. Also links back to 2020 months July-December"
+  },
+  {
+    "date": null,
+    "page_source": "videos",
+    "service_title": "VIDEO COLLECTION",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": null,
+    "description": "Main video collection landing page linking to yearly archives",
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [],
+    "special_notes": "Top-level navigation page linking to 2020 Videos and 2021 Videos collection pages"
+  },
+  {
+    "date": null,
+    "page_source": "2020DecemberVideos",
+    "service_title": "2020 Full Year Archive",
+    "sermon_title": null,
+    "scripture": null,
+    "speaker": null,
+    "description": "This page served as a comprehensive archive of all 2020 services from March 29 through December 6. All individual service data is captured in the monthly page entries above.",
+    "prayer_description": null,
+    "scripture_reading_description": null,
+    "video_files": [],
+    "special_notes": "Master archive page containing all 2020 content. The December 6th heading appears here but has no unique video content. The actual December 7-27 content is in 2020decembervideos-2. All other dates on this page duplicate content from their respective monthly pages."
+  }
+]

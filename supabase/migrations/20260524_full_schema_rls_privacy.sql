@@ -18,6 +18,32 @@
 
 
 -- ============================================================================
+-- 0. ENSURE PREREQUISITE COLUMNS EXIST (from 20260522 migration)
+--    These must come first so helper functions can reference them.
+-- ============================================================================
+
+-- profiles: ward assignment (needed by get_profile_ward function)
+DO $$ BEGIN
+  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ward_id UUID
+    REFERENCES wards(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- profiles: additional fields that may not exist yet
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS about_bio TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS baptism_date DATE;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS family_id UUID;
+
+-- deacons: ensure ward_id exists (needed by is_deacon_of_ward function)
+DO $$ BEGIN
+  ALTER TABLE deacons ADD COLUMN IF NOT EXISTS ward_id UUID
+    REFERENCES wards(id) ON DELETE SET NULL;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+
+-- ============================================================================
 -- 1. HELPER FUNCTIONS FOR PRIVACY
 -- ============================================================================
 

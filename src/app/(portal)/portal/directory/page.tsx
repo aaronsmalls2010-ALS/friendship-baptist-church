@@ -47,7 +47,7 @@ export default function ChurchDirectoryPage() {
         const res = await fetch("/api/portal/directory");
         if (res.ok) {
           const data = await res.json();
-          setProfiles(data.profiles || data || []);
+          setProfiles(data.directory || data.profiles || data || []);
           if (data.ministries) {
             setMinistries(data.ministries);
           }

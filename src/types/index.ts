@@ -153,7 +153,7 @@ export interface Ward {
 
 export interface Deacon {
   id: string;
-  profile_id: string;
+  profile_id?: string;
   ward_id?: string;
   ordained_date?: string;
   bio?: string;

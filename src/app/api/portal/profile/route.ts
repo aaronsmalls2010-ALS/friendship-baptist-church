@@ -27,6 +27,16 @@ const ALLOWED_FIELDS = [
 ] as const;
 
 /**
+ * Map incoming field names to their actual DB column names.
+ * The DB has `birthday` (original schema) and `date_of_birth` (added later).
+ * We accept both from the client and write to both columns for compatibility.
+ */
+const FIELD_ALIASES: Record<string, string[]> = {
+  date_of_birth: ["date_of_birth", "birthday"],
+  birthday: ["date_of_birth", "birthday"],
+};
+
+/**
  * GET /api/portal/profile
  *
  * Returns the authenticated user's own profile.
@@ -86,11 +96,19 @@ export async function PATCH(request: NextRequest) {
 
     const body = await request.json();
 
-    // Filter to only allowed fields
+    // Filter to only allowed fields, expanding aliases
     const updates: Record<string, unknown> = {};
     for (const key of ALLOWED_FIELDS) {
       if (key in body) {
-        updates[key] = body[key];
+        const aliases = FIELD_ALIASES[key];
+        if (aliases) {
+          // Write to all alias columns so both birthday and date_of_birth stay in sync
+          for (const alias of aliases) {
+            updates[alias] = body[key];
+          }
+        } else {
+          updates[key] = body[key];
+        }
       }
     }
 
@@ -104,17 +122,38 @@ export async function PATCH(request: NextRequest) {
     updates.updated_at = new Date().toISOString();
 
     const admin = createAdminClient();
-    const { data: profile, error } = await admin
+
+    // Try the update; if a column doesn't exist, strip it and retry
+    let result = await admin
       .from("profiles")
       .update(updates)
       .eq("id", user.id)
       .select("*")
       .single();
 
+    // If a column error occurs (e.g. birthday or date_of_birth missing),
+    // remove the offending column and retry
+    if (result.error && result.error.code === "42703") {
+      const msg = result.error.message || "";
+      // Extract column name from error message
+      const colMatch = msg.match(/column "(\w+)"/);
+      if (colMatch) {
+        delete updates[colMatch[1]];
+        result = await admin
+          .from("profiles")
+          .update(updates)
+          .eq("id", user.id)
+          .select("*")
+          .single();
+      }
+    }
+
+    const { data: profile, error } = result;
+
     if (error) {
       console.error("[PORTAL] Update profile error:", error);
       return NextResponse.json(
-        { error: "Failed to update profile" },
+        { error: `Failed to update profile: ${error.message}` },
         { status: 500 }
       );
     }

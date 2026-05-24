@@ -40,7 +40,7 @@ export const PUBLIC_NAV: NavItem[] = [
     label: "Worship",
     href: "/events",
     children: [
-      { label: "Service Times", href: "/events" },
+      { label: "Events", href: "/events" },
       { label: "Watch Live", href: "/media?tab=live" },
       { label: "Prayer Requests", href: "/prayer" },
     ],

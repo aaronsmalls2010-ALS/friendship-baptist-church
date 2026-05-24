@@ -25,7 +25,7 @@ export async function GET() {
     }
 
     const admin = createAdminClient();
-    const { data: deacons, error } = await admin
+    const { data: rawDeacons, error } = await admin
       .from("deacons")
       .select("*, profiles(first_name, last_name, phone, photo_url), wards(name)")
       .order("created_at", { ascending: false });
@@ -38,7 +38,28 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ deacons: deacons ?? [] });
+    // Flatten: use standalone columns if present, fall back to profile join
+    const deacons = (rawDeacons ?? []).map((d: Record<string, unknown>) => {
+      const profile = d.profiles as Record<string, unknown> | null;
+      const ward = d.wards as Record<string, unknown> | null;
+      return {
+        id: d.id,
+        profile_id: d.profile_id,
+        ward_id: d.ward_id,
+        ordained_date: d.ordained_date,
+        bio: d.bio,
+        title: d.title,
+        is_active: d.is_active,
+        created_at: d.created_at,
+        first_name: d.first_name || profile?.first_name || "",
+        last_name: d.last_name || profile?.last_name || "",
+        phone: d.phone || profile?.phone || null,
+        photo_url: profile?.photo_url || null,
+        ward_name: ward?.name || null,
+      };
+    });
+
+    return NextResponse.json({ deacons });
   } catch (err) {
     console.error("[ADMIN] Deacons GET error:", err);
     return NextResponse.json(
@@ -71,19 +92,34 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { profile_id, ward_id, ordained_date, bio, title } = body;
+    const { profile_id, ward_id, ordained_date, bio, title, first_name, last_name, phone } = body;
 
-    if (!profile_id) {
+    // Must have either a profile_id OR a first_name+last_name
+    if (!profile_id && (!first_name || !last_name)) {
       return NextResponse.json(
-        { error: "Missing required field: profile_id" },
+        { error: "Provide either a member profile or a first and last name" },
         { status: 400 }
       );
     }
 
     const admin = createAdminClient();
+    const insertData: Record<string, unknown> = {
+      ward_id: ward_id || null,
+      ordained_date: ordained_date || null,
+      bio: bio || null,
+      title: title || null,
+    };
+
+    if (profile_id) {
+      insertData.profile_id = profile_id;
+    }
+    if (first_name) insertData.first_name = first_name;
+    if (last_name) insertData.last_name = last_name;
+    if (phone) insertData.phone = phone;
+
     const { data: deacon, error } = await admin
       .from("deacons")
-      .insert({ profile_id, ward_id, ordained_date, bio, title })
+      .insert(insertData)
       .select()
       .single();
 

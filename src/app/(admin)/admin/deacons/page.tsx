@@ -47,6 +47,10 @@ export default function DeaconManagementPage() {
   const [formOrdainedDate, setFormOrdainedDate] = useState("");
   const [formTitle, setFormTitle] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formFirstName, setFormFirstName] = useState("");
+  const [formLastName, setFormLastName] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formUseManual, setFormUseManual] = useState(false);
 
   // ── Data fetching ─────────────────────────────────────────────────
   async function loadData() {
@@ -87,6 +91,10 @@ export default function DeaconManagementPage() {
     setFormOrdainedDate("");
     setFormTitle("");
     setFormIsActive(true);
+    setFormFirstName("");
+    setFormLastName("");
+    setFormPhone("");
+    setFormUseManual(false);
     setEditingDeacon(null);
   }
 
@@ -97,22 +105,33 @@ export default function DeaconManagementPage() {
 
   function openEditDialog(deacon: Deacon) {
     setEditingDeacon(deacon);
-    setFormProfileId(deacon.profile_id);
+    setFormProfileId(deacon.profile_id ?? "");
     setFormWardId(deacon.ward_id ?? "");
     setFormOrdainedDate(deacon.ordained_date ?? "");
     setFormTitle(deacon.title ?? "");
     setFormIsActive(deacon.is_active);
+    setFormFirstName(deacon.first_name ?? "");
+    setFormLastName(deacon.last_name ?? "");
+    setFormPhone(deacon.phone ?? "");
+    setFormUseManual(!deacon.profile_id);
     setFormOpen(true);
   }
 
   async function handleSave() {
-    const payload = {
-      profile_id: formProfileId,
+    const payload: Record<string, unknown> = {
       ward_id: formWardId || undefined,
       ordained_date: formOrdainedDate || undefined,
       title: formTitle || undefined,
       is_active: formIsActive,
     };
+
+    if (formUseManual) {
+      payload.first_name = formFirstName;
+      payload.last_name = formLastName;
+      payload.phone = formPhone || undefined;
+    } else {
+      payload.profile_id = formProfileId;
+    }
 
     if (editingDeacon) {
       const res = await fetch("/api/admin/deacons", {
@@ -284,21 +303,70 @@ export default function DeaconManagementPage() {
               handleSave();
             }}
           >
-            <div className="space-y-2">
-              <Label htmlFor="member">Member</Label>
-              <Select value={formProfileId} onValueChange={setFormProfileId}>
-                <SelectTrigger id="member">
-                  <SelectValue placeholder="Select a member" />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles.map((profile) => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      {profile.first_name} {profile.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Toggle: link to member or enter manually */}
+            <div className="flex items-center space-x-2 pb-2 border-b">
+              <Checkbox
+                id="use_manual"
+                checked={formUseManual}
+                onCheckedChange={(checked) => {
+                  setFormUseManual(checked === true);
+                  if (checked) setFormProfileId("");
+                }}
+              />
+              <Label htmlFor="use_manual" className="text-sm text-warm-600">
+                Enter name manually (deacon doesn&apos;t have an account)
+              </Label>
             </div>
+
+            {formUseManual ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={formFirstName}
+                    onChange={(e) => setFormFirstName(e.target.value)}
+                    placeholder="First name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={formLastName}
+                    onChange={(e) => setFormLastName(e.target.value)}
+                    placeholder="Last name"
+                    required
+                  />
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="deaconPhone">Phone</Label>
+                  <Input
+                    id="deaconPhone"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                    placeholder="(843) 555-0000"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="member">Member</Label>
+                <Select value={formProfileId} onValueChange={setFormProfileId}>
+                  <SelectTrigger id="member">
+                    <SelectValue placeholder="Select a member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {profile.first_name} {profile.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="ward">Ward</Label>

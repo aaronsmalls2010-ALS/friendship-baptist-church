@@ -24,26 +24,62 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { getBirthdayEvents } from "@/lib/mock-data";
 import { formatDate, formatTime } from "@/lib/utils";
 import type { Event, Ministry } from "@/types";
 
 export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
+  const [birthdayEvents, setBirthdayEvents] = useState<Event[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
-        const [eventsRes, ministriesRes] = await Promise.all([
+        const [eventsRes, ministriesRes, birthdaysRes] = await Promise.all([
           fetch("/api/public/events"),
           fetch("/api/public/ministries"),
+          fetch("/api/public/birthdays"),
         ]);
         const eventsData = await eventsRes.json();
         const ministriesData = await ministriesRes.json();
+        const birthdaysData = await birthdaysRes.json();
         setEvents(eventsData.events ?? []);
         setMinistries(ministriesData.ministries ?? []);
+
+        // Convert birthday data into Event objects
+        const currentYear = new Date().getFullYear();
+        const bdays: Event[] = (birthdaysData.birthdays ?? [])
+          .map(
+            (p: {
+              id: string;
+              first_name: string;
+              last_name: string;
+              date_of_birth: string;
+            }) => {
+              const dob = new Date(p.date_of_birth + "T12:00:00");
+              const birthdayThisYear = new Date(
+                currentYear,
+                dob.getMonth(),
+                dob.getDate(),
+                12,
+                0,
+                0
+              );
+              return {
+                id: `bday-${p.id}`,
+                title: `🎂 ${p.first_name} ${p.last_name}'s Birthday`,
+                description: `Happy Birthday to ${p.first_name} ${p.last_name}! Wishing you many blessings.`,
+                start_date: birthdayThisYear.toISOString(),
+                location: "",
+                rsvp_enabled: false,
+                is_published: true,
+                created_at: new Date().toISOString(),
+              } as Event;
+            }
+          )
+          .filter(Boolean);
+        setBirthdayEvents(bdays);
       } catch (err) {
         console.error("Failed to load events:", err);
       } finally {
@@ -63,7 +99,6 @@ export default function EventsPage() {
 
   const { featuredEvent, upcomingEvents, pastEvents } = useMemo(() => {
     // Merge regular events with birthday events
-    const birthdayEvents = getBirthdayEvents();
     const allEvents = [...events, ...birthdayEvents];
     const published = allEvents.filter((e) => e.is_published);
     const upcoming = published
@@ -86,7 +121,7 @@ export default function EventsPage() {
 
     return { featuredEvent: featured, upcomingEvents: rest, pastEvents: past };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events]);
+  }, [events, birthdayEvents]);
 
   if (loading) {
     return (

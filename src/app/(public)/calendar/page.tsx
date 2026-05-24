@@ -16,7 +16,6 @@ import { CTAButton } from "@/components/shared/cta-button";
 import { EditableText } from "@/components/cms/editable-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getBirthdayEvents } from "@/lib/mock-data";
 import { formatTime, cn } from "@/lib/utils";
 import type { Event, Ministry } from "@/types";
 
@@ -107,6 +106,7 @@ function getCalendarDays(year: number, month: number): Date[] {
 export default function CalendarPage() {
   const [loading, setLoading] = useState(true);
   const [events, setEvents] = useState<Event[]>([]);
+  const [birthdayEvents, setBirthdayEvents] = useState<Event[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [currentMonth, setCurrentMonth] = useState<Date>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -116,14 +116,50 @@ export default function CalendarPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [eventsRes, ministriesRes] = await Promise.all([
+        const [eventsRes, ministriesRes, birthdaysRes] = await Promise.all([
           fetch("/api/public/events"),
           fetch("/api/public/ministries"),
+          fetch("/api/public/birthdays"),
         ]);
         const eventsData = await eventsRes.json();
         const ministriesData = await ministriesRes.json();
+        const birthdaysData = await birthdaysRes.json();
         setEvents(eventsData.events ?? []);
         setMinistries(ministriesData.ministries ?? []);
+
+        // Convert birthday data into Event objects for the calendar
+        const currentYear = new Date().getFullYear();
+        const bdays: Event[] = (birthdaysData.birthdays ?? [])
+          .map(
+            (p: {
+              id: string;
+              first_name: string;
+              last_name: string;
+              date_of_birth: string;
+            }) => {
+              const dob = new Date(p.date_of_birth + "T12:00:00");
+              const birthdayThisYear = new Date(
+                currentYear,
+                dob.getMonth(),
+                dob.getDate(),
+                12,
+                0,
+                0
+              );
+              return {
+                id: `bday-${p.id}`,
+                title: `🎂 ${p.first_name} ${p.last_name}'s Birthday`,
+                description: `Happy Birthday to ${p.first_name} ${p.last_name}! Wishing you many blessings.`,
+                start_date: birthdayThisYear.toISOString(),
+                location: "",
+                rsvp_enabled: false,
+                is_published: true,
+                created_at: new Date().toISOString(),
+              } as Event;
+            }
+          )
+          .filter(Boolean);
+        setBirthdayEvents(bdays);
       } catch (err) {
         console.error("Failed to load calendar data:", err);
       } finally {
@@ -140,8 +176,8 @@ export default function CalendarPage() {
   }
 
   const publishedEvents = useMemo(
-    () => [...events, ...getBirthdayEvents()].filter((e) => e.is_published),
-    [events]
+    () => [...events, ...birthdayEvents].filter((e) => e.is_published),
+    [events, birthdayEvents]
   );
 
   const year = currentMonth.getFullYear();

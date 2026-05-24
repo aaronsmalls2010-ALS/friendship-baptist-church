@@ -41,18 +41,10 @@ export function useMusicPlayer() {
   return context;
 }
 
-const SEED_TRACKS: MusicTrack[] = [
-  {
-    id: "seed-1",
-    title: "Oh Lord I Want You To Help Me",
-    artist: "Shirley Caesar",
-    album: "Gospel Classics",
-    audio_url: "/music/Shirley Caesar 1975 Oh Lord I Want You To Help Me.mp3",
-    duration: 276,
-    track_type: "gospel",
-    created_at: "1975-01-01",
-  },
-];
+// Import the full music library from mock data
+import { MOCK_MUSIC_TRACKS } from "@/lib/mock-data";
+
+const SEED_TRACKS: MusicTrack[] = MOCK_MUSIC_TRACKS;
 
 export function MusicProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);

@@ -13,7 +13,6 @@ export const CHURCH_INFO = {
   serviceTimes: [
     { day: "Sunday", time: "10:00 AM", name: "Morning Worship" },
     { day: "Sunday", time: "9:00 AM", name: "Sunday School" },
-    { day: "Wednesday", time: "7:00 PM", name: "Bible Study" },
   ],
 } as const;
 

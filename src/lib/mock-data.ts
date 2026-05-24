@@ -417,37 +417,37 @@ export const MOCK_SERMONS: Sermon[] = WORSHIP_SERVICES
 
 // ─── Music Tracks (real worship music from church collection) ───────
 export const MOCK_MUSIC_TRACKS: MusicTrack[] = [
-  { id: "mt1", title: "Oh Lord I Want You to Help Me", artist: "Shirley Caesar", album: "Gospel Classics", audio_url: "", duration: 285, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt2", title: "Be Right", artist: "Worship Collection", audio_url: "", duration: 300, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt3", title: "Bread of Heaven", artist: "Fred Hammond", audio_url: "", duration: 280, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt4", title: "Come See About Me", artist: "Lee Williams & The Spiritual QC's", audio_url: "", duration: 290, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt5", title: "Don't Call The Roll", artist: "Worship Collection", audio_url: "", duration: 310, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt6", title: "Faithful Is Our God", artist: "Hezekiah Walker", audio_url: "", duration: 280, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt7", title: "All I Need", artist: "George Dickens & The Gospel Disciples", audio_url: "", duration: 340, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt8", title: "Get Ready", artist: "Worship Collection", audio_url: "", duration: 300, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt9", title: "God's Got It", artist: "Trinity Inspirational Choir", audio_url: "", duration: 270, track_type: "choir", created_at: "2024-01-01" },
-  { id: "mt10", title: "God's Got A Blessing With My Name On It", artist: "Worship Collection", audio_url: "", duration: 320, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt11", title: "Have Mercy", artist: "Soul Purposed", audio_url: "", duration: 260, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt12", title: "Hosanna", artist: "Worship Collection", audio_url: "", duration: 290, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt13", title: "I Call Jesus My Rock", artist: "Bishop Dixon", audio_url: "", duration: 350, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt14", title: "I Call You Faithful", artist: "Donnie McClurkin", audio_url: "", duration: 290, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt15", title: "I Came To Tell You", artist: "Trinity Inspirational Choir", audio_url: "", duration: 340, track_type: "choir", created_at: "2024-01-01" },
-  { id: "mt16", title: "I Give Myself Away / Here I Am to Worship", artist: "William McDowell", audio_url: "", duration: 340, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt17", title: "I Pray We'll Be Ready", artist: "Chicago Mass Choir", audio_url: "", duration: 350, track_type: "choir", created_at: "2024-01-01" },
-  { id: "mt18", title: "I Won't Let You Fall", artist: "Helen Miller", audio_url: "", duration: 420, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt19", title: "Jesus Be A Fence Around Me", artist: "Fred Hammond", audio_url: "", duration: 350, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt20", title: "Jesus Is Alive And Well", artist: "Lee Williams & The Spiritual QC's", audio_url: "", duration: 350, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt21", title: "Jesus Is Real", artist: "Worship Collection", audio_url: "", duration: 300, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt22", title: "Let It Rise", artist: "William Murphy", audio_url: "", duration: 310, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt23", title: "Prayer Room", artist: "Worship Collection", audio_url: "", duration: 280, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt24", title: "Put A Praise On It", artist: "Tasha Cobbs", audio_url: "", duration: 260, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt25", title: "Jesus", artist: "Shekinah Glory Ministry", audio_url: "", duration: 350, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt26", title: "For Your Glory", artist: "Tasha Cobbs", audio_url: "", duration: 300, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt27", title: "Trust in You", artist: "Anthony Brown & Group TherAPy", audio_url: "", duration: 275, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt28", title: "You Are My Strength", artist: "William Murphy", audio_url: "", duration: 310, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt29", title: "You Fight On", artist: "Worship Collection", audio_url: "", duration: 320, track_type: "gospel", created_at: "2024-01-01" },
-  { id: "mt30", title: "You Reign", artist: "William Murphy", audio_url: "", duration: 310, track_type: "worship", created_at: "2024-01-01" },
-  { id: "mt31", title: "You Don't Know", artist: "Zacardi Cortez", audio_url: "", duration: 270, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt1", title: "Oh Lord I Want You to Help Me", artist: "Shirley Caesar", album: "Gospel Classics", audio_url: "/music/Shirley Caesar 1975 Oh Lord I Want You To Help Me.mp3", duration: 276, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt2", title: "Be Right", artist: "Worship Collection", audio_url: "/music/Be Right.mp3", duration: 490, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt3", title: "Bread of Heaven", artist: "Fred Hammond", audio_url: "/music/Bread of Heaven - Fred Hammond.mp3", duration: 302, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt4", title: "Come See About Me", artist: "Lee Williams & The Spiritual QC's", audio_url: "/music/Come See About Me - Lee Williams & The Spiritual QC's (192  kbps).mp3", duration: 300, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt5", title: "Don't Call The Roll", artist: "Worship Collection", audio_url: "/music/Don't Call The Roll (1).mp3", duration: 327, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt6", title: "Faithful Is Our God", artist: "Hezekiah Walker", audio_url: "/music/Faithful Is Our God - Hezekiah Walker.mp3", duration: 302, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt7", title: "All I Need", artist: "George Dickens & The Gospel Disciples", audio_url: "/music/George Dickens & The Gospel Disciples - All I Need.mp3", duration: 548, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt8", title: "Get Ready", artist: "Worship Collection", audio_url: "/music/Get Ready (1).mp3", duration: 321, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt9", title: "God's Got It", artist: "Trinity Inspirational Choir", audio_url: "/music/God's Got It - Trinity Inspirational Choir.mp3", duration: 281, track_type: "choir", created_at: "2024-01-01" },
+  { id: "mt10", title: "God's Got A Blessing With My Name On It", artist: "Worship Collection", audio_url: "/music/Gods Got A Blessing With My Name On It.mp3", duration: 440, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt11", title: "Have Mercy", artist: "Soul Purposed", audio_url: "/music/Have Mercy - Soul_Purposed.mp3", duration: 228, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt12", title: "Hosanna", artist: "Worship Collection", audio_url: "/music/Hosanna.mp3", duration: 308, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt13", title: "I Call Jesus My Rock", artist: "Bishop Dixon", audio_url: "/music/I Call Jesus My Rock - Bishop Dixon.mp3", duration: 708, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt14", title: "I Call You Faithful", artist: "Donnie McClurkin", audio_url: "/music/I Call You Faithful - Donnie McClurkin.mp3", duration: 313, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt15", title: "I Came To Tell You", artist: "Trinity Inspirational Choir", audio_url: "/music/I Came To Tell You - Trinity Inspirational Choir.mp3", duration: 566, track_type: "choir", created_at: "2024-01-01" },
+  { id: "mt16", title: "I Give Myself Away / Here I Am to Worship", artist: "William McDowell", audio_url: "/music/I give myself away and Here I am to worship w lyrics - William McDowell.mp3", duration: 548, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt17", title: "I Pray We'll Be Ready", artist: "Chicago Mass Choir", audio_url: "/music/I Pray We'll Be Ready - Chicago Mass Choir.mp3", duration: 730, track_type: "choir", created_at: "2024-01-01" },
+  { id: "mt18", title: "I Won't Let You Fall", artist: "Helen Miller", audio_url: "/music/I Wont Let You Fall - Helen Miller.mp3", duration: 1067, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt19", title: "Jesus Be A Fence Around Me", artist: "Fred Hammond", audio_url: "/music/Jesus Be A Fence Around Me - FredHammond.mp3", duration: 715, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt20", title: "Jesus Is Alive And Well", artist: "Lee Williams & The Spiritual QC's", audio_url: "/music/Jesus Is Alive And Well - Lee Williams and Spiritual QCs.mp3", duration: 575, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt21", title: "Jesus Is Real", artist: "Worship Collection", audio_url: "/music/Jesus Is Real.mp3", duration: 324, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt22", title: "Let It Rise", artist: "William Murphy", audio_url: "/music/Let It Rise - William Murphy.mp3", duration: 351, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt23", title: "Prayer Room", artist: "Worship Collection", audio_url: "/music/Prayer Room.mp3", duration: 298, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt24", title: "Put A Praise On It", artist: "Tasha Cobbs", audio_url: "/music/Put A Praise On It - Tasha Cobbs.mp3", duration: 251, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt25", title: "Jesus", artist: "Shekinah Glory Ministry", audio_url: "/music/Shekinah Glory Ministry-Jesus.mp3", duration: 706, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt26", title: "For Your Glory", artist: "Tasha Cobbs", audio_url: "/music/Tasha Cobbs - For Your Glory.mp3", duration: 407, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt27", title: "Trust in You", artist: "Anthony Brown & Group TherAPy", audio_url: "/music/Trust in You - Anthony Brown & Group TherAPy Lyrics.mp3", duration: 285, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt28", title: "You Are My Strength", artist: "William Murphy", audio_url: "/music/You Are My Strength - William Murphy.mp3", duration: 371, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt29", title: "You Fight On", artist: "Worship Collection", audio_url: "/music/You Fight On.mp3", duration: 381, track_type: "gospel", created_at: "2024-01-01" },
+  { id: "mt30", title: "You Reign", artist: "William Murphy", audio_url: "/music/You Reign - William Murphy.mp3", duration: 377, track_type: "worship", created_at: "2024-01-01" },
+  { id: "mt31", title: "You Don't Know", artist: "Zacardi Cortez", audio_url: "/music/Zacardi Cortez- You Don't know.mp3", duration: 283, track_type: "gospel", created_at: "2024-01-01" },
 ];
 
 // ─── Announcements ──────────────────────────────────────────────────
@@ -509,27 +509,27 @@ export const MOCK_DEVOTIONALS: Devotional[] = [
   {
     id: "dv1", title: "The Anchor of Our Hope", scripture: "Hebrews 6:19", scripture_text: "We have this hope as an anchor for the soul, firm and secure.",
     body: "In the storms of life, our hope in Christ is the anchor that holds us steady. When the winds blow and the waves crash, we can rest in the assurance that God's promises never fail. Today, meditate on the faithfulness of God and let your hope be renewed.",
-    author: "Pastor Isiah Smalls", date: "2026-05-22", created_at: "2024-01-01",
+    author: "Pastor Isiah Smalls", date: "2026-05-22", category: "faith", created_at: "2024-01-01",
   },
   {
     id: "dv2", title: "Joy in the Morning", scripture: "Psalm 30:5", scripture_text: "Weeping may endure for a night, but joy cometh in the morning.",
     body: "No matter what you faced yesterday — grief, disappointment, uncertainty — God has prepared a new morning for you. His mercies are new every day. Rise with expectation, knowing that joy is your portion through Christ Jesus.",
-    author: "Pastor Isiah Smalls", date: "2026-05-21", created_at: "2024-01-01",
+    author: "Pastor Isiah Smalls", date: "2026-05-21", category: "emotional_encouragement", created_at: "2024-01-01",
   },
   {
     id: "dv3", title: "Strength for the Weary", scripture: "Isaiah 40:31", scripture_text: "But those who hope in the Lord will renew their strength.",
     body: "Are you tired? Worn down by the demands of daily life? The Lord invites you to wait on Him — not passively, but with active trust. As you place your burdens at His feet, He will lift you up on wings like eagles.",
-    author: "Deacon Edward Simmons", date: "2026-05-20", created_at: "2024-01-01",
+    author: "Deacon Edward Simmons", date: "2026-05-20", category: "spiritual_growth", created_at: "2024-01-01",
   },
   {
     id: "dv4", title: "Walking in Purpose", scripture: "Jeremiah 29:11", scripture_text: "For I know the plans I have for you, declares the Lord.",
     body: "God has a plan for your life — a plan born of love and filled with hope. Even when the path seems unclear, trust that the Creator of the universe is directing your steps. Walk boldly in the purpose He has given you.",
-    author: "Pastor Isiah Smalls", date: "2026-05-19", created_at: "2024-01-01",
+    author: "Pastor Isiah Smalls", date: "2026-05-19", category: "faith", created_at: "2024-01-01",
   },
   {
     id: "dv5", title: "The Power of Gratitude", scripture: "1 Thessalonians 5:18", scripture_text: "Give thanks in all circumstances; for this is God's will for you in Christ Jesus.",
     body: "Gratitude transforms our perspective. When we choose to give thanks — even in difficulty — we shift our focus from our problems to God's provision. Start your day with three things you are thankful for, and watch how God opens your heart.",
-    author: "Sister Mae Robinson", date: "2026-05-18", created_at: "2024-01-01",
+    author: "Sister Mae Robinson", date: "2026-05-18", category: "worship", created_at: "2024-01-01",
   },
 ];
 
@@ -553,6 +553,10 @@ export const MOCK_BUSINESSES: Business[] = [
   { id: "b4", name: "Grace Home Health Care", owner_name: "Nurse Dorothy Williams", description: "Compassionate home health care services for seniors and those recovering from illness. Licensed and insured.", category: "Healthcare", phone: "(843) 555-0304", is_approved: true, created_at: "2024-01-01" },
   { id: "b5", name: "Lowcountry Lawn & Garden", owner_name: "Tommy Davis", description: "Professional landscaping, lawn care, and garden design. Beautifying Beaufort one yard at a time.", category: "Home Services", phone: "(843) 555-0305", is_approved: true, created_at: "2024-01-01" },
   { id: "b6", name: "Sweet Tea Catering", owner_name: "Sister Alma Reed", description: "Catering for church events, family reunions, weddings, and celebrations. Southern cooking with love.", category: "Restaurant", phone: "(843) 555-0306", is_approved: true, created_at: "2024-01-01" },
+  { id: "b7", name: "Gwen's Arts & Crafts", owner_name: "Gwen Williams", description: "Handmade arts and crafts for all occasions. Custom creations, gifts, and decorations made with love and creativity.", category: "Arts & Crafts", phone: "(843) 694-3808", is_approved: true, created_at: "2024-01-01" },
+  { id: "b8", name: "Smalls Landscaping & Land Clearing", owner_name: "Alex Smalls", description: "Professional landscaping and land clearing services. From yard maintenance to full property clearing, we handle it all.", category: "Home Services", phone: "(843) 263-6006", is_approved: true, created_at: "2024-01-01" },
+  { id: "b9", name: "Sierra's Baked Goods", owner_name: "Sierra Green", description: "Delicious homemade baked goods for every occasion. Cakes, pies, cookies, and specialty desserts baked fresh to order.", category: "Food & Bakery", phone: "(843) 263-7531", is_approved: true, created_at: "2024-01-01" },
+  { id: "b10", name: "Smalls Web Design", owner_name: "Dea. Aaron Smalls", description: "Professional website design and development services. Modern, responsive websites for businesses, churches, and organizations.", category: "Technology", phone: "(843) 263-0072", is_approved: true, created_at: "2024-01-01" },
 ];
 
 // ─── Birthday Events (derived from profiles) ──────────────────────────
@@ -648,19 +652,27 @@ export const MOCK_MINISTRY_MEMBERS: MinistryMember[] = [
   // Usher Board members
   { id: "mm1", ministry_id: "m1", profile_id: "p7", role: "manager", status: "approved", requested_at: "2022-04-01", approved_at: "2022-04-01", profile_name: "Martha Washington", ministry_name: "Usher Board" },
   { id: "mm2", ministry_id: "m1", profile_id: "p8", role: "member", status: "approved", requested_at: "2022-05-10", approved_at: "2022-05-12", approved_by: "p7", profile_name: "James Singleton", ministry_name: "Usher Board" },
-  { id: "mm3", ministry_id: "m1", profile_id: "p13", role: "member", status: "pending", requested_at: "2026-05-20", profile_name: "Gloria Campbell", ministry_name: "Usher Board" },
+  { id: "mm3", ministry_id: "m1", profile_id: "p13", role: "member", status: "approved", requested_at: "2023-03-15", approved_at: "2023-03-16", approved_by: "p7", profile_name: "Gloria Campbell", ministry_name: "Usher Board" },
   // Choir members
   { id: "mm4", ministry_id: "m2", profile_id: "p8", role: "manager", status: "approved", requested_at: "2020-09-01", approved_at: "2020-09-01", profile_name: "James Singleton", ministry_name: "Choir" },
   { id: "mm5", ministry_id: "m2", profile_id: "p10", role: "member", status: "approved", requested_at: "2020-10-15", approved_at: "2020-10-16", approved_by: "p8", profile_name: "Mae Robinson", ministry_name: "Choir" },
+  { id: "mm6", ministry_id: "m2", profile_id: "p13", role: "member", status: "approved", requested_at: "2023-04-01", approved_at: "2023-04-02", approved_by: "p8", profile_name: "Gloria Campbell", ministry_name: "Choir" },
   // Youth Ministry
-  { id: "mm6", ministry_id: "m3", profile_id: "p9", role: "manager", status: "approved", requested_at: "2021-02-01", approved_at: "2021-02-01", profile_name: "Crystal Young", ministry_name: "Youth Ministry" },
+  { id: "mm7", ministry_id: "m3", profile_id: "p9", role: "manager", status: "approved", requested_at: "2021-02-01", approved_at: "2021-02-01", profile_name: "Crystal Young", ministry_name: "Youth Ministry" },
+  { id: "mm8", ministry_id: "m3", profile_id: "p13", role: "member", status: "approved", requested_at: "2023-06-01", approved_at: "2023-06-02", approved_by: "p9", profile_name: "Gloria Campbell", ministry_name: "Youth Ministry" },
+  { id: "mm9", ministry_id: "m3", profile_id: "p7", role: "member", status: "approved", requested_at: "2022-01-15", approved_at: "2022-01-16", approved_by: "p9", profile_name: "Martha Washington", ministry_name: "Youth Ministry" },
   // Missionary Society
-  { id: "mm7", ministry_id: "m4", profile_id: "p10", role: "manager", status: "approved", requested_at: "2019-07-01", approved_at: "2019-07-01", profile_name: "Mae Robinson", ministry_name: "Missionary Society" },
-  { id: "mm8", ministry_id: "m4", profile_id: "p11", role: "member", status: "approved", requested_at: "2019-08-10", approved_at: "2019-08-12", approved_by: "p10", profile_name: "Patricia Grant", ministry_name: "Missionary Society" },
-  // A denied request
-  { id: "mm9", ministry_id: "m2", profile_id: "p14", role: "member", status: "denied", requested_at: "2026-04-01", profile_name: "William Harris", ministry_name: "Choir" },
+  { id: "mm10", ministry_id: "m4", profile_id: "p10", role: "manager", status: "approved", requested_at: "2019-07-01", approved_at: "2019-07-01", profile_name: "Mae Robinson", ministry_name: "Missionary Society" },
+  { id: "mm11", ministry_id: "m4", profile_id: "p11", role: "member", status: "approved", requested_at: "2019-08-10", approved_at: "2019-08-12", approved_by: "p10", profile_name: "Patricia Grant", ministry_name: "Missionary Society" },
+  { id: "mm12", ministry_id: "m4", profile_id: "p7", role: "member", status: "approved", requested_at: "2020-03-01", approved_at: "2020-03-02", approved_by: "p10", profile_name: "Martha Washington", ministry_name: "Missionary Society" },
+  // Deaconess Board
+  { id: "mm13", ministry_id: "m5", profile_id: "p11", role: "manager", status: "approved", requested_at: "2019-01-01", approved_at: "2019-01-01", profile_name: "Patricia Grant", ministry_name: "Deaconess Board" },
+  { id: "mm14", ministry_id: "m5", profile_id: "p10", role: "member", status: "approved", requested_at: "2019-06-01", approved_at: "2019-06-02", approved_by: "p11", profile_name: "Mae Robinson", ministry_name: "Deaconess Board" },
+  { id: "mm15", ministry_id: "m5", profile_id: "p7", role: "member", status: "approved", requested_at: "2022-04-15", approved_at: "2022-04-16", approved_by: "p11", profile_name: "Martha Washington", ministry_name: "Deaconess Board" },
   // Sunday School
-  { id: "mm10", ministry_id: "m6", profile_id: "p12", role: "manager", status: "approved", requested_at: "2017-05-01", approved_at: "2017-05-01", profile_name: "Henry Baker", ministry_name: "Sunday School" },
+  { id: "mm16", ministry_id: "m6", profile_id: "p12", role: "manager", status: "approved", requested_at: "2017-05-01", approved_at: "2017-05-01", profile_name: "Henry Baker", ministry_name: "Sunday School" },
+  { id: "mm17", ministry_id: "m6", profile_id: "p14", role: "member", status: "approved", requested_at: "2018-01-10", approved_at: "2018-01-11", approved_by: "p12", profile_name: "William Harris", ministry_name: "Sunday School" },
+  { id: "mm18", ministry_id: "m6", profile_id: "p9", role: "member", status: "approved", requested_at: "2021-09-01", approved_at: "2021-09-02", approved_by: "p12", profile_name: "Crystal Young", ministry_name: "Sunday School" },
 ];
 
 // ─── Ministry Messages ─────────────────────────────────────────────

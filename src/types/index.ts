@@ -184,6 +184,13 @@ export interface Business {
   created_at: string;
 }
 
+export type DevotionalCategory =
+  | "spiritual_growth"
+  | "emotional_encouragement"
+  | "faith"
+  | "love"
+  | "worship";
+
 export interface Devotional {
   id: string;
   title: string;
@@ -192,6 +199,7 @@ export interface Devotional {
   body: string;
   author: string;
   date: string;
+  category: DevotionalCategory;
   created_at: string;
 }
 

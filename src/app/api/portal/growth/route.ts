@@ -2,6 +2,51 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+/* ─── Column Mapping ──────────────────────────────────────────────────
+ * The TypeScript SpiritualGoal type uses `current`, `title`, and `is_completed`.
+ * The DB might have `current_value` and `description` from the original schema.
+ * We handle both naming conventions gracefully.
+ * ──────────────────────────────────────────────────────────────────── */
+
+/** Map a DB row to the TS SpiritualGoal shape */
+function mapGoalFromDB(row: Record<string, unknown>) {
+  return {
+    id: row.id,
+    profile_id: row.profile_id,
+    type: row.type,
+    title: row.title ?? row.description ?? "",
+    target: row.target ?? 1,
+    current: row.current ?? row.current_value ?? 0,
+    period: row.period ?? "monthly",
+    is_completed: row.is_completed ?? false,
+    created_at: row.created_at,
+  };
+}
+
+/** Map TS fields to DB column names for inserts/updates */
+function mapGoalToDB(body: Record<string, unknown>) {
+  const mapped: Record<string, unknown> = {};
+
+  // Pass through known DB columns
+  if (body.profile_id !== undefined) mapped.profile_id = body.profile_id;
+  if (body.type !== undefined) mapped.type = body.type;
+  if (body.target !== undefined) mapped.target = body.target;
+  if (body.period !== undefined) mapped.period = body.period;
+
+  // Map title → title (DB) and also try description → title
+  if (body.title !== undefined) mapped.title = body.title;
+  else if (body.description !== undefined) mapped.title = body.description;
+
+  // Map current → current (DB) and also try current_value → current
+  if (body.current !== undefined) mapped.current = body.current;
+  else if (body.current_value !== undefined) mapped.current = body.current_value;
+
+  // Map is_completed
+  if (body.is_completed !== undefined) mapped.is_completed = body.is_completed;
+
+  return mapped;
+}
+
 /**
  * GET /api/portal/growth
  *
@@ -19,7 +64,7 @@ export async function GET() {
     }
 
     const admin = createAdminClient();
-    const { data: goals, error } = await admin
+    const { data: rows, error } = await admin
       .from("spiritual_goals")
       .select("*")
       .eq("profile_id", user.id)
@@ -33,6 +78,7 @@ export async function GET() {
       );
     }
 
+    const goals = (rows || []).map(mapGoalFromDB);
     return NextResponse.json({ goals });
   } catch (err) {
     console.error("[PORTAL] Growth GET error:", err);
@@ -47,7 +93,7 @@ export async function GET() {
  * POST /api/portal/growth
  *
  * Creates a new spiritual goal.
- * Body: { type, target, current_value, period, description }
+ * Body: { type, title, target, current, period, is_completed }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -61,26 +107,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { type, target, current_value, period, description } = body;
 
-    if (!type) {
+    if (!body.type) {
       return NextResponse.json(
         { error: "type is required" },
         { status: 400 }
       );
     }
 
+    const dbFields = mapGoalToDB(body);
+    dbFields.profile_id = user.id;
+    if (dbFields.current === undefined) dbFields.current = 0;
+    if (dbFields.is_completed === undefined) dbFields.is_completed = false;
+
     const admin = createAdminClient();
-    const { data: goal, error } = await admin
+    const { data: row, error } = await admin
       .from("spiritual_goals")
-      .insert({
-        profile_id: user.id,
-        type,
-        target,
-        current_value: current_value ?? 0,
-        period,
-        description,
-      })
+      .insert(dbFields)
       .select("*")
       .single();
 
@@ -92,7 +135,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ goal }, { status: 201 });
+    return NextResponse.json({ goal: mapGoalFromDB(row) }, { status: 201 });
   } catch (err) {
     console.error("[PORTAL] Growth POST error:", err);
     return NextResponse.json(
@@ -106,7 +149,7 @@ export async function POST(request: NextRequest) {
  * PUT /api/portal/growth
  *
  * Updates an existing spiritual goal.
- * Body: { id, current_value, ... }
+ * Body: { id, title?, target?, current?, period?, is_completed?, type? }
  */
 export async function PUT(request: NextRequest) {
   try {
@@ -120,7 +163,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, ...updates } = body;
+    const { id, ...rest } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -129,7 +172,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    if (Object.keys(updates).length === 0) {
+    const dbFields = mapGoalToDB(rest);
+    // Remove profile_id from updates (shouldn't change)
+    delete dbFields.profile_id;
+
+    if (Object.keys(dbFields).length === 0) {
       return NextResponse.json(
         { error: "No fields to update" },
         { status: 400 }
@@ -137,9 +184,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const admin = createAdminClient();
-    const { data: goal, error } = await admin
+    const { data: row, error } = await admin
       .from("spiritual_goals")
-      .update(updates)
+      .update(dbFields)
       .eq("id", id)
       .eq("profile_id", user.id)
       .select("*")
@@ -153,7 +200,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ goal });
+    return NextResponse.json({ goal: mapGoalFromDB(row) });
   } catch (err) {
     console.error("[PORTAL] Growth PUT error:", err);
     return NextResponse.json(

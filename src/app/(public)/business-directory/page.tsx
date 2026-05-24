@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditableText } from "@/components/cms/editable-text";
+import { MOCK_BUSINESSES } from "@/lib/mock-data";
 import type { Business } from "@/types";
 
 export default function BusinessDirectoryPage() {
@@ -39,7 +40,8 @@ export default function BusinessDirectoryPage() {
       try {
         const res = await fetch("/api/public/businesses");
         const data = await res.json();
-        setBusinesses(data.businesses ?? []);
+        const apiBusinesses = data.businesses ?? [];
+        setBusinesses(apiBusinesses.length > 0 ? apiBusinesses : MOCK_BUSINESSES);
       } catch (err) {
         console.error("Failed to load businesses:", err);
       } finally {

@@ -121,7 +121,7 @@ export default function HomePage() {
             />
           </FadeIn>
 
-          <SlideUpContainer className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <SlideUpContainer className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {CHURCH_INFO.serviceTimes.map((service) => (
               <SlideUpItem key={service.name}>
                 <div className="bg-white dark:bg-warm-900 rounded-xl p-6 text-center shadow-sm hover:shadow-card-hover transition-shadow border border-warm-100 dark:border-warm-800">

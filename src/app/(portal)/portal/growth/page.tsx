@@ -184,7 +184,7 @@ export default function SpiritualGrowthPage() {
   const handleCreateGoal = async () => {
     const newGoal: SpiritualGoal = {
       id: `sg-${Date.now()}`,
-      profile_id: "p7",
+      profile_id: "",
       type: goalType as SpiritualGoal["type"],
       title: goalTitle,
       target: parseInt(goalTarget, 10),

@@ -34,6 +34,7 @@ import {
   Loader2,
   Archive,
 } from "lucide-react";
+import { MOCK_MUSIC_TRACKS } from "@/lib/mock-data";
 import type { WorshipService, MusicTrack, Testimony } from "@/types";
 
 const VALID_TABS = ["services", "music", "gallery", "testimonies", "archives"] as const;
@@ -302,7 +303,7 @@ function MusicTab({ tracks }: { tracks: MusicTrack[] }) {
             <h3 className="font-heading font-bold text-purple-900">Worship Music Collection</h3>
             <p className="mt-1 text-sm text-purple-700">
               {tracks.length} gospel and worship tracks from our church music library.
-              Tracks will be available for streaming once uploaded.
+              {playableTracks.length > 0 ? ` ${playableTracks.length} tracks available for streaming.` : " Tracks will be available for streaming once uploaded."}
             </p>
           </div>
           {playableTracks.length > 0 && (
@@ -775,7 +776,8 @@ function MediaPageInner() {
         const musicData = await musicRes.json();
         const testimoniesData = await testimoniesRes.json();
         setAllServices(sermonsData.sermons ?? []);
-        setTracks(musicData.music ?? musicData.tracks ?? []);
+        const apiTracks = musicData.music ?? musicData.tracks ?? [];
+        setTracks(apiTracks.length > 0 ? apiTracks : MOCK_MUSIC_TRACKS);
         setTestimonies(testimoniesData.testimonies ?? []);
       } catch (err) {
         console.error("Failed to load media:", err);

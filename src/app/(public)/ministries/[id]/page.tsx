@@ -59,7 +59,7 @@ const MINISTRY_DETAILS: Record<string, MinistryDetail> = {
       { name: "James Singleton", title: "Vice President", role: "vice_president", phone: "(843) 555-0202", email: "james.singleton@email.com" },
       { name: "Gloria Campbell", title: "Secretary", role: "secretary", phone: "(843) 555-0207", email: "gloria.campbell@email.com" },
     ],
-    members: ["Martha Washington", "James Singleton", "Gloria Campbell", "Robert Davis", "Shirley Holmes", "Dexter Brown", "Annie Richardson"],
+    members: ["Martha Washington", "James Singleton", "Gloria Campbell"],
   },
   m2: {
     history:
@@ -72,9 +72,9 @@ const MINISTRY_DETAILS: Record<string, MinistryDetail> = {
     officers: [
       { name: "James Singleton", title: "President", role: "president", phone: "(843) 555-0202", email: "james.singleton@email.com" },
       { name: "Mae Robinson", title: "Vice President", role: "vice_president", phone: "(843) 555-0204", email: "mae.robinson@email.com" },
-      { name: "Dorothy Williams", title: "Secretary", role: "secretary", phone: "(843) 555-0210", email: "dorothy.williams@email.com" },
+      { name: "Gloria Campbell", title: "Secretary", role: "secretary", phone: "(843) 555-0207", email: "gloria.campbell@email.com" },
     ],
-    members: ["James Singleton", "Mae Robinson", "Dorothy Williams", "Alma Reed", "Sandra Mitchell", "Tony Freeman", "Brenda Collins", "Charles Washington"],
+    members: ["James Singleton", "Mae Robinson", "Gloria Campbell"],
   },
   m3: {
     history:
@@ -86,10 +86,10 @@ const MINISTRY_DETAILS: Record<string, MinistryDetail> = {
     scripture_ref: "Proverbs 22:6",
     officers: [
       { name: "Crystal Young", title: "President", role: "president", phone: "(843) 555-0203", email: "crystal.young@email.com" },
-      { name: "Michael Thompson", title: "Vice President", role: "vice_president", phone: "(843) 555-0211", email: "michael.thompson@email.com" },
-      { name: "Jasmine Carter", title: "Secretary", role: "secretary", phone: "(843) 555-0212", email: "jasmine.carter@email.com" },
+      { name: "Gloria Campbell", title: "Vice President", role: "vice_president", phone: "(843) 555-0207", email: "gloria.campbell@email.com" },
+      { name: "Martha Washington", title: "Secretary", role: "secretary", phone: "(843) 555-0201", email: "martha.washington@email.com" },
     ],
-    members: ["Crystal Young", "Michael Thompson", "Jasmine Carter", "David Mitchell", "Keisha Williams", "Marcus Johnson"],
+    members: ["Crystal Young", "Gloria Campbell", "Martha Washington"],
   },
   m4: {
     history:
@@ -102,9 +102,9 @@ const MINISTRY_DETAILS: Record<string, MinistryDetail> = {
     officers: [
       { name: "Mae Robinson", title: "President", role: "president", phone: "(843) 555-0204", email: "mae.robinson@email.com" },
       { name: "Patricia Grant", title: "Vice President", role: "vice_president", phone: "(843) 555-0205", email: "patricia.grant@email.com" },
-      { name: "Helen Miller", title: "Secretary", role: "secretary", phone: "(843) 555-0213", email: "helen.miller@email.com" },
+      { name: "Martha Washington", title: "Secretary", role: "secretary", phone: "(843) 555-0201", email: "martha.washington@email.com" },
     ],
-    members: ["Mae Robinson", "Patricia Grant", "Helen Miller", "Ruth Adams", "Bertha Jackson", "Willie Mae Brown", "Cora Lee Jenkins"],
+    members: ["Mae Robinson", "Patricia Grant", "Martha Washington"],
   },
   m5: {
     history:
@@ -116,10 +116,10 @@ const MINISTRY_DETAILS: Record<string, MinistryDetail> = {
     scripture_ref: "Proverbs 31:20",
     officers: [
       { name: "Patricia Grant", title: "President", role: "president", phone: "(843) 555-0205", email: "patricia.grant@email.com" },
-      { name: "Katie Calloway", title: "Vice President", role: "vice_president", phone: "(843) 555-0214", email: "katie.calloway@email.com" },
-      { name: "Alma Reed", title: "Secretary", role: "secretary", phone: "(843) 555-0215", email: "alma.reed@email.com" },
+      { name: "Mae Robinson", title: "Vice President", role: "vice_president", phone: "(843) 555-0204", email: "mae.robinson@email.com" },
+      { name: "Martha Washington", title: "Secretary", role: "secretary", phone: "(843) 555-0201", email: "martha.washington@email.com" },
     ],
-    members: ["Patricia Grant", "Katie Calloway", "Alma Reed", "Bessie Monroe", "Edna Frazier", "Rosa Bennett"],
+    members: ["Patricia Grant", "Mae Robinson", "Martha Washington"],
   },
   m6: {
     history:
@@ -132,9 +132,9 @@ const MINISTRY_DETAILS: Record<string, MinistryDetail> = {
     officers: [
       { name: "Henry Baker", title: "Superintendent", role: "president", phone: "(843) 555-0206", email: "henry.baker@email.com" },
       { name: "William Harris", title: "Vice Superintendent", role: "vice_president", phone: "(843) 555-0208", email: "william.harris@email.com" },
-      { name: "Sandra Mitchell", title: "Secretary", role: "secretary", phone: "(843) 555-0216", email: "sandra.mitchell@email.com" },
+      { name: "Crystal Young", title: "Secretary", role: "secretary", phone: "(843) 555-0203", email: "crystal.young@email.com" },
     ],
-    members: ["Henry Baker", "William Harris", "Sandra Mitchell", "Barbara Jenkins", "Thomas Green", "Evelyn Carter", "Joseph Freeman"],
+    members: ["Henry Baker", "William Harris", "Crystal Young"],
   },
 };
 

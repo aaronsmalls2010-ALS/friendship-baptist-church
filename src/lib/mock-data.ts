@@ -555,6 +555,35 @@ export const MOCK_BUSINESSES: Business[] = [
   { id: "b6", name: "Sweet Tea Catering", owner_name: "Sister Alma Reed", description: "Catering for church events, family reunions, weddings, and celebrations. Southern cooking with love.", category: "Restaurant", phone: "(843) 555-0306", is_approved: true, created_at: "2024-01-01" },
 ];
 
+// ─── Birthday Events (derived from profiles) ──────────────────────────
+// Generates birthday events for the current year from member profiles
+export function getBirthdayEvents(): Event[] {
+  const currentYear = new Date().getFullYear();
+  return MOCK_PROFILES
+    .filter((p) => p.date_of_birth)
+    .map((p) => {
+      const dob = new Date(p.date_of_birth + "T12:00:00");
+      const month = String(dob.getMonth() + 1).padStart(2, "0");
+      const day = String(dob.getDate()).padStart(2, "0");
+      return {
+        id: `bday-${p.id}`,
+        title: `🎂 Happy Birthday, ${p.first_name} ${p.last_name}!`,
+        description: `Let's celebrate ${p.first_name}'s birthday! Send a birthday greeting to show the love of our church family.`,
+        start_date: `${currentYear}-${month}-${day}T00:00:00`,
+        end_date: `${currentYear}-${month}-${day}T23:59:00`,
+        location: undefined,
+        ministry_id: undefined,
+        image_url: undefined,
+        rsvp_enabled: false,
+        is_published: true,
+        created_at: "2024-01-01",
+        _birthday_profile_id: p.id,
+        _birthday_phone: p.phone,
+        _birthday_email: p.email,
+      } as Event & { _birthday_profile_id: string; _birthday_phone?: string; _birthday_email?: string };
+    });
+}
+
 // ─── Timeline Events (Church History) ───────────────────────────────
 export const MOCK_TIMELINE: TimelineEvent[] = [
   { id: "tl1", year: 1865, title: "The Beginning", description: "In the wake of emancipation, formerly enslaved men and women gathered under the oak trees to worship in freedom. From those humble gatherings, the seeds of Friendship Baptist Church were planted.", order: 1 },

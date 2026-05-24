@@ -7,12 +7,14 @@ import { Menu, X, ChevronDown, Heart, Video, HandHeart, LogIn, LogOut, User } fr
 import { Logo } from "@/components/brand/logo";
 import { useScrollPosition } from "@/hooks/use-scroll-position";
 import { useAuth } from "@/hooks/use-auth";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 import { PUBLIC_NAV } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function PublicHeader() {
   const { isScrolled } = useScrollPosition();
   const { user, isAuthenticated, signOut } = useAuth();
+  const { watchLiveEnabled } = useSiteSettings();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -185,13 +187,15 @@ export function PublicHeader() {
       {/* Mobile Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white/[0.97] dark:bg-warm-950/[0.97] backdrop-blur-lg border-t border-warm-200 dark:border-warm-800">
         <div className="flex items-center justify-around py-2">
-          <Link
-            href="/media?tab=live"
-            className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-purple-700"
-          >
-            <Video className="h-5 w-5" />
-            Watch Live
-          </Link>
+          {watchLiveEnabled && (
+            <Link
+              href="/media?tab=live"
+              className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-purple-700"
+            >
+              <Video className="h-5 w-5" />
+              Watch Live
+            </Link>
+          )}
           <Link
             href="/give"
             className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs font-semibold text-gold-600"

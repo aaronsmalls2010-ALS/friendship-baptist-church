@@ -11,6 +11,7 @@ import {
   Clock,
   ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { FadeIn } from "@/components/motion/fade-in";
 import { CTAButton } from "@/components/shared/cta-button";
@@ -127,13 +128,13 @@ export default function MinistriesPage() {
                       )}
 
                       {/* Learn More */}
-                      <Button
-                        variant="ghost"
-                        className="self-start -ml-2 text-purple-700 hover:text-purple-800 hover:bg-purple-50 gap-1.5 text-sm font-medium p-2 h-auto"
+                      <Link
+                        href={`/ministries/${min.id}`}
+                        className="self-start -ml-2 text-purple-700 hover:text-purple-800 hover:bg-purple-50 gap-1.5 text-sm font-medium p-2 h-auto inline-flex items-center rounded-md"
                       >
                         Learn More
                         <ArrowRight className="h-4 w-4" />
-                      </Button>
+                      </Link>
                     </div>
                   </div>
                 </SlideUpItem>

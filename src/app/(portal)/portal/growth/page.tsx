@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   TrendingUp,
   Target,
@@ -91,8 +91,28 @@ const periodLabels: Record<string, string> = {
   yearly: "Yearly",
 };
 
+const STORAGE_KEY = "fbc_spiritual_goals";
+
+function loadGoals(): SpiritualGoal[] {
+  if (typeof window === "undefined") return [...MOCK_SPIRITUAL_GOALS];
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return [...MOCK_SPIRITUAL_GOALS];
+}
+
+function saveGoals(goals: SpiritualGoal[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
+  } catch {}
+}
+
 export default function SpiritualGrowthPage() {
-  const [goals, setGoals] = useState<SpiritualGoal[]>([...MOCK_SPIRITUAL_GOALS]);
+  const [goals, setGoals] = useState<SpiritualGoal[]>(loadGoals);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalType, setGoalType] = useState("");
@@ -112,6 +132,11 @@ export default function SpiritualGrowthPage() {
 
   // Celebration state — tracks recently completed goal ids
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
+
+  // Persist goals to localStorage whenever they change
+  useEffect(() => {
+    saveGoals(goals);
+  }, [goals]);
 
   const activeGoals = goals.filter((g) => !g.is_completed);
   const completedGoals = goals.filter((g) => g.is_completed);

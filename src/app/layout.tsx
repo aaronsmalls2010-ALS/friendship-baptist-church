@@ -3,6 +3,7 @@ import { Inter, Playfair_Display, Cormorant_Garamond } from "next/font/google";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { MusicProvider } from "@/providers/music-provider";
 import { AuthProvider } from "@/providers/auth-provider";
+import { SiteSettingsProvider } from "@/contexts/site-settings-context";
 import { MusicPlayer } from "@/components/media/music-player";
 import { CMSWrapper } from "@/components/cms/cms-wrapper";
 import "./globals.css";
@@ -84,12 +85,14 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            <MusicProvider>
-              <CMSWrapper>
-                {children}
-              </CMSWrapper>
-              <MusicPlayer />
-            </MusicProvider>
+            <SiteSettingsProvider>
+              <MusicProvider>
+                <CMSWrapper>
+                  {children}
+                </CMSWrapper>
+                <MusicPlayer />
+              </MusicProvider>
+            </SiteSettingsProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -19,6 +19,7 @@ const ALLOWED_FIELDS = [
   "anniversary",
   "baptism_date",
   "ward_id",
+  "photo_url",
 ] as const;
 
 /**

@@ -42,6 +42,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { FadeIn } from "@/components/motion/fade-in";
 import { ProfilePictureUpload } from "@/components/portal/profile-picture-upload";
+import { AlertDialog } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/utils";
 import { MOCK_DONATIONS } from "@/lib/mock-data";
 import type {
@@ -111,6 +112,54 @@ const DONATION_TYPE_LABELS: Record<string, string> = {
   mission: "Missions",
   other: "Other",
 };
+
+// ── Form snapshot type for dirty detection ─────────────────────────
+
+interface FormSnapshot {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  dateOfBirth: string;
+  gender: string;
+  aboutBio: string;
+  baptismDate: string;
+  anniversary: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  emergencyName: string;
+  emergencyPhone: string;
+  emailNotifs: boolean;
+  smsNotifs: boolean;
+  publicDirectory: boolean;
+}
+
+function createSnapshot(values: FormSnapshot): FormSnapshot {
+  return { ...values };
+}
+
+function isSnapshotEqual(a: FormSnapshot, b: FormSnapshot): boolean {
+  return (
+    a.firstName === b.firstName &&
+    a.lastName === b.lastName &&
+    a.phone === b.phone &&
+    a.dateOfBirth === b.dateOfBirth &&
+    a.gender === b.gender &&
+    a.aboutBio === b.aboutBio &&
+    a.baptismDate === b.baptismDate &&
+    a.anniversary === b.anniversary &&
+    a.address === b.address &&
+    a.city === b.city &&
+    a.state === b.state &&
+    a.zip === b.zip &&
+    a.emergencyName === b.emergencyName &&
+    a.emergencyPhone === b.emergencyPhone &&
+    a.emailNotifs === b.emailNotifs &&
+    a.smsNotifs === b.smsNotifs &&
+    a.publicDirectory === b.publicDirectory
+  );
+}
 
 // ── Helper: initials ────────────────────────────────────────────────
 
@@ -208,6 +257,12 @@ export default function MyProfilePage() {
   const [smsNotifs, setSmsNotifs] = useState(false);
   const [publicDirectory, setPublicDirectory] = useState(true);
 
+  // ── Dirty form detection ────────────────────────────────────────
+  const [savedSnapshot, setSavedSnapshot] = useState<FormSnapshot | null>(null);
+  const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   // ── Family form ─────────────────────────────────────────────────
   const [newFamilyName, setNewFamilyName] = useState("");
   const [creatingFamily, setCreatingFamily] = useState(false);
@@ -229,21 +284,147 @@ export default function MyProfilePage() {
 
   // ── Populate form from profile ──────────────────────────────────
   function populateForm(p: Profile) {
-    setFirstName(p.first_name || "");
-    setLastName(p.last_name || "");
+    const fName = p.first_name || "";
+    const lName = p.last_name || "";
+    const ph = p.phone || "";
+    const dob = p.date_of_birth || "";
+    const gen = p.gender || "";
+    const bio = p.about_bio || "";
+    const bapt = p.baptism_date || "";
+    const anniv = p.anniversary || "";
+    const addr = p.address || "";
+    const ct = p.city || "";
+    const st = p.state || "";
+    const zp = p.zip || "";
+    const emName = p.emergency_contact_name || "";
+    const emPhone = p.emergency_contact_phone || "";
+
+    setFirstName(fName);
+    setLastName(lName);
     setEmail(p.email || "");
-    setPhone(p.phone || "");
-    setDateOfBirth(p.date_of_birth || "");
-    setGender(p.gender || "");
-    setAboutBio(p.about_bio || "");
-    setBaptismDate(p.baptism_date || "");
-    setAnniversary(p.anniversary || "");
-    setAddress(p.address || "");
-    setCity(p.city || "");
-    setState(p.state || "");
-    setZip(p.zip || "");
-    setEmergencyName(p.emergency_contact_name || "");
-    setEmergencyPhone(p.emergency_contact_phone || "");
+    setPhone(ph);
+    setDateOfBirth(dob);
+    setGender(gen);
+    setAboutBio(bio);
+    setBaptismDate(bapt);
+    setAnniversary(anniv);
+    setAddress(addr);
+    setCity(ct);
+    setState(st);
+    setZip(zp);
+    setEmergencyName(emName);
+    setEmergencyPhone(emPhone);
+
+    // Store snapshot for dirty detection
+    const snapshot: FormSnapshot = {
+      firstName: fName,
+      lastName: lName,
+      phone: ph,
+      dateOfBirth: dob,
+      gender: gen,
+      aboutBio: bio,
+      baptismDate: bapt,
+      anniversary: anniv,
+      address: addr,
+      city: ct,
+      state: st,
+      zip: zp,
+      emergencyName: emName,
+      emergencyPhone: emPhone,
+      emailNotifs: true,
+      smsNotifs: false,
+      publicDirectory: true,
+    };
+    setSavedSnapshot(snapshot);
+  }
+
+  // ── Get current form values as snapshot ─────────────────────────
+  function getCurrentSnapshot(): FormSnapshot {
+    return {
+      firstName,
+      lastName,
+      phone,
+      dateOfBirth,
+      gender,
+      aboutBio,
+      baptismDate,
+      anniversary,
+      address,
+      city,
+      state,
+      zip,
+      emergencyName,
+      emergencyPhone,
+      emailNotifs,
+      smsNotifs,
+      publicDirectory,
+    };
+  }
+
+  // ── Check if form is dirty ──────────────────────────────────────
+  function isFormDirty(): boolean {
+    if (!savedSnapshot) return false;
+    return !isSnapshotEqual(getCurrentSnapshot(), savedSnapshot);
+  }
+
+  // ── Revert form to last saved snapshot ──────────────────────────
+  function revertToSnapshot() {
+    if (!savedSnapshot) return;
+    setFirstName(savedSnapshot.firstName);
+    setLastName(savedSnapshot.lastName);
+    setPhone(savedSnapshot.phone);
+    setDateOfBirth(savedSnapshot.dateOfBirth);
+    setGender(savedSnapshot.gender);
+    setAboutBio(savedSnapshot.aboutBio);
+    setBaptismDate(savedSnapshot.baptismDate);
+    setAnniversary(savedSnapshot.anniversary);
+    setAddress(savedSnapshot.address);
+    setCity(savedSnapshot.city);
+    setState(savedSnapshot.state);
+    setZip(savedSnapshot.zip);
+    setEmergencyName(savedSnapshot.emergencyName);
+    setEmergencyPhone(savedSnapshot.emergencyPhone);
+    setEmailNotifs(savedSnapshot.emailNotifs);
+    setSmsNotifs(savedSnapshot.smsNotifs);
+    setPublicDirectory(savedSnapshot.publicDirectory);
+  }
+
+  // ── Tab change with dirty detection ─────────────────────────────
+  function handleTabChange(newTab: string) {
+    if (newTab === activeTab) return;
+    if (isFormDirty()) {
+      setPendingTab(newTab);
+      setUnsavedDialogOpen(true);
+    } else {
+      setActiveTab(newTab);
+    }
+  }
+
+  // ── Unsaved changes dialog: save and switch ─────────────────────
+  async function handleSaveAndSwitch() {
+    setUnsavedDialogOpen(false);
+    // Determine which tab we are currently on and save accordingly
+    if (activeTab === "personal") {
+      await handleSavePersonal();
+    } else if (activeTab === "contact") {
+      await handleSaveContact();
+    } else if (activeTab === "preferences") {
+      handleSavePreferences();
+    }
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+  }
+
+  // ── Unsaved changes dialog: discard and switch ──────────────────
+  function handleDiscardAndSwitch() {
+    setUnsavedDialogOpen(false);
+    revertToSnapshot();
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
   }
 
   // ── Fetch all data ──────────────────────────────────────────────
@@ -308,6 +489,8 @@ export default function MyProfilePage() {
       if (!res.ok) throw new Error(data.error || "Failed to save");
       setProfile(data.profile);
       setEditMode(false);
+      // Update saved snapshot
+      setSavedSnapshot(getCurrentSnapshot());
       setToast({ type: "success", message: "Personal info updated." });
     } catch (err) {
       setToast({
@@ -338,6 +521,8 @@ export default function MyProfilePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save");
       setProfile(data.profile);
+      // Update saved snapshot
+      setSavedSnapshot(getCurrentSnapshot());
       setToast({ type: "success", message: "Contact info updated." });
     } catch (err) {
       setToast({
@@ -357,6 +542,8 @@ export default function MyProfilePage() {
     // Simulate a brief network delay since there's no backend yet
     setTimeout(() => {
       setSavingPreferences(false);
+      // Update saved snapshot
+      setSavedSnapshot(getCurrentSnapshot());
       setToast({ type: "success", message: "Preferences saved successfully" });
     }, 600);
   }
@@ -588,11 +775,43 @@ export default function MyProfilePage() {
               <ProfilePictureUpload
                 currentPhotoUrl={profile.photo_url}
                 initials={initials}
-                onSave={(croppedDataUrl) => {
+                onSave={async (croppedDataUrl) => {
+                  // Optimistically show the new image
                   setProfile({ ...profile, photo_url: croppedDataUrl });
-                  setToast({ type: "success", message: "Profile picture updated!" });
+                  setUploadingAvatar(true);
+                  try {
+                    const res = await fetch("/api/portal/profile/avatar", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ image: croppedDataUrl }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "Upload failed");
+                    // Update profile with the persistent URL from storage
+                    setProfile(data.profile);
+                    setToast({ type: "success", message: "Profile picture saved!" });
+                  } catch (err) {
+                    setToast({
+                      type: "error",
+                      message: err instanceof Error ? err.message : "Failed to save profile picture",
+                    });
+                    // Revert optimistic update on failure - refetch profile
+                    const refetchRes = await fetch("/api/portal/profile");
+                    if (refetchRes.ok) {
+                      const refetchData = await refetchRes.json();
+                      setProfile(refetchData.profile);
+                    }
+                  } finally {
+                    setUploadingAvatar(false);
+                  }
                 }}
               />
+              {uploadingAvatar && (
+                <span className="mt-1 text-xs text-purple-600 flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Uploading...
+                </span>
+              )}
             </div>
 
             {/* Info */}
@@ -623,19 +842,66 @@ export default function MyProfilePage() {
               )}
             </div>
 
-            {/* Edit Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0"
-              onClick={() => {
-                setEditMode(!editMode);
-                setActiveTab("personal");
-              }}
-            >
-              <Pencil className="h-4 w-4 mr-1.5" />
-              {editMode ? "Cancel Edit" : "Edit Profile"}
-            </Button>
+            {/* Edit / Save / Cancel Button */}
+            {editMode ? (
+              <div className="flex items-center gap-2 shrink-0">
+                {isFormDirty() ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        revertToSnapshot();
+                        setEditMode(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-purple-700 hover:bg-purple-800"
+                      onClick={async () => {
+                        if (activeTab === "personal") await handleSavePersonal();
+                        else if (activeTab === "contact") await handleSaveContact();
+                        else if (activeTab === "preferences") handleSavePreferences();
+                      }}
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-1.5" />
+                      )}
+                      Save Changes
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditMode(false);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 mr-1.5" />
+                    Cancel Edit
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => {
+                  setEditMode(true);
+                  setActiveTab("personal");
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-1.5" />
+                Edit Profile
+              </Button>
+            )}
           </div>
         </Card>
       </FadeIn>
@@ -643,7 +909,7 @@ export default function MyProfilePage() {
       {/* ── Tabbed Content ───────────────────────────────────────── */}
       <FadeIn direction="up" delay={0.1}>
         <Card className="p-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-6 h-auto">
               <TabsTrigger value="personal" className="gap-1.5 text-xs sm:text-sm">
                 <User className="h-4 w-4 hidden sm:block" />
@@ -1465,6 +1731,18 @@ export default function MyProfilePage() {
           </Tabs>
         </Card>
       </FadeIn>
+
+      {/* ── Unsaved Changes Confirmation Dialog ─────────────────── */}
+      <AlertDialog
+        open={unsavedDialogOpen}
+        onOpenChange={setUnsavedDialogOpen}
+        title="Unsaved Changes"
+        description="You have unsaved changes. Would you like to save them before leaving this tab?"
+        confirmLabel="Save"
+        cancelLabel="Discard"
+        onConfirm={handleSaveAndSwitch}
+        onCancel={handleDiscardAndSwitch}
+      />
     </div>
   );
 }

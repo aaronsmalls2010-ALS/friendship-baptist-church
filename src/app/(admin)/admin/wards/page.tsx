@@ -44,6 +44,14 @@ import {
   Search,
 } from "lucide-react";
 
+/**
+ * NOTE: Ward/member assignments use `ward_id` on the profile object (MOCK_PROFILES).
+ * When Supabase is connected, both this Wards page and the Members page
+ * read/write to the same `profiles` table (profiles.ward_id column).
+ * Assigning a member to a ward here or from the Members admin page will
+ * update the same underlying data, keeping both views in sync.
+ */
+
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function getDeaconsForWard(wardId: string, deacons: Deacon[]): Deacon[] {

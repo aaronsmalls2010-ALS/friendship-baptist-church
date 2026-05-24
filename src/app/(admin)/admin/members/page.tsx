@@ -5,6 +5,14 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -22,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { FadeIn } from "@/components/motion/fade-in";
 import { formatDate } from "@/lib/utils";
+import { MOCK_WARDS, MOCK_DEACONS, MOCK_PROFILES } from "@/lib/mock-data";
 import {
   Search,
   ChevronLeft,
@@ -30,8 +39,9 @@ import {
   AlertCircle,
   CheckCircle,
   RefreshCw,
+  Pencil,
 } from "lucide-react";
-import type { UserRole } from "@/types";
+import type { UserRole, Profile, Ward, Deacon } from "@/types";
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Member {
@@ -43,6 +53,7 @@ interface Member {
   role: UserRole;
   photo_url?: string;
   created_at: string;
+  ward_id?: string;
 }
 
 // ── Constants ────────────────────────────────────────────────────────
@@ -76,6 +87,13 @@ const ALL_ROLES: UserRole[] = [
 
 const PAGE_SIZE = 10;
 
+/**
+ * NOTE: Ward and deacon assignments are stored on the profile via `ward_id`.
+ * When Supabase is connected, both this Members page and the Wards page
+ * read/write to the same `profiles` table (profiles.ward_id column).
+ * This ensures ward assignment stays in sync across both admin views.
+ */
+
 // ── Page Component ───────────────────────────────────────────────────
 export default function MemberManagementPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -88,6 +106,15 @@ export default function MemberManagementPage() {
     message: string;
   } | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // Local mock profiles state for ward/deacon assignments
+  const [profiles, setProfiles] = useState<Profile[]>([...MOCK_PROFILES]);
+
+  // Edit member dialog state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [editWardId, setEditWardId] = useState("");
+  const [editDeaconId, setEditDeaconId] = useState("");
 
   // ── Fetch members from Supabase ──────────────────────────────────
   const fetchMembers = useCallback(async () => {
@@ -152,6 +179,82 @@ export default function MemberManagementPage() {
       setToast({ type: "error", message: "Network error. Please try again." });
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  // ── Ward/Deacon helpers ──────────────────────────────────────────
+  function getWardForMember(memberId: string): Ward | undefined {
+    // Check local profiles state for ward_id assignment
+    const profile = profiles.find((p) => p.id === memberId);
+    if (profile?.ward_id) {
+      return MOCK_WARDS.find((w) => w.id === profile.ward_id);
+    }
+    return undefined;
+  }
+
+  function getDeaconForMember(memberId: string): Deacon | undefined {
+    const ward = getWardForMember(memberId);
+    if (!ward) return undefined;
+    return MOCK_DEACONS.find((d) => d.ward_id === ward.id);
+  }
+
+  // ── Edit member ward/deacon ──────────────────────────────────────
+  function openEditMemberDialog(member: Member) {
+    setEditingMember(member);
+    const profile = profiles.find((p) => p.id === member.id);
+    setEditWardId(profile?.ward_id ?? "");
+    // Find deacon for current ward
+    const ward = profile?.ward_id
+      ? MOCK_WARDS.find((w) => w.id === profile.ward_id)
+      : undefined;
+    const deacon = ward
+      ? MOCK_DEACONS.find((d) => d.ward_id === ward.id)
+      : undefined;
+    setEditDeaconId(deacon?.id ?? "");
+    setEditOpen(true);
+  }
+
+  function handleSaveEdit() {
+    if (!editingMember) return;
+
+    // Normalize sentinel value to empty for "unassigned"
+    const wardValue = editWardId === "__none__" ? "" : editWardId;
+
+    // Update local profiles state (same source as wards page uses)
+    setProfiles((prev) =>
+      prev.map((p) =>
+        p.id === editingMember.id
+          ? { ...p, ward_id: wardValue || undefined }
+          : p
+      )
+    );
+
+    // Also update the members list ward_id for display
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.id === editingMember.id
+          ? { ...m, ward_id: wardValue || undefined }
+          : m
+      )
+    );
+
+    setToast({
+      type: "success",
+      message: `${editingMember.first_name} ${editingMember.last_name} ward assignment updated.`,
+    });
+
+    setEditOpen(false);
+    setEditingMember(null);
+  }
+
+  // When ward changes in edit dialog, auto-select the deacon for that ward
+  function handleEditWardChange(wardId: string) {
+    setEditWardId(wardId);
+    if (wardId) {
+      const deacon = MOCK_DEACONS.find((d) => d.ward_id === wardId);
+      setEditDeaconId(deacon?.id ?? "");
+    } else {
+      setEditDeaconId("");
     }
   }
 
@@ -277,95 +380,142 @@ export default function MemberManagementPage() {
                 <TableHead className="font-medium">Name</TableHead>
                 <TableHead className="font-medium">Email</TableHead>
                 <TableHead className="font-medium">Role</TableHead>
+                <TableHead className="font-medium">Ward</TableHead>
+                <TableHead className="font-medium">Deacon</TableHead>
                 <TableHead className="font-medium">Phone</TableHead>
                 <TableHead className="font-medium">Member Since</TableHead>
+                <TableHead className="font-medium">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paged.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={8}
                     className="text-center py-8 text-warm-400"
                   >
                     {search ? "No members match your search" : "No members found"}
                   </TableCell>
                 </TableRow>
               ) : (
-                paged.map((member) => (
-                  <TableRow key={member.id}>
-                    {/* Name */}
-                    <TableCell>
-                      <span className="font-medium text-warm-900 dark:text-warm-50">
-                        {member.first_name} {member.last_name}
-                      </span>
-                    </TableCell>
+                paged.map((member) => {
+                  const ward = getWardForMember(member.id);
+                  const deacon = getDeaconForMember(member.id);
 
-                    {/* Email */}
-                    <TableCell className="text-warm-600 dark:text-warm-400">
-                      {member.email}
-                    </TableCell>
+                  return (
+                    <TableRow key={member.id}>
+                      {/* Name */}
+                      <TableCell>
+                        <span className="font-medium text-warm-900 dark:text-warm-50">
+                          {member.first_name} {member.last_name}
+                        </span>
+                      </TableCell>
 
-                    {/* Role — inline editable */}
-                    <TableCell>
-                      {updatingId === member.id ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                          <span className="text-sm text-warm-500">
-                            Updating...
+                      {/* Email */}
+                      <TableCell className="text-warm-600 dark:text-warm-400">
+                        {member.email}
+                      </TableCell>
+
+                      {/* Role — inline editable */}
+                      <TableCell>
+                        {updatingId === member.id ? (
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                            <span className="text-sm text-warm-500">
+                              Updating...
+                            </span>
+                          </div>
+                        ) : (
+                          <Select
+                            value={member.role}
+                            onValueChange={(value) =>
+                              handleRoleChange(member.id, value as UserRole)
+                            }
+                          >
+                            <SelectTrigger className="w-[145px] h-8 border-0 bg-transparent hover:bg-warm-50 dark:hover:bg-warm-800 focus:ring-1 focus:ring-purple-500 p-0 pl-1">
+                              <Badge
+                                variant="outline"
+                                className={`border-0 cursor-pointer ${
+                                  ROLE_BADGE_COLORS[member.role] ?? ""
+                                }`}
+                              >
+                                {ROLE_LABELS[member.role] ?? member.role}
+                              </Badge>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ALL_ROLES.map((r) => (
+                                <SelectItem key={r} value={r}>
+                                  <span className="flex items-center gap-2">
+                                    <span
+                                      className={`inline-block h-2 w-2 rounded-full ${
+                                        ROLE_BADGE_COLORS[r]
+                                          ?.split(" ")[0]
+                                          ?.replace("text-", "bg-") ??
+                                        "bg-warm-300"
+                                      }`}
+                                    />
+                                    {ROLE_LABELS[r]}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </TableCell>
+
+                      {/* Ward */}
+                      <TableCell>
+                        {ward ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border-0"
+                          >
+                            {ward.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-warm-400 text-sm">Unassigned</span>
+                        )}
+                      </TableCell>
+
+                      {/* Deacon */}
+                      <TableCell>
+                        {deacon ? (
+                          <span className="text-sm text-warm-700 dark:text-warm-300">
+                            {deacon.title ? `${deacon.title} ` : ""}
+                            {deacon.first_name} {deacon.last_name}
                           </span>
-                        </div>
-                      ) : (
-                        <Select
-                          value={member.role}
-                          onValueChange={(value) =>
-                            handleRoleChange(member.id, value as UserRole)
-                          }
+                        ) : (
+                          <span className="text-warm-400 text-sm">—</span>
+                        )}
+                      </TableCell>
+
+                      {/* Phone */}
+                      <TableCell className="text-warm-600 dark:text-warm-400">
+                        {member.phone || "—"}
+                      </TableCell>
+
+                      {/* Member Since */}
+                      <TableCell>
+                        <span className="text-sm text-warm-500">
+                          {formatDate(member.created_at)}
+                        </span>
+                      </TableCell>
+
+                      {/* Actions */}
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditMemberDialog(member)}
+                          className="h-8 w-8 p-0 text-warm-500 hover:text-purple-700 hover:bg-purple-50"
+                          title="Edit ward/deacon assignment"
                         >
-                          <SelectTrigger className="w-[145px] h-8 border-0 bg-transparent hover:bg-warm-50 dark:hover:bg-warm-800 focus:ring-1 focus:ring-purple-500 p-0 pl-1">
-                            <Badge
-                              variant="outline"
-                              className={`border-0 cursor-pointer ${
-                                ROLE_BADGE_COLORS[member.role] ?? ""
-                              }`}
-                            >
-                              {ROLE_LABELS[member.role] ?? member.role}
-                            </Badge>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ALL_ROLES.map((r) => (
-                              <SelectItem key={r} value={r}>
-                                <span className="flex items-center gap-2">
-                                  <span
-                                    className={`inline-block h-2 w-2 rounded-full ${
-                                      ROLE_BADGE_COLORS[r]
-                                        ?.split(" ")[0]
-                                        ?.replace("text-", "bg-") ??
-                                      "bg-warm-300"
-                                    }`}
-                                  />
-                                  {ROLE_LABELS[r]}
-                                </span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-
-                    {/* Phone */}
-                    <TableCell className="text-warm-600 dark:text-warm-400">
-                      {member.phone || "—"}
-                    </TableCell>
-
-                    {/* Member Since */}
-                    <TableCell>
-                      <span className="text-sm text-warm-500">
-                        {formatDate(member.created_at)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -400,6 +550,85 @@ export default function MemberManagementPage() {
           </div>
         </div>
       )}
+
+      {/* ── Edit Ward/Deacon Assignment Dialog ──────────────────────── */}
+      <Dialog
+        open={editOpen}
+        onOpenChange={(open) => {
+          setEditOpen(open);
+          if (!open) setEditingMember(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl">
+              Edit Ward Assignment
+            </DialogTitle>
+          </DialogHeader>
+          {editingMember && (
+            <div className="space-y-4">
+              <p className="text-sm text-warm-600">
+                Assign <span className="font-medium">{editingMember.first_name} {editingMember.last_name}</span> to a ward and deacon.
+              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-ward">Ward</Label>
+                <Select value={editWardId} onValueChange={handleEditWardChange}>
+                  <SelectTrigger id="edit-ward">
+                    <SelectValue placeholder="Select a ward" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-warm-400">Unassigned</span>
+                    </SelectItem>
+                    {MOCK_WARDS.map((ward) => (
+                      <SelectItem key={ward.id} value={ward.id}>
+                        {ward.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-deacon">Deacon</Label>
+                <Select value={editDeaconId} onValueChange={setEditDeaconId}>
+                  <SelectTrigger id="edit-deacon">
+                    <SelectValue placeholder="Auto-assigned by ward" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      <span className="text-warm-400">None</span>
+                    </SelectItem>
+                    {MOCK_DEACONS.filter((d) => d.is_active).map((deacon) => (
+                      <SelectItem key={deacon.id} value={deacon.id}>
+                        {deacon.title ? `${deacon.title} ` : ""}
+                        {deacon.first_name} {deacon.last_name}
+                        {deacon.ward_name ? ` (${deacon.ward_name})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-warm-400">
+                  Deacon is auto-selected when ward changes. Override manually if needed.
+                </p>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  className="bg-purple-700 hover:bg-purple-600 text-white"
+                >
+                  Save Assignment
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

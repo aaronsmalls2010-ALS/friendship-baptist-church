@@ -1,14 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
-import { FormDialog } from "@/components/admin/form-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -19,8 +27,109 @@ import {
 import { MOCK_ANNOUNCEMENTS } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import type { Announcement } from "@/types";
+import { Pencil, Trash2, Plus } from "lucide-react";
+
+const CATEGORIES = ["church", "youth", "finance", "ministry", "outreach"];
 
 export default function AnnouncementManagementPage() {
+  const [announcements, setAnnouncements] = useState<Announcement[]>([
+    ...MOCK_ANNOUNCEMENTS,
+  ]);
+
+  // Form dialog state
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingAnnouncement, setEditingAnnouncement] =
+    useState<Announcement | null>(null);
+
+  // Delete confirmation dialog state
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingAnnouncement, setDeletingAnnouncement] =
+    useState<Announcement | null>(null);
+
+  // Form field state
+  const [formTitle, setFormTitle] = useState("");
+  const [formBody, setFormBody] = useState("");
+  const [formStartDate, setFormStartDate] = useState("");
+  const [formEndDate, setFormEndDate] = useState("");
+  const [formIsPinned, setFormIsPinned] = useState(false);
+  const [formCategory, setFormCategory] = useState("");
+
+  function resetForm() {
+    setFormTitle("");
+    setFormBody("");
+    setFormStartDate("");
+    setFormEndDate("");
+    setFormIsPinned(false);
+    setFormCategory("");
+    setEditingAnnouncement(null);
+  }
+
+  function openCreateDialog() {
+    resetForm();
+    setFormOpen(true);
+  }
+
+  function openEditDialog(announcement: Announcement) {
+    setEditingAnnouncement(announcement);
+    setFormTitle(announcement.title);
+    setFormBody(announcement.body);
+    setFormStartDate(announcement.start_date);
+    setFormEndDate(announcement.end_date ?? "");
+    setFormIsPinned(announcement.is_pinned);
+    setFormCategory(announcement.category ?? "");
+    setFormOpen(true);
+  }
+
+  function handleSave() {
+    if (editingAnnouncement) {
+      setAnnouncements((prev) =>
+        prev.map((a) =>
+          a.id === editingAnnouncement.id
+            ? {
+                ...a,
+                title: formTitle,
+                body: formBody,
+                start_date: formStartDate,
+                end_date: formEndDate || undefined,
+                is_pinned: formIsPinned,
+                category: formCategory || undefined,
+              }
+            : a
+        )
+      );
+    } else {
+      const newAnnouncement: Announcement = {
+        id: `a${Date.now()}`,
+        title: formTitle,
+        body: formBody,
+        start_date: formStartDate,
+        end_date: formEndDate || undefined,
+        is_pinned: formIsPinned,
+        category: formCategory || undefined,
+        ministry_id: undefined,
+        created_at: new Date().toISOString(),
+      };
+      setAnnouncements((prev) => [...prev, newAnnouncement]);
+    }
+    setFormOpen(false);
+    resetForm();
+  }
+
+  function openDeleteDialog(announcement: Announcement) {
+    setDeletingAnnouncement(announcement);
+    setDeleteOpen(true);
+  }
+
+  function handleDelete() {
+    if (deletingAnnouncement) {
+      setAnnouncements((prev) =>
+        prev.filter((a) => a.id !== deletingAnnouncement.id)
+      );
+    }
+    setDeleteOpen(false);
+    setDeletingAnnouncement(null);
+  }
+
   const columns = [
     {
       key: "title",
@@ -59,6 +168,38 @@ export default function AnnouncementManagementPage() {
           "—"
         ),
     },
+    {
+      key: "actions",
+      label: "Actions",
+      render: (item: Announcement) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              openEditDialog(item);
+            }}
+            className="h-8 w-8 p-0 text-warm-500 hover:text-purple-700 hover:bg-purple-50"
+            title="Edit announcement"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              openDeleteDialog(item);
+            }}
+            className="h-8 w-8 p-0 text-warm-500 hover:text-red-600 hover:bg-red-50"
+            title="Delete announcement"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -67,69 +208,150 @@ export default function AnnouncementManagementPage() {
         title="Announcements"
         description="Manage church announcements"
         action={
-          <FormDialog
-            title="Create Announcement"
-            triggerLabel="Create Announcement"
+          <Button
+            onClick={openCreateDialog}
+            className="bg-purple-700 hover:bg-purple-600 text-white"
           >
-            <form className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" placeholder="Announcement title" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="body">Body</Label>
-                <Textarea id="body" placeholder="Announcement body" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="start_date">Start Date</Label>
-                <Input id="start_date" type="date" />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="end_date">End Date</Label>
-                <Input id="end_date" type="date" />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox id="is_pinned" />
-                <Label htmlFor="is_pinned">Pinned</Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select>
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="church">Church</SelectItem>
-                    <SelectItem value="youth">Youth</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                    <SelectItem value="ministry">Ministry</SelectItem>
-                    <SelectItem value="outreach">Outreach</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                type="button"
-                className="w-full bg-purple-700 hover:bg-purple-600 text-white"
-              >
-                Save
-              </Button>
-            </form>
-          </FormDialog>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Announcement
+          </Button>
         }
       />
 
       <DataTable
-        data={MOCK_ANNOUNCEMENTS as unknown as Record<string, unknown>[]}
+        data={announcements as unknown as Record<string, unknown>[]}
         columns={columns as Parameters<typeof DataTable>[0]["columns"]}
         searchable
         searchKeys={["title", "body"]}
       />
+
+      {/* Create / Edit Announcement Dialog */}
+      <Dialog
+        open={formOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) resetForm();
+        }}
+      >
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl">
+              {editingAnnouncement ? "Edit Announcement" : "Create Announcement"}
+            </DialogTitle>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                placeholder="Announcement title"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="body">Body</Label>
+              <Textarea
+                id="body"
+                placeholder="Announcement body"
+                value={formBody}
+                onChange={(e) => setFormBody(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="start_date">Start Date</Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={formStartDate}
+                onChange={(e) => setFormStartDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_date">End Date</Label>
+              <Input
+                id="end_date"
+                type="date"
+                value={formEndDate}
+                onChange={(e) => setFormEndDate(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="is_pinned"
+                checked={formIsPinned}
+                onCheckedChange={(checked) => setFormIsPinned(checked === true)}
+              />
+              <Label htmlFor="is_pinned">Pinned</Label>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select value={formCategory} onValueChange={setFormCategory}>
+                <SelectTrigger id="category">
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      <span className="capitalize">{cat}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full bg-purple-700 hover:bg-purple-600 text-white"
+            >
+              {editingAnnouncement ? "Update Announcement" : "Save Announcement"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl">
+              Delete Announcement
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this announcement?
+            </DialogDescription>
+          </DialogHeader>
+          {deletingAnnouncement && (
+            <p className="text-sm text-warm-600">
+              <span className="font-medium">{deletingAnnouncement.title}</span>{" "}
+              will be permanently removed.
+            </p>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

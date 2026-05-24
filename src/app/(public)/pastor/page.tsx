@@ -139,9 +139,12 @@ export default function PastorPage() {
                   id="pastor.welcome.desc"
                   as="p"
                   multiline
-                  className="text-warm-600 dark:text-warm-400"
+                  className="text-warm-600 dark:text-warm-400 mb-4"
                   fallback="Pastor Smalls brings a shepherd's heart and a teacher's mind to every aspect of ministry at Friendship Baptist. His leadership is defined by compassion, Biblical conviction, and a genuine love for every soul that enters the church."
                 />
+                <p className="font-heading text-fluid-lg font-bold italic text-purple-700 dark:text-purple-400">
+                  &ldquo;To God be the Glory!&rdquo;
+                </p>
               </div>
             </FadeIn>
 

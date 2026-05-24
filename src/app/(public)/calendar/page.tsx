@@ -15,7 +15,7 @@ import { CTAButton } from "@/components/shared/cta-button";
 import { EditableText } from "@/components/cms/editable-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_EVENTS, MOCK_MINISTRIES } from "@/lib/mock-data";
+import { MOCK_EVENTS, MOCK_MINISTRIES, getBirthdayEvents } from "@/lib/mock-data";
 import { formatTime, cn } from "@/lib/utils";
 import type { Event } from "@/types";
 
@@ -116,7 +116,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const publishedEvents = useMemo(
-    () => MOCK_EVENTS.filter((e) => e.is_published),
+    () => [...MOCK_EVENTS, ...getBirthdayEvents()].filter((e) => e.is_published),
     []
   );
 

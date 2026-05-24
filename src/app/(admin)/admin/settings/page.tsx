@@ -27,9 +27,14 @@ import {
   MessageSquare,
   Check,
   Upload,
+  Video,
 } from "lucide-react";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 
 export default function SettingsPage() {
+  const { watchLiveEnabled, toggleWatchLive } = useSiteSettings();
+  const [watchLiveLoading, setWatchLiveLoading] = useState(false);
+
   // General tab state
   const [churchName, setChurchName] = useState<string>(CHURCH_INFO.name);
   const [tagline, setTagline] = useState<string>(CHURCH_INFO.tagline);
@@ -67,6 +72,37 @@ export default function SettingsPage() {
         title="Settings"
         description="Configure church website settings"
       />
+
+      {/* Watch Live Stream Toggle */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-warm-900 dark:text-warm-50">
+            <Video className="h-5 w-5 text-purple-600" />
+            Watch Live Stream
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between rounded-lg border border-warm-100 p-4 dark:border-warm-800">
+            <div>
+              <p className="text-sm font-medium text-warm-900 dark:text-warm-50">
+                Watch Live Button
+              </p>
+              <p className="text-xs text-warm-500">
+                Show or hide the Watch Live button across the public website
+              </p>
+            </div>
+            <Switch
+              checked={watchLiveEnabled}
+              disabled={watchLiveLoading}
+              onCheckedChange={async (checked) => {
+                setWatchLiveLoading(true);
+                await toggleWatchLive(checked);
+                setWatchLiveLoading(false);
+              }}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <FadeIn>
         <Tabs defaultValue="general" className="space-y-6">

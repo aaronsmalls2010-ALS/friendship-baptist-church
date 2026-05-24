@@ -23,7 +23,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { MOCK_EVENTS, MOCK_MINISTRIES } from "@/lib/mock-data";
+import { MOCK_EVENTS, MOCK_MINISTRIES, getBirthdayEvents } from "@/lib/mock-data";
 import { formatDate, formatTime } from "@/lib/utils";
 
 function getMinistryName(ministryId?: string): string | null {
@@ -36,7 +36,10 @@ export default function EventsPage() {
   const now = new Date();
 
   const { featuredEvent, upcomingEvents, pastEvents } = useMemo(() => {
-    const published = MOCK_EVENTS.filter((e) => e.is_published);
+    // Merge regular events with birthday events
+    const birthdayEvents = getBirthdayEvents();
+    const allEvents = [...MOCK_EVENTS, ...birthdayEvents];
+    const published = allEvents.filter((e) => e.is_published);
     const upcoming = published
       .filter((e) => new Date(e.start_date) > now)
       .sort(
@@ -51,8 +54,9 @@ export default function EventsPage() {
           new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
       );
 
-    const featured = upcoming[0] ?? null;
-    const rest = upcoming.slice(1);
+    // Don't use birthday events as the featured event
+    const featured = upcoming.find((e) => !e.id.startsWith("bday-")) ?? null;
+    const rest = upcoming.filter((e) => e !== featured);
 
     return { featuredEvent: featured, upcomingEvents: rest, pastEvents: past };
     // eslint-disable-next-line react-hooks/exhaustive-deps

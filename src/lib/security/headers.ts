@@ -13,9 +13,12 @@
  * @returns The CSP header value string.
  */
 export function getCSPHeader(nonce?: string): string {
+  // Next.js requires 'unsafe-inline' for hydration bootstrap scripts
+  // and 'unsafe-eval' for development mode / hot reload.
+  // In production with nonces, we can be more restrictive.
   const scriptSrc = nonce
     ? `'self' 'nonce-${nonce}'`
-    : `'self'`;
+    : `'self' 'unsafe-inline' 'unsafe-eval'`;
 
   const styleSrc = nonce
     ? `'self' 'unsafe-inline' 'nonce-${nonce}' https://fonts.googleapis.com`
@@ -116,8 +119,8 @@ export const SECURITY_HEADERS: { key: string; value: string }[] = [
     value: 'same-origin',
   },
   {
-    // Only allow same-origin requests to load this resource
+    // Allow cross-origin resources (needed for Google Fonts, Supabase CDN)
     key: 'Cross-Origin-Resource-Policy',
-    value: 'same-origin',
+    value: 'cross-origin',
   },
 ];

@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 // Build CSP inline (avoid importing TS from src at config level)
+// Next.js requires 'unsafe-inline' + 'unsafe-eval' for hydration and HMR
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' https://fonts.gstatic.com",
@@ -58,7 +59,7 @@ const nextConfig: NextConfig = {
           },
           // Prevent cross-origin information leakage
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-          { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+          { key: "Cross-Origin-Resource-Policy", value: "cross-origin" },
           // DNS prefetch control
           { key: "X-DNS-Prefetch-Control", value: "on" },
         ],

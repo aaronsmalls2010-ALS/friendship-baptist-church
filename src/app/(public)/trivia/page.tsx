@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import {
+  EASY_QUESTIONS,
+  MEDIUM_QUESTIONS,
+  HARD_QUESTIONS,
+  type TriviaQuestion,
+} from "@/lib/trivia-questions";
 
 /* ------------------------------------------------------------------ */
 /*  Lightweight confetti effect — gold & purple branded DOM confetti   */
@@ -36,7 +42,6 @@ function launchConfetti() {
     const left = Math.random() * 100;
     const delay = Math.random() * 0.4;
     const duration = Math.random() * 1.5 + 1.5;
-    const rotation = Math.random() * 720 - 360;
     const shape = Math.random() > 0.5 ? "50%" : "0";
 
     piece.style.cssText = `
@@ -71,268 +76,62 @@ function launchConfetti() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Trivia questions — 25 covering OT, NT, Psalms, Proverbs, Gospels  */
+/*  Difficulty configuration                                           */
 /* ------------------------------------------------------------------ */
 
-interface TriviaQuestion {
-  question: string;
-  options: string[];
-  correctIndex: number;
-  explanation: string;
-  scripture: string;
-  category: string;
-}
+type Difficulty = "easy" | "medium" | "hard";
 
-const QUESTIONS: TriviaQuestion[] = [
+const DIFFICULTY_CONFIG: Record<
+  Difficulty,
   {
-    question: "Who built the ark to survive the great flood?",
-    options: ["Abraham", "Moses", "Noah", "David"],
-    correctIndex: 2,
-    explanation:
-      "God instructed Noah to build an ark to save his family and pairs of every animal from the flood He sent to cleanse the earth.",
-    scripture: "Genesis 6:13–22",
-    category: "Old Testament",
+    label: string;
+    pool: TriviaQuestion[];
+    bgSelected: string;
+    bgHover: string;
+    badgeBg: string;
+    badgeText: string;
+    badgeDark: string;
+    badgeTextDark: string;
+  }
+> = {
+  easy: {
+    label: "Easy",
+    pool: EASY_QUESTIONS,
+    bgSelected:
+      "bg-green-600 text-white border-green-600 hover:bg-green-700",
+    bgHover:
+      "border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-950/30",
+    badgeBg: "bg-green-100",
+    badgeText: "text-green-800",
+    badgeDark: "dark:bg-green-900/40",
+    badgeTextDark: "dark:text-green-300",
   },
-  {
-    question: "How many days did God take to create the world?",
-    options: ["5 days", "6 days", "7 days", "10 days"],
-    correctIndex: 1,
-    explanation:
-      "God created the heavens and the earth in six days and rested on the seventh day, blessing it and making it holy.",
-    scripture: "Genesis 1–2:3",
-    category: "Old Testament",
+  medium: {
+    label: "Medium",
+    pool: MEDIUM_QUESTIONS,
+    bgSelected:
+      "bg-amber-600 text-white border-amber-600 hover:bg-amber-700",
+    bgHover:
+      "border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30",
+    badgeBg: "bg-amber-100",
+    badgeText: "text-amber-800",
+    badgeDark: "dark:bg-amber-900/40",
+    badgeTextDark: "dark:text-amber-300",
   },
-  {
-    question: "Who was thrown into a den of lions?",
-    options: ["Elijah", "Daniel", "Jonah", "Samson"],
-    correctIndex: 1,
-    explanation:
-      "Daniel was thrown into the lions’ den for continuing to pray to God despite the king’s decree. God sent an angel to shut the lions’ mouths.",
-    scripture: "Daniel 6:16–23",
-    category: "Old Testament",
+  hard: {
+    label: "Hard",
+    pool: HARD_QUESTIONS,
+    bgSelected: "bg-red-600 text-white border-red-600 hover:bg-red-700",
+    bgHover:
+      "border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30",
+    badgeBg: "bg-red-100",
+    badgeText: "text-red-800",
+    badgeDark: "dark:bg-red-900/40",
+    badgeTextDark: "dark:text-red-300",
   },
-  {
-    question: "What sea did Moses part for the Israelites to cross?",
-    options: ["Dead Sea", "Sea of Galilee", "Red Sea", "Mediterranean Sea"],
-    correctIndex: 2,
-    explanation:
-      "God parted the Red Sea through Moses so the Israelites could escape Pharaoh’s army during the Exodus from Egypt.",
-    scripture: "Exodus 14:21–22",
-    category: "Old Testament",
-  },
-  {
-    question: "Who was the first king of Israel?",
-    options: ["David", "Solomon", "Saul", "Samuel"],
-    correctIndex: 2,
-    explanation:
-      "Saul, from the tribe of Benjamin, was anointed by the prophet Samuel as the first king of Israel.",
-    scripture: "1 Samuel 10:1",
-    category: "Old Testament",
-  },
-  {
-    question: "What did God use to speak to Moses in the desert?",
-    options: ["A still small voice", "A burning bush", "A dove", "Thunder"],
-    correctIndex: 1,
-    explanation:
-      "God spoke to Moses from a burning bush on Mount Horeb, calling him to lead the Israelites out of Egypt. The bush burned but was not consumed.",
-    scripture: "Exodus 3:1–4",
-    category: "Old Testament",
-  },
-  {
-    question: "Who defeated Goliath with a sling and a stone?",
-    options: ["Jonathan", "Joshua", "David", "Gideon"],
-    correctIndex: 2,
-    explanation:
-      "As a young shepherd, David defeated the Philistine giant Goliath with faith in God, a sling, and a single stone.",
-    scripture: "1 Samuel 17:49–50",
-    category: "Old Testament",
-  },
-  {
-    question: "In which town was Jesus born?",
-    options: ["Nazareth", "Jerusalem", "Bethlehem", "Capernaum"],
-    correctIndex: 2,
-    explanation:
-      "Jesus was born in Bethlehem of Judea, fulfilling the prophecy of Micah. Mary and Joseph had traveled there for a census.",
-    scripture: "Matthew 2:1; Luke 2:4–7",
-    category: "Gospels",
-  },
-  {
-    question: "How many disciples did Jesus choose?",
-    options: ["7", "10", "12", "14"],
-    correctIndex: 2,
-    explanation:
-      "Jesus chose twelve disciples (also called apostles) to follow Him and carry out His ministry.",
-    scripture: "Luke 6:13–16",
-    category: "Gospels",
-  },
-  {
-    question: "What was Jesus’ first recorded miracle?",
-    options: [
-      "Walking on water",
-      "Turning water into wine",
-      "Healing the blind man",
-      "Feeding the 5,000",
-    ],
-    correctIndex: 1,
-    explanation:
-      "At a wedding in Cana of Galilee, Jesus turned water into wine, revealing His glory. This was the first of His miraculous signs.",
-    scripture: "John 2:1–11",
-    category: "Gospels",
-  },
-  {
-    question: "Which disciple denied Jesus three times?",
-    options: ["Judas", "Thomas", "Peter", "John"],
-    correctIndex: 2,
-    explanation:
-      "After Jesus was arrested, Peter denied knowing Him three times before the rooster crowed, just as Jesus had foretold.",
-    scripture: "Luke 22:54–62",
-    category: "Gospels",
-  },
-  {
-    question: "Who baptized Jesus in the Jordan River?",
-    options: ["Peter", "John the Baptist", "Andrew", "James"],
-    correctIndex: 1,
-    explanation:
-      "John the Baptist baptized Jesus in the Jordan River. When Jesus came up out of the water, the heavens opened and the Spirit descended like a dove.",
-    scripture: "Matthew 3:13–17",
-    category: "Gospels",
-  },
-  {
-    question: "What mountain did Jesus deliver the Beatitudes from?",
-    options: [
-      "Mount Sinai",
-      "Mount Carmel",
-      "A mountainside (Mount of Beatitudes)",
-      "Mount of Olives",
-    ],
-    correctIndex: 2,
-    explanation:
-      "Jesus taught the Sermon on the Mount, including the Beatitudes, from a mountainside near the Sea of Galilee.",
-    scripture: "Matthew 5:1–12",
-    category: "Gospels",
-  },
-  {
-    question:
-      "Which Psalm begins with “The Lord is my shepherd; I shall not want”?",
-    options: ["Psalm 1", "Psalm 19", "Psalm 23", "Psalm 91"],
-    correctIndex: 2,
-    explanation:
-      "Psalm 23, written by David, is one of the most beloved passages in Scripture, depicting God as a caring shepherd who provides for every need.",
-    scripture: "Psalm 23:1",
-    category: "Psalms",
-  },
-  {
-    question: "Which Psalm declares “The heavens declare the glory of God”?",
-    options: ["Psalm 8", "Psalm 19", "Psalm 24", "Psalm 100"],
-    correctIndex: 1,
-    explanation:
-      "Psalm 19 celebrates how God’s creation reveals His majesty and how His Word is perfect, refreshing the soul.",
-    scripture: "Psalm 19:1",
-    category: "Psalms",
-  },
-  {
-    question: "Which Psalm says “Be still, and know that I am God”?",
-    options: ["Psalm 23", "Psalm 37", "Psalm 46", "Psalm 119"],
-    correctIndex: 2,
-    explanation:
-      "Psalm 46 reminds us that God is our refuge and strength. In the midst of turmoil, He calls us to be still and trust Him.",
-    scripture: "Psalm 46:10",
-    category: "Psalms",
-  },
-  {
-    question:
-      "According to Proverbs, what is the beginning of knowledge?",
-    options: ["Love", "Wisdom", "The fear of the Lord", "Obedience"],
-    correctIndex: 2,
-    explanation:
-      "Proverbs teaches that true knowledge and wisdom begin with reverence for God, which shapes how we understand the world.",
-    scripture: "Proverbs 1:7",
-    category: "Proverbs",
-  },
-  {
-    question:
-      'Proverbs 3:5 tells us to "Trust in the Lord with all your heart and lean not on your own ___."',
-    options: ["Strength", "Wisdom", "Understanding", "Knowledge"],
-    correctIndex: 2,
-    explanation:
-      "This beloved proverb calls us to fully rely on God rather than our own limited perspective, trusting that He will direct our paths.",
-    scripture: "Proverbs 3:5–6",
-    category: "Proverbs",
-  },
-  {
-    question:
-      "According to Proverbs, what does a gentle answer turn away?",
-    options: ["Sorrow", "Wrath", "Fear", "Doubt"],
-    correctIndex: 1,
-    explanation:
-      "Proverbs teaches the power of our words: a gentle, soft answer can defuse anger, while harsh words stir up conflict.",
-    scripture: "Proverbs 15:1",
-    category: "Proverbs",
-  },
-  {
-    question:
-      "Who wrote most of the letters (epistles) in the New Testament?",
-    options: ["Peter", "James", "John", "Paul"],
-    correctIndex: 3,
-    explanation:
-      "The apostle Paul wrote thirteen epistles (letters) to early churches and individuals, forming a major portion of the New Testament.",
-    scripture: "Romans–Philemon",
-    category: "New Testament",
-  },
-  {
-    question: "On what day did Jesus rise from the dead?",
-    options: ["The first day", "The second day", "The third day", "The seventh day"],
-    correctIndex: 2,
-    explanation:
-      "Jesus rose from the dead on the third day after His crucifixion, just as He had foretold, fulfilling Scripture.",
-    scripture: "1 Corinthians 15:3–4; Luke 24:1–7",
-    category: "New Testament",
-  },
-  {
-    question:
-      "What event is described in Acts 2 when the Holy Spirit descended on the believers?",
-    options: ["The Last Supper", "Pentecost", "The Ascension", "The Transfiguration"],
-    correctIndex: 1,
-    explanation:
-      "At Pentecost, the Holy Spirit came upon the believers gathered in Jerusalem with the sound of a mighty wind and tongues of fire. About 3,000 were baptized that day.",
-    scripture: "Acts 2:1–41",
-    category: "New Testament",
-  },
-  {
-    question: "What is the last book of the Bible?",
-    options: ["Jude", "Hebrews", "Revelation", "Acts"],
-    correctIndex: 2,
-    explanation:
-      "Revelation, written by the apostle John, is the last book of the Bible. It contains prophetic visions about the end times and the return of Christ.",
-    scripture: "Revelation 1:1–3",
-    category: "New Testament",
-  },
-  {
-    question:
-      "Which Old Testament prophet was swallowed by a great fish?",
-    options: ["Elijah", "Jonah", "Isaiah", "Jeremiah"],
-    correctIndex: 1,
-    explanation:
-      "When Jonah fled from God’s call to go to Nineveh, God sent a great fish to swallow him. After three days and nights, the fish released him and Jonah obeyed.",
-    scripture: "Jonah 1:17–2:10",
-    category: "Old Testament",
-  },
-  {
-    question:
-      "In the parable of the Good Samaritan, who stopped to help the injured man?",
-    options: [
-      "A Levite",
-      "A priest",
-      "A Samaritan",
-      "A Roman soldier",
-    ],
-    correctIndex: 2,
-    explanation:
-      "In Jesus’ parable, both a priest and a Levite passed by the injured man. Only the Samaritan stopped to show mercy and care for him, teaching us to love our neighbor.",
-    scripture: "Luke 10:25–37",
-    category: "Gospels",
-  },
-];
+};
+
+const QUIZ_SIZE = 20;
 
 /* ------------------------------------------------------------------ */
 /*  Shuffle helper                                                     */
@@ -348,37 +147,75 @@ function shuffle<T>(array: T[]): T[] {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Adapted question interface for the component                       */
+/* ------------------------------------------------------------------ */
+
+interface InternalQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+function adaptQuestions(pool: TriviaQuestion[]): InternalQuestion[] {
+  return shuffle(pool)
+    .slice(0, QUIZ_SIZE)
+    .map((q) => ({
+      question: q.question,
+      options: q.options,
+      correctIndex: q.correct,
+      explanation: q.explanation,
+    }));
+}
+
+/* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
 export default function BibleTriviaPage() {
-  const [questions, setQuestions] = useState<TriviaQuestion[]>([]);
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [questions, setQuestions] = useState<InternalQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const startGame = useCallback(
+    (diff?: Difficulty) => {
+      const d = diff ?? difficulty;
+      const pool = DIFFICULTY_CONFIG[d].pool;
+      setQuestions(adaptQuestions(pool));
+      setCurrentIndex(0);
+      setSelectedAnswer(null);
+      setScore(0);
+      setAnswered(false);
+      setGameOver(false);
+    },
+    [difficulty],
+  );
 
-  const startGame = useCallback(() => {
-    setQuestions(shuffle(QUESTIONS));
-    setCurrentIndex(0);
-    setSelectedAnswer(null);
-    setScore(0);
-    setAnswered(false);
-    setGameOver(false);
-  }, []);
+  const handleDifficultyChange = useCallback(
+    (diff: Difficulty) => {
+      setDifficulty(diff);
+      startGame(diff);
+    },
+    [startGame],
+  );
 
   useEffect(() => {
     startGame();
-  }, [startGame]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Guard while questions are loading
   if (questions.length === 0) return null;
 
   const current = questions[currentIndex];
   const totalQuestions = questions.length;
-  const progressPercent = ((currentIndex + (answered ? 1 : 0)) / totalQuestions) * 100;
+  const progressPercent =
+    ((currentIndex + (answered ? 1 : 0)) / totalQuestions) * 100;
   const isCorrect = selectedAnswer === current.correctIndex;
+  const cfg = DIFFICULTY_CONFIG[difficulty];
 
   function handleAnswer(index: number) {
     if (answered) return;
@@ -430,6 +267,30 @@ export default function BibleTriviaPage() {
       <section className="section-padding">
         <div className="container-narrow">
           <FadeIn>
+            {/* Difficulty selector */}
+            <div className="mx-auto mb-8 max-w-2xl">
+              <p className="mb-3 text-center text-sm font-medium text-warm-600 dark:text-warm-400">
+                Choose Difficulty
+              </p>
+              <div className="flex justify-center gap-2">
+                {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((d) => {
+                  const c = DIFFICULTY_CONFIG[d];
+                  const isActive = difficulty === d;
+                  return (
+                    <button
+                      key={d}
+                      onClick={() => handleDifficultyChange(d)}
+                      className={`rounded-full border-2 px-5 py-2 text-sm font-semibold transition-all duration-200 ${
+                        isActive ? c.bgSelected : c.bgHover
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {gameOver ? (
               /* -------- End screen -------- */
               <Card className="mx-auto max-w-2xl overflow-hidden border-warm-100 dark:border-warm-800">
@@ -462,11 +323,16 @@ export default function BibleTriviaPage() {
                     <Badge className="bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
                       {totalQuestions - score} Missed
                     </Badge>
+                    <Badge
+                      className={`${cfg.badgeBg} ${cfg.badgeText} ${cfg.badgeDark} ${cfg.badgeTextDark}`}
+                    >
+                      {cfg.label} Mode
+                    </Badge>
                   </div>
 
                   <Button
                     size="lg"
-                    onClick={startGame}
+                    onClick={() => startGame()}
                     className="gap-2 bg-purple-700 hover:bg-purple-800"
                   >
                     <RotateCcw className="h-4 w-4" />
@@ -480,8 +346,13 @@ export default function BibleTriviaPage() {
                 {/* Progress header */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm text-warm-600 dark:text-warm-400">
-                    <span>
+                    <span className="flex items-center gap-2">
                       Question {currentIndex + 1} of {totalQuestions}
+                      <Badge
+                        className={`${cfg.badgeBg} ${cfg.badgeText} ${cfg.badgeDark} ${cfg.badgeTextDark} text-xs`}
+                      >
+                        {cfg.label}
+                      </Badge>
                     </span>
                     <span className="font-semibold text-purple-700 dark:text-purple-400">
                       {score} / {currentIndex + (answered ? 1 : 0)} correct
@@ -495,10 +366,12 @@ export default function BibleTriviaPage() {
 
                 {/* Question card */}
                 <Card className="overflow-hidden border-warm-100 dark:border-warm-800">
-                  {/* Category badge + question */}
+                  {/* Difficulty badge + question */}
                   <div className="p-6 sm:p-8">
-                    <Badge className="mb-4 bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
-                      {current.category}
+                    <Badge
+                      className={`mb-4 ${cfg.badgeBg} ${cfg.badgeText} ${cfg.badgeDark} ${cfg.badgeTextDark}`}
+                    >
+                      {cfg.label}
                     </Badge>
                     <h2 className="font-heading text-xl font-bold text-warm-900 dark:text-warm-50 sm:text-2xl">
                       {current.question}
@@ -583,10 +456,6 @@ export default function BibleTriviaPage() {
                         <div className="mt-2 space-y-2">
                           <p className="text-sm leading-relaxed text-warm-700 dark:text-warm-300">
                             {current.explanation}
-                          </p>
-                          <p className="text-sm font-medium text-purple-700 dark:text-purple-400">
-                            <BookOpen className="mr-1 inline h-4 w-4" />
-                            Read more: {current.scripture}
                           </p>
                         </div>
                       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -23,13 +23,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_DEACONS, MOCK_WARDS, MOCK_PROFILES } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
-import type { Deacon } from "@/types";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import type { Deacon, Ward, Profile } from "@/types";
+import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 
 export default function DeaconManagementPage() {
-  const [deacons, setDeacons] = useState<Deacon[]>([...MOCK_DEACONS]);
+  const [deacons, setDeacons] = useState<Deacon[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Form dialog state
   const [formOpen, setFormOpen] = useState(false);
@@ -46,6 +48,39 @@ export default function DeaconManagementPage() {
   const [formTitle, setFormTitle] = useState("");
   const [formIsActive, setFormIsActive] = useState(true);
 
+  // ── Data fetching ─────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const [deaconsRes, wardsRes, membersRes] = await Promise.all([
+        fetch("/api/admin/deacons"),
+        fetch("/api/admin/wards"),
+        fetch("/api/admin/members"),
+      ]);
+
+      if (deaconsRes.ok) {
+        const data = await deaconsRes.json();
+        setDeacons(data.deacons ?? []);
+      }
+      if (wardsRes.ok) {
+        const data = await wardsRes.json();
+        setWards(data.wards ?? []);
+      }
+      if (membersRes.ok) {
+        const data = await membersRes.json();
+        setProfiles(data.members ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to load deacons:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // ── Form helpers ──────────────────────────────────────────────────
   function resetForm() {
     setFormProfileId("");
     setFormWardId("");
@@ -70,45 +105,33 @@ export default function DeaconManagementPage() {
     setFormOpen(true);
   }
 
-  function handleSave() {
-    const profile = MOCK_PROFILES.find((p) => p.id === formProfileId);
-    const ward = MOCK_WARDS.find((w) => w.id === formWardId);
+  async function handleSave() {
+    const payload = {
+      profile_id: formProfileId,
+      ward_id: formWardId || undefined,
+      ordained_date: formOrdainedDate || undefined,
+      title: formTitle || undefined,
+      is_active: formIsActive,
+    };
 
     if (editingDeacon) {
-      setDeacons((prev) =>
-        prev.map((d) =>
-          d.id === editingDeacon.id
-            ? {
-                ...d,
-                profile_id: formProfileId || d.profile_id,
-                ward_id: formWardId || undefined,
-                ordained_date: formOrdainedDate || undefined,
-                title: formTitle || undefined,
-                is_active: formIsActive,
-                first_name: profile?.first_name ?? d.first_name,
-                last_name: profile?.last_name ?? d.last_name,
-                phone: profile?.phone ?? d.phone,
-                ward_name: ward?.name ?? undefined,
-              }
-            : d
-        )
-      );
+      const res = await fetch("/api/admin/deacons", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingDeacon.id, ...payload }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     } else {
-      const newDeacon: Deacon = {
-        id: `d${Date.now()}`,
-        profile_id: formProfileId,
-        ward_id: formWardId || undefined,
-        ordained_date: formOrdainedDate || undefined,
-        title: formTitle || undefined,
-        is_active: formIsActive,
-        created_at: new Date().toISOString(),
-        first_name: profile?.first_name ?? "",
-        last_name: profile?.last_name ?? "",
-        phone: profile?.phone,
-        photo_url: profile?.photo_url,
-        ward_name: ward?.name,
-      };
-      setDeacons((prev) => [...prev, newDeacon]);
+      const res = await fetch("/api/admin/deacons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setFormOpen(false);
     resetForm();
@@ -119,14 +142,22 @@ export default function DeaconManagementPage() {
     setDeleteOpen(true);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (deletingDeacon) {
-      setDeacons((prev) => prev.filter((d) => d.id !== deletingDeacon.id));
+      const res = await fetch("/api/admin/deacons", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deletingDeacon.id }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setDeleteOpen(false);
     setDeletingDeacon(null);
   }
 
+  // ── Column definitions ────────────────────────────────────────────
   const columns = [
     {
       key: "first_name",
@@ -200,6 +231,15 @@ export default function DeaconManagementPage() {
     },
   ];
 
+  // ── Loading state ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -251,7 +291,7 @@ export default function DeaconManagementPage() {
                   <SelectValue placeholder="Select a member" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MOCK_PROFILES.map((profile) => (
+                  {profiles.map((profile) => (
                     <SelectItem key={profile.id} value={profile.id}>
                       {profile.first_name} {profile.last_name}
                     </SelectItem>
@@ -267,7 +307,7 @@ export default function DeaconManagementPage() {
                   <SelectValue placeholder="Select a ward" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MOCK_WARDS.map((ward) => (
+                  {wards.map((ward) => (
                     <SelectItem key={ward.id} value={ward.id}>
                       {ward.name}
                     </SelectItem>

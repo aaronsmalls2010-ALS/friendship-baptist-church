@@ -21,11 +21,6 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate } from "@/lib/utils";
-import {
-  MOCK_EVENTS,
-  MOCK_ANNOUNCEMENTS,
-  MOCK_DONATIONS,
-} from "@/lib/mock-data";
 
 const quickActions = [
   { label: "Directory", icon: Users, href: "/portal/directory" },
@@ -35,22 +30,6 @@ const quickActions = [
   { label: "Profile", icon: User, href: "/portal/profile" },
   { label: "Devotional", icon: BookOpen, href: "/portal/devotionals" },
 ];
-
-// Upcoming events (future dates)
-const upcomingEvents = MOCK_EVENTS
-  .filter((e) => new Date(e.start_date) > new Date())
-  .sort(
-    (a, b) =>
-      new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
-  )
-  .slice(0, 3);
-
-// Giving summary
-const yearToDateTotal = MOCK_DONATIONS.reduce((sum, d) => sum + d.amount, 0);
-const lastDonation = MOCK_DONATIONS[0];
-
-// Recent announcements
-const recentAnnouncements = MOCK_ANNOUNCEMENTS.slice(0, 3);
 
 const todayFormatted = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
@@ -66,6 +45,11 @@ export default function MemberDashboardPage() {
     last_name: string;
     photo_url?: string;
   } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [yearToDateTotal, setYearToDateTotal] = useState(0);
+  const [lastDonation, setLastDonation] = useState<any>(null);
+  const [recentAnnouncements, setRecentAnnouncements] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -82,6 +66,26 @@ export default function MemberDashboardPage() {
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await fetch("/api/portal/dashboard");
+        if (res.ok) {
+          const data = await res.json();
+          setUpcomingEvents(data.events || []);
+          setYearToDateTotal(data.giving?.year_to_date || 0);
+          setLastDonation(data.giving?.last_donation || null);
+          setRecentAnnouncements(data.announcements || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDashboard();
+  }, []);
+
   const firstName =
     profile?.first_name ||
     user?.user_metadata?.first_name ||
@@ -92,15 +96,31 @@ export default function MemberDashboardPage() {
     "";
   const initials = `${firstName[0] || ""}${lastName[0] || ""}`.toUpperCase();
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
       <FadeIn direction="up">
         <div className="rounded-2xl bg-gradient-to-r from-purple-700 to-purple-800 text-white p-6 lg:p-8">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-xl font-bold">
-              {initials}
-            </div>
+            {profile?.photo_url ? (
+              <img
+                src={profile.photo_url}
+                alt={`${firstName} ${lastName}`}
+                className="h-14 w-14 shrink-0 rounded-full object-cover border-2 border-white/30"
+              />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20 text-xl font-bold">
+                {initials}
+              </div>
+            )}
             <div>
               <h1 className="text-fluid-2xl font-heading font-bold">
                 Welcome back, {firstName}!

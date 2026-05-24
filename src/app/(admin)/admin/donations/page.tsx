@@ -1,21 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MOCK_DONATIONS, MOCK_PROFILES } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
-import { Download, DollarSign, TrendingUp, Users } from "lucide-react";
+import { Download, DollarSign, TrendingUp, Users, Loader2 } from "lucide-react";
 import type { Donation } from "@/types";
 
 type Row = Record<string, unknown>;
-
-function getDonorName(profileId?: string): string {
-  if (!profileId) return "Anonymous";
-  const profile = MOCK_PROFILES.find((p) => p.id === profileId);
-  return profile ? `${profile.first_name} ${profile.last_name}` : "Anonymous";
-}
 
 function formatDonationType(type: string): string {
   return type
@@ -24,17 +18,41 @@ function formatDonationType(type: string): string {
     .join(" ");
 }
 
-const totalDonations = MOCK_DONATIONS.reduce((sum, d) => sum + d.amount, 0);
-const averageGift = Math.round(totalDonations / MOCK_DONATIONS.length);
-const recurringDonors = MOCK_DONATIONS.filter((d) => d.is_recurring).length;
-
 export default function DonationManagementPage() {
+  const [donations, setDonations] = useState<Donation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // ── Data fetching ─────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const res = await fetch("/api/admin/donations");
+      const data = await res.json();
+      setDonations(data.donations ?? []);
+    } catch (err) {
+      console.error("Failed to load donations:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // ── Computed stats ────────────────────────────────────────────────
+  const totalDonations = donations.reduce((sum, d) => sum + d.amount, 0);
+  const averageGift = donations.length > 0 ? Math.round(totalDonations / donations.length) : 0;
+  const recurringDonors = donations.filter((d) => d.is_recurring).length;
+
+  // ── Column definitions ────────────────────────────────────────────
   const columns = [
     {
-      key: "profile_id",
+      key: "donor_name",
       label: "Donor",
-      render: (row: Row) =>
-        getDonorName((row as unknown as Donation).profile_id),
+      render: (row: Row) => {
+        const item = row as unknown as Donation;
+        return (item as unknown as { donor_name?: string }).donor_name || "Anonymous";
+      },
     },
     {
       key: "amount",
@@ -79,6 +97,15 @@ export default function DonationManagementPage() {
       },
     },
   ];
+
+  // ── Loading state ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -140,7 +167,7 @@ export default function DonationManagementPage() {
 
       {/* Donations Table */}
       <DataTable
-        data={MOCK_DONATIONS as unknown as Record<string, unknown>[]}
+        data={donations as unknown as Record<string, unknown>[]}
         columns={columns}
         searchable
         searchKeys={["donation_type"]}

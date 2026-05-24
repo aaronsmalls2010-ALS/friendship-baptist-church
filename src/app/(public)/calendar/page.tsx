@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   MapPin,
   Clock,
   CalendarDays,
+  Loader2,
 } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SectionHeading } from "@/components/shared/section-heading";
@@ -15,9 +16,9 @@ import { CTAButton } from "@/components/shared/cta-button";
 import { EditableText } from "@/components/cms/editable-text";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_EVENTS, MOCK_MINISTRIES, getBirthdayEvents } from "@/lib/mock-data";
+import { getBirthdayEvents } from "@/lib/mock-data";
 import { formatTime, cn } from "@/lib/utils";
-import type { Event } from "@/types";
+import type { Event, Ministry } from "@/types";
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 
@@ -65,12 +66,6 @@ function eventFallsOnDay(event: Event, day: Date): boolean {
   return isSameDay(startDay, dayStart);
 }
 
-function getMinistryName(ministryId?: string): string | null {
-  if (!ministryId) return null;
-  const ministry = MOCK_MINISTRIES.find((m) => m.id === ministryId);
-  return ministry?.name ?? null;
-}
-
 /** Check if event is a ministry event (has ministry_id) vs. church event */
 function isMinistryEvent(event: Event): boolean {
   return !!event.ministry_id;
@@ -110,14 +105,43 @@ function getCalendarDays(year: number, month: number): Date[] {
 /* ─── Component ───────────────────────────────────────────────────── */
 
 export default function CalendarPage() {
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [currentMonth, setCurrentMonth] = useState<Date>(
     new Date(new Date().getFullYear(), new Date().getMonth(), 1)
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
+  useEffect(() => {
+    async function load() {
+      try {
+        const [eventsRes, ministriesRes] = await Promise.all([
+          fetch("/api/public/events"),
+          fetch("/api/public/ministries"),
+        ]);
+        const eventsData = await eventsRes.json();
+        const ministriesData = await ministriesRes.json();
+        setEvents(eventsData.events ?? []);
+        setMinistries(ministriesData.ministries ?? []);
+      } catch (err) {
+        console.error("Failed to load calendar data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  function getMinistryName(ministryId?: string): string | null {
+    if (!ministryId) return null;
+    const ministry = ministries.find((m) => m.id === ministryId);
+    return ministry?.name ?? null;
+  }
+
   const publishedEvents = useMemo(
-    () => [...MOCK_EVENTS, ...getBirthdayEvents()].filter((e) => e.is_published),
-    []
+    () => [...events, ...getBirthdayEvents()].filter((e) => e.is_published),
+    [events]
   );
 
   const year = currentMonth.getFullYear();
@@ -161,6 +185,21 @@ export default function CalendarPage() {
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     setSelectedDate(now);
   }, []);
+
+  if (loading) {
+    return (
+      <>
+        <PageHero
+          title={<EditableText id="calendar.hero.title" fallback="Church Calendar" as="span" />}
+          subtitle={<EditableText id="calendar.hero.subtitle" fallback="Stay connected with what's happening at Friendship Baptist" as="span" />}
+          breadcrumbs={[{ label: "Calendar" }]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

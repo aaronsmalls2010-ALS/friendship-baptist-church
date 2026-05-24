@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { FadeIn } from "@/components/motion/fade-in";
-import { MOCK_WARDS, MOCK_DEACONS, MOCK_PROFILES } from "@/lib/mock-data";
 import type { Ward, Profile, Deacon } from "@/types";
 import {
   ChevronDown,
@@ -42,10 +41,11 @@ import {
   X,
   Users,
   Search,
+  Loader2,
 } from "lucide-react";
 
 /**
- * NOTE: Ward/member assignments use `ward_id` on the profile object (MOCK_PROFILES).
+ * NOTE: Ward/member assignments use `ward_id` on the profile object.
  * When Supabase is connected, both this Wards page and the Members page
  * read/write to the same `profiles` table (profiles.ward_id column).
  * Assigning a member to a ward here or from the Members admin page will
@@ -54,8 +54,8 @@ import {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function getDeaconsForWard(wardId: string, deacons: Deacon[]): Deacon[] {
-  const ward = MOCK_WARDS.find((w) => w.id === wardId);
+function getDeaconsForWard(wardId: string, allWards: Ward[], deacons: Deacon[]): Deacon[] {
+  const ward = allWards.find((w) => w.id === wardId);
   return deacons.filter((d) => {
     if (d.ward_id === wardId) return true;
     if (d.ward_name && ward) return d.ward_name.includes(ward.name);
@@ -68,8 +68,8 @@ function formatDeaconName(d: Deacon): string {
   return `${prefix}${d.first_name} ${d.last_name}`;
 }
 
-function getDeaconDisplayForWard(wardId: string, deacons: Deacon[]): string {
-  const matched = getDeaconsForWard(wardId, deacons);
+function getDeaconDisplayForWard(wardId: string, allWards: Ward[], deacons: Deacon[]): string {
+  const matched = getDeaconsForWard(wardId, allWards, deacons);
   if (matched.length === 0) return "Unassigned";
   return matched.map(formatDeaconName).join(", ");
 }
@@ -77,10 +77,11 @@ function getDeaconDisplayForWard(wardId: string, deacons: Deacon[]): string {
 // ── Page Component ───────────────────────────────────────────────────
 
 export default function WardManagementPage() {
-  // Local state for all data
-  const [wards, setWards] = useState<Ward[]>([...MOCK_WARDS]);
-  const [profiles, setProfiles] = useState<Profile[]>([...MOCK_PROFILES]);
-  const [deacons] = useState<Deacon[]>([...MOCK_DEACONS]);
+  // Data state
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [deacons, setDeacons] = useState<Deacon[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // UI state
   const [expandedWardId, setExpandedWardId] = useState<string | null>(null);
@@ -107,6 +108,38 @@ export default function WardManagementPage() {
   const [createName, setCreateName] = useState("");
   const [createDescription, setCreateDescription] = useState("");
 
+  // ── Data fetching ─────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const [wardsRes, membersRes, deaconsRes] = await Promise.all([
+        fetch("/api/admin/wards"),
+        fetch("/api/admin/members"),
+        fetch("/api/admin/deacons"),
+      ]);
+
+      if (wardsRes.ok) {
+        const data = await wardsRes.json();
+        setWards(data.wards ?? []);
+      }
+      if (membersRes.ok) {
+        const data = await membersRes.json();
+        setProfiles(data.members ?? []);
+      }
+      if (deaconsRes.ok) {
+        const data = await deaconsRes.json();
+        setDeacons(data.deacons ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to load wards data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   // ── Computed data ──────────────────────────────────────────────────
 
   function getMembersForWard(wardId: string): Profile[] {
@@ -128,23 +161,30 @@ export default function WardManagementPage() {
     setExpandedWardId((prev) => (prev === wardId ? null : wardId));
   }
 
-  function handleAssignMember() {
+  async function handleAssignMember() {
     if (!assignDialogWardId || !selectedProfileId) return;
-    setProfiles((prev) =>
-      prev.map((p) =>
-        p.id === selectedProfileId ? { ...p, ward_id: assignDialogWardId } : p
-      )
-    );
+    // Update profile ward_id via the members API
+    const res = await fetch("/api/admin/members", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: selectedProfileId, ward_id: assignDialogWardId }),
+    });
+    if (res.ok) {
+      loadData();
+    }
     setAssignDialogWardId(null);
     setSelectedProfileId("");
   }
 
-  function handleRemoveMember(profileId: string) {
-    setProfiles((prev) =>
-      prev.map((p) =>
-        p.id === profileId ? { ...p, ward_id: undefined } : p
-      )
-    );
+  async function handleRemoveMember(profileId: string) {
+    const res = await fetch("/api/admin/members", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: profileId, ward_id: null }),
+    });
+    if (res.ok) {
+      loadData();
+    }
   }
 
   function handleOpenEdit(ward: Ward) {
@@ -153,57 +193,76 @@ export default function WardManagementPage() {
     setEditDescription(ward.description ?? "");
   }
 
-  function handleSaveEdit() {
+  async function handleSaveEdit() {
     if (!editDialogWard) return;
-    setWards((prev) =>
-      prev.map((w) =>
-        w.id === editDialogWard.id
-          ? { ...w, name: editName, description: editDescription }
-          : w
-      )
-    );
+    const res = await fetch("/api/admin/wards", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editDialogWard.id,
+        name: editName,
+        description: editDescription,
+      }),
+    });
+    if (res.ok) {
+      loadData();
+    }
     setEditDialogWard(null);
   }
 
-  function handleDeleteWard() {
+  async function handleDeleteWard() {
     if (!deleteDialogWard) return;
-    // Unassign all members from this ward
-    setProfiles((prev) =>
-      prev.map((p) =>
-        p.ward_id === deleteDialogWard.id ? { ...p, ward_id: undefined } : p
-      )
-    );
-    setWards((prev) => prev.filter((w) => w.id !== deleteDialogWard.id));
+    const res = await fetch("/api/admin/wards", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: deleteDialogWard.id }),
+    });
+    if (res.ok) {
+      loadData();
+    }
     if (expandedWardId === deleteDialogWard.id) setExpandedWardId(null);
     setDeleteDialogWard(null);
   }
 
-  function handleAssignDeacon() {
+  async function handleAssignDeacon() {
     if (!deaconDialogWardId || !selectedDeaconId) return;
-    setWards((prev) =>
-      prev.map((w) =>
-        w.id === deaconDialogWardId
-          ? { ...w, deacon_id: selectedDeaconId }
-          : w
-      )
-    );
+    const res = await fetch("/api/admin/wards", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: deaconDialogWardId, deacon_id: selectedDeaconId }),
+    });
+    if (res.ok) {
+      loadData();
+    }
     setDeaconDialogWardId(null);
     setSelectedDeaconId("");
   }
 
-  function handleCreateWard() {
+  async function handleCreateWard() {
     if (!createName.trim()) return;
-    const newWard: Ward = {
-      id: `w${Date.now()}`,
-      name: createName.trim(),
-      description: createDescription.trim() || undefined,
-      families_count: 0,
-      created_at: new Date().toISOString().split("T")[0],
-    };
-    setWards((prev) => [...prev, newWard]);
+    const res = await fetch("/api/admin/wards", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: createName.trim(),
+        description: createDescription.trim() || undefined,
+      }),
+    });
+    if (res.ok) {
+      loadData();
+    }
     setCreateName("");
     setCreateDescription("");
     setCreateDialogOpen(false);
+  }
+
+  // ── Loading state ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
   }
 
   // ── Render ─────────────────────────────────────────────────────────
@@ -265,6 +324,7 @@ export default function WardManagementPage() {
                     <WardRow
                       key={ward.id}
                       ward={ward}
+                      allWards={wards}
                       isExpanded={isExpanded}
                       members={members}
                       deacons={deacons}
@@ -532,6 +592,7 @@ export default function WardManagementPage() {
 
 interface WardRowProps {
   ward: Ward;
+  allWards: Ward[];
   isExpanded: boolean;
   members: Profile[];
   deacons: Deacon[];
@@ -545,6 +606,7 @@ interface WardRowProps {
 
 function WardRow({
   ward,
+  allWards,
   isExpanded,
   members,
   deacons,
@@ -586,7 +648,7 @@ function WardRow({
             className="text-left hover:underline text-purple-700 dark:text-purple-400 text-sm"
             title="Change deacon assignment"
           >
-            {getDeaconDisplayForWard(ward.id, deacons)}
+            {getDeaconDisplayForWard(ward.id, allWards, deacons)}
           </button>
         </TableCell>
         <TableCell>{ward.families_count ?? 0}</TableCell>

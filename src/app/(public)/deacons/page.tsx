@@ -1,6 +1,7 @@
 "use client";
 
-import { Phone, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Phone, Users, Loader2 } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { CTAButton } from "@/components/shared/cta-button";
 import { PageHero } from "@/components/shared/page-hero";
@@ -13,31 +14,72 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { MOCK_DEACONS, MOCK_WARDS } from "@/lib/mock-data";
 import { EditableText } from "@/components/cms/editable-text";
+import type { Deacon, Ward } from "@/types";
 
 function getInitials(firstName: string, lastName: string) {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`;
 }
 
-function getDeaconsForWard(wardId: string): string {
-  const ward = MOCK_WARDS.find((w) => w.id === wardId);
-  // Match deacons whose ward_id matches directly OR whose ward_name covers this ward
-  const deacons = MOCK_DEACONS.filter((d) => {
-    if (d.ward_id === wardId) return true;
-    if (d.ward_name && ward) return d.ward_name.includes(ward.name);
-    return false;
-  });
-  if (deacons.length === 0) return "Unassigned";
-  return deacons
-    .map((d) => {
-      const prefix = d.title ? `${d.title} ` : "";
-      return `${prefix}Deacon ${d.first_name} ${d.last_name}`;
-    })
-    .join(" / ");
-}
-
 export default function DeaconsPage() {
+  const [loading, setLoading] = useState(true);
+  const [deacons, setDeacons] = useState<Deacon[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [deaconsRes, wardsRes] = await Promise.all([
+          fetch("/api/public/deacons"),
+          fetch("/api/public/wards"),
+        ]);
+        const deaconsData = await deaconsRes.json();
+        const wardsData = await wardsRes.json();
+        setDeacons(deaconsData.deacons ?? []);
+        setWards(wardsData.wards ?? []);
+      } catch (err) {
+        console.error("Failed to load deacons:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  function getDeaconsForWard(wardId: string): string {
+    const ward = wards.find((w) => w.id === wardId);
+    // Match deacons whose ward_id matches directly OR whose ward_name covers this ward
+    const matchedDeacons = deacons.filter((d) => {
+      if (d.ward_id === wardId) return true;
+      if (d.ward_name && ward) return d.ward_name.includes(ward.name);
+      return false;
+    });
+    if (matchedDeacons.length === 0) return "Unassigned";
+    return matchedDeacons
+      .map((d) => {
+        const prefix = d.title ? `${d.title} ` : "";
+        return `${prefix}Deacon ${d.first_name} ${d.last_name}`;
+      })
+      .join(" / ");
+  }
+  if (loading) {
+    return (
+      <>
+        <PageHero
+          title="Our Deacons"
+          subtitle="Faithful servants leading our church family with love and devotion"
+          breadcrumbs={[
+            { label: "About", href: "/about" },
+            { label: "Deacons" },
+          ]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageHero
@@ -71,7 +113,7 @@ export default function DeaconsPage() {
           </FadeIn>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MOCK_DEACONS.map((deacon, index) => (
+            {deacons.map((deacon, index) => (
               <FadeIn key={deacon.id} delay={index * 0.1}>
                 <div className="bg-white rounded-xl shadow-sm hover:shadow-card-hover transition-all duration-300 border border-warm-100 p-6">
                   {/* Avatar */}
@@ -160,7 +202,7 @@ export default function DeaconsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {MOCK_WARDS.map((ward) => (
+                  {wards.map((ward) => (
                     <TableRow key={ward.id}>
                       <TableCell className="font-medium text-warm-900">
                         {ward.name}

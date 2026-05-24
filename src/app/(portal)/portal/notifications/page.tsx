@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -12,12 +12,12 @@ import {
   CheckCircle,
   ChevronRight,
   Check,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FadeIn } from "@/components/motion/fade-in";
-import { MOCK_NOTIFICATIONS } from "@/lib/mock-data";
 import type { Notification } from "@/types";
 
 const typeConfig: Record<
@@ -57,17 +57,47 @@ function formatTimeAgo(dateString: string): string {
 type TabValue = "all" | "unread" | "event" | "announcement" | "ministry";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>(
-    () => MOCK_NOTIFICATIONS.map((n) => ({ ...n }))
-  );
+  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState<TabValue>("all");
+
+  useEffect(() => {
+    async function fetchNotifications() {
+      try {
+        const res = await fetch("/api/portal/notifications");
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data.notifications || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchNotifications();
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
+    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+
+    // Optimistically update local state
     setNotifications((prev) =>
       prev.map((n) => ({ ...n, is_read: true }))
     );
+
+    try {
+      await fetch("/api/portal/notifications", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: unreadIds }),
+      });
+    } catch (error) {
+      console.error("Failed to mark notifications as read:", error);
+    }
   };
 
   const markAsRead = (id: string) => {
@@ -91,7 +121,13 @@ export default function NotificationsPage() {
     }
   };
 
-  const filteredNotifications = getFilteredNotifications(activeTab);
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/table";
 import { FadeIn } from "@/components/motion/fade-in";
 import { formatDate } from "@/lib/utils";
-import { MOCK_WARDS, MOCK_DEACONS, MOCK_PROFILES } from "@/lib/mock-data";
 import {
   Search,
   ChevronLeft,
@@ -41,7 +40,7 @@ import {
   RefreshCw,
   Pencil,
 } from "lucide-react";
-import type { UserRole, Profile, Ward, Deacon } from "@/types";
+import type { UserRole, Ward, Deacon } from "@/types";
 
 // ── Types ────────────────────────────────────────────────────────────
 interface Member {
@@ -97,6 +96,8 @@ const PAGE_SIZE = 10;
 // ── Page Component ───────────────────────────────────────────────────
 export default function MemberManagementPage() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [wards, setWards] = useState<Ward[]>([]);
+  const [deacons, setDeacons] = useState<Deacon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -107,26 +108,38 @@ export default function MemberManagementPage() {
   } | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Local mock profiles state for ward/deacon assignments
-  const [profiles, setProfiles] = useState<Profile[]>([...MOCK_PROFILES]);
-
   // Edit member dialog state
   const [editOpen, setEditOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [editWardId, setEditWardId] = useState("");
   const [editDeaconId, setEditDeaconId] = useState("");
 
-  // ── Fetch members from Supabase ──────────────────────────────────
-  const fetchMembers = useCallback(async () => {
+  // ── Fetch data from API ─────────────────────────────────────────
+  const fetchData = useCallback(async () => {
     try {
       setError("");
-      const res = await fetch("/api/admin/members");
-      if (!res.ok) {
-        const data = await res.json();
+      const [membersRes, wardsRes, deaconsRes] = await Promise.all([
+        fetch("/api/admin/members"),
+        fetch("/api/admin/wards"),
+        fetch("/api/admin/deacons"),
+      ]);
+
+      if (!membersRes.ok) {
+        const data = await membersRes.json();
         throw new Error(data.error || "Failed to fetch members");
       }
-      const data = await res.json();
-      setMembers(data.members);
+      const membersData = await membersRes.json();
+      setMembers(membersData.members);
+
+      if (wardsRes.ok) {
+        const wardsData = await wardsRes.json();
+        setWards(wardsData.wards ?? []);
+      }
+
+      if (deaconsRes.ok) {
+        const deaconsData = await deaconsRes.json();
+        setDeacons(deaconsData.deacons ?? []);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
     } finally {
@@ -135,8 +148,8 @@ export default function MemberManagementPage() {
   }, []);
 
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
+    fetchData();
+  }, [fetchData]);
 
   // ── Auto-dismiss toast ───────────────────────────────────────────
   useEffect(() => {
@@ -184,10 +197,9 @@ export default function MemberManagementPage() {
 
   // ── Ward/Deacon helpers ──────────────────────────────────────────
   function getWardForMember(memberId: string): Ward | undefined {
-    // Check local profiles state for ward_id assignment
-    const profile = profiles.find((p) => p.id === memberId);
-    if (profile?.ward_id) {
-      return MOCK_WARDS.find((w) => w.id === profile.ward_id);
+    const member = members.find((m) => m.id === memberId);
+    if (member?.ward_id) {
+      return wards.find((w) => w.id === member.ward_id);
     }
     return undefined;
   }
@@ -195,53 +207,54 @@ export default function MemberManagementPage() {
   function getDeaconForMember(memberId: string): Deacon | undefined {
     const ward = getWardForMember(memberId);
     if (!ward) return undefined;
-    return MOCK_DEACONS.find((d) => d.ward_id === ward.id);
+    return deacons.find((d) => d.ward_id === ward.id);
   }
 
   // ── Edit member ward/deacon ──────────────────────────────────────
   function openEditMemberDialog(member: Member) {
     setEditingMember(member);
-    const profile = profiles.find((p) => p.id === member.id);
-    setEditWardId(profile?.ward_id ?? "");
+    setEditWardId(member.ward_id ?? "");
     // Find deacon for current ward
-    const ward = profile?.ward_id
-      ? MOCK_WARDS.find((w) => w.id === profile.ward_id)
+    const ward = member.ward_id
+      ? wards.find((w) => w.id === member.ward_id)
       : undefined;
     const deacon = ward
-      ? MOCK_DEACONS.find((d) => d.ward_id === ward.id)
+      ? deacons.find((d) => d.ward_id === ward.id)
       : undefined;
     setEditDeaconId(deacon?.id ?? "");
     setEditOpen(true);
   }
 
-  function handleSaveEdit() {
+  async function handleSaveEdit() {
     if (!editingMember) return;
 
     // Normalize sentinel value to empty for "unassigned"
     const wardValue = editWardId === "__none__" ? "" : editWardId;
 
-    // Update local profiles state (same source as wards page uses)
-    setProfiles((prev) =>
-      prev.map((p) =>
-        p.id === editingMember.id
-          ? { ...p, ward_id: wardValue || undefined }
-          : p
-      )
-    );
-
-    // Also update the members list ward_id for display
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.id === editingMember.id
-          ? { ...m, ward_id: wardValue || undefined }
-          : m
-      )
-    );
-
-    setToast({
-      type: "success",
-      message: `${editingMember.first_name} ${editingMember.last_name} ward assignment updated.`,
+    // Update via API
+    const res = await fetch("/api/admin/members", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: editingMember.id, ward_id: wardValue || null }),
     });
+
+    if (res.ok) {
+      // Update local state
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.id === editingMember.id
+            ? { ...m, ward_id: wardValue || undefined }
+            : m
+        )
+      );
+
+      setToast({
+        type: "success",
+        message: `${editingMember.first_name} ${editingMember.last_name} ward assignment updated.`,
+      });
+    } else {
+      setToast({ type: "error", message: "Failed to update ward assignment." });
+    }
 
     setEditOpen(false);
     setEditingMember(null);
@@ -250,8 +263,8 @@ export default function MemberManagementPage() {
   // When ward changes in edit dialog, auto-select the deacon for that ward
   function handleEditWardChange(wardId: string) {
     setEditWardId(wardId);
-    if (wardId) {
-      const deacon = MOCK_DEACONS.find((d) => d.ward_id === wardId);
+    if (wardId && wardId !== "__none__") {
+      const deacon = deacons.find((d) => d.ward_id === wardId);
       setEditDeaconId(deacon?.id ?? "");
     } else {
       setEditDeaconId("");
@@ -306,7 +319,7 @@ export default function MemberManagementPage() {
           <Button
             onClick={() => {
               setLoading(true);
-              fetchMembers();
+              fetchData();
             }}
             variant="outline"
           >
@@ -363,7 +376,7 @@ export default function MemberManagementPage() {
           size="sm"
           onClick={() => {
             setLoading(true);
-            fetchMembers();
+            fetchData();
           }}
           title="Refresh member list"
         >
@@ -581,7 +594,7 @@ export default function MemberManagementPage() {
                     <SelectItem value="__none__">
                       <span className="text-warm-400">Unassigned</span>
                     </SelectItem>
-                    {MOCK_WARDS.map((ward) => (
+                    {wards.map((ward) => (
                       <SelectItem key={ward.id} value={ward.id}>
                         {ward.name}
                       </SelectItem>
@@ -600,7 +613,7 @@ export default function MemberManagementPage() {
                     <SelectItem value="__none__">
                       <span className="text-warm-400">None</span>
                     </SelectItem>
-                    {MOCK_DEACONS.filter((d) => d.is_active).map((deacon) => (
+                    {deacons.filter((d) => d.is_active).map((deacon) => (
                       <SelectItem key={deacon.id} value={deacon.id}>
                         {deacon.title ? `${deacon.title} ` : ""}
                         {deacon.first_name} {deacon.last_name}

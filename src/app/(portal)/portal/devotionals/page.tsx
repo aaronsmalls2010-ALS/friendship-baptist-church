@@ -1,19 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { MOCK_DEVOTIONALS } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { formatDate } from "@/lib/utils";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Bookmark, Heart } from "lucide-react";
-
-const todayDevotional = MOCK_DEVOTIONALS[0];
-const previousDevotionals = MOCK_DEVOTIONALS.slice(1);
+import { BookOpen, Bookmark, Heart, Loader2 } from "lucide-react";
 
 export default function DevotionalsPage() {
+  const [loading, setLoading] = useState(true);
+  const [devotionals, setDevotionals] = useState<any[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [bookmarkedToday, setBookmarkedToday] = useState(false);
+
+  useEffect(() => {
+    async function fetchDevotionals() {
+      try {
+        const res = await fetch("/api/portal/devotionals");
+        if (res.ok) {
+          const data = await res.json();
+          setDevotionals(data.devotionals || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch devotionals:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDevotionals();
+  }, []);
 
   function toggleSaved(id: string) {
     setSavedIds((prev) => {
@@ -30,6 +45,17 @@ export default function DevotionalsPage() {
   function toggleExpanded(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
   }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
+  const todayDevotional = devotionals[0];
+  const previousDevotionals = devotionals.slice(1);
 
   return (
     <div className="space-y-8">
@@ -49,48 +75,50 @@ export default function DevotionalsPage() {
       </FadeIn>
 
       {/* Today's Devotional */}
-      <FadeIn delay={0.1}>
-        <div className="relative bg-purple-50 rounded-2xl p-8">
-          <button
-            onClick={() => setBookmarkedToday(!bookmarkedToday)}
-            className="absolute top-6 right-6 text-purple-400 hover:text-purple-700 transition-colors"
-            aria-label={bookmarkedToday ? "Remove bookmark" : "Bookmark this devotional"}
-          >
-            <Bookmark
-              className="h-6 w-6"
-              fill={bookmarkedToday ? "currentColor" : "none"}
-            />
-          </button>
+      {todayDevotional && (
+        <FadeIn delay={0.1}>
+          <div className="relative bg-purple-50 rounded-2xl p-8">
+            <button
+              onClick={() => setBookmarkedToday(!bookmarkedToday)}
+              className="absolute top-6 right-6 text-purple-400 hover:text-purple-700 transition-colors"
+              aria-label={bookmarkedToday ? "Remove bookmark" : "Bookmark this devotional"}
+            >
+              <Bookmark
+                className="h-6 w-6"
+                fill={bookmarkedToday ? "currentColor" : "none"}
+              />
+            </button>
 
-          <div className="space-y-4 max-w-3xl">
-            <span className="inline-block text-xs font-semibold uppercase tracking-wider text-purple-500">
-              Today&apos;s Devotional
-            </span>
+            <div className="space-y-4 max-w-3xl">
+              <span className="inline-block text-xs font-semibold uppercase tracking-wider text-purple-500">
+                Today&apos;s Devotional
+              </span>
 
-            <h2 className="font-heading text-fluid-2xl font-bold text-warm-900">
-              {todayDevotional.title}
-            </h2>
+              <h2 className="font-heading text-fluid-2xl font-bold text-warm-900">
+                {todayDevotional.title}
+              </h2>
 
-            <p className="text-purple-700 italic font-medium">
-              {todayDevotional.scripture}
-            </p>
+              <p className="text-purple-700 italic font-medium">
+                {todayDevotional.scripture}
+              </p>
 
-            <blockquote className="font-scripture italic text-lg text-warm-700 border-l-4 border-purple-300 pl-4">
-              {todayDevotional.scripture_text}
-            </blockquote>
+              <blockquote className="font-scripture italic text-lg text-warm-700 border-l-4 border-purple-300 pl-4">
+                {todayDevotional.scripture_text}
+              </blockquote>
 
-            <div className="space-y-3 text-warm-700 leading-relaxed">
-              {todayDevotional.body.split("\n").map((paragraph, i) => (
-                <p key={i}>{paragraph}</p>
-              ))}
+              <div className="space-y-3 text-warm-700 leading-relaxed">
+                {todayDevotional.body.split("\n").map((paragraph: string, i: number) => (
+                  <p key={i}>{paragraph}</p>
+                ))}
+              </div>
+
+              <p className="text-sm text-warm-500 pt-2">
+                &mdash; {todayDevotional.author}
+              </p>
             </div>
-
-            <p className="text-sm text-warm-500 pt-2">
-              &mdash; {todayDevotional.author}
-            </p>
           </div>
-        </div>
-      </FadeIn>
+        </FadeIn>
+      )}
 
       {/* Previous Devotionals */}
       <FadeIn delay={0.2}>
@@ -140,7 +168,7 @@ export default function DevotionalsPage() {
                         : "text-warm-600 leading-relaxed line-clamp-3"
                     }
                   >
-                    {devotional.body.split("\n").map((paragraph, i) => (
+                    {devotional.body.split("\n").map((paragraph: string, i: number) => (
                       <p key={i} className={i > 0 ? "mt-2" : ""}>
                         {paragraph}
                       </p>

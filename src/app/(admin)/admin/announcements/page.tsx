@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -24,17 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_ANNOUNCEMENTS } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import type { Announcement } from "@/types";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 
 const CATEGORIES = ["church", "youth", "finance", "ministry", "outreach"];
 
 export default function AnnouncementManagementPage() {
-  const [announcements, setAnnouncements] = useState<Announcement[]>([
-    ...MOCK_ANNOUNCEMENTS,
-  ]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Form dialog state
   const [formOpen, setFormOpen] = useState(false);
@@ -54,6 +52,24 @@ export default function AnnouncementManagementPage() {
   const [formIsPinned, setFormIsPinned] = useState(false);
   const [formCategory, setFormCategory] = useState("");
 
+  // ── Data fetching ─────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const res = await fetch("/api/admin/announcements");
+      const data = await res.json();
+      setAnnouncements(data.announcements ?? []);
+    } catch (err) {
+      console.error("Failed to load announcements:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // ── Form helpers ──────────────────────────────────────────────────
   function resetForm() {
     setFormTitle("");
     setFormBody("");
@@ -80,36 +96,34 @@ export default function AnnouncementManagementPage() {
     setFormOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
+    const payload = {
+      title: formTitle,
+      body: formBody,
+      start_date: formStartDate,
+      end_date: formEndDate || undefined,
+      is_pinned: formIsPinned,
+      category: formCategory || undefined,
+    };
+
     if (editingAnnouncement) {
-      setAnnouncements((prev) =>
-        prev.map((a) =>
-          a.id === editingAnnouncement.id
-            ? {
-                ...a,
-                title: formTitle,
-                body: formBody,
-                start_date: formStartDate,
-                end_date: formEndDate || undefined,
-                is_pinned: formIsPinned,
-                category: formCategory || undefined,
-              }
-            : a
-        )
-      );
+      const res = await fetch("/api/admin/announcements", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingAnnouncement.id, ...payload }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     } else {
-      const newAnnouncement: Announcement = {
-        id: `a${Date.now()}`,
-        title: formTitle,
-        body: formBody,
-        start_date: formStartDate,
-        end_date: formEndDate || undefined,
-        is_pinned: formIsPinned,
-        category: formCategory || undefined,
-        ministry_id: undefined,
-        created_at: new Date().toISOString(),
-      };
-      setAnnouncements((prev) => [...prev, newAnnouncement]);
+      const res = await fetch("/api/admin/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setFormOpen(false);
     resetForm();
@@ -120,16 +134,22 @@ export default function AnnouncementManagementPage() {
     setDeleteOpen(true);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (deletingAnnouncement) {
-      setAnnouncements((prev) =>
-        prev.filter((a) => a.id !== deletingAnnouncement.id)
-      );
+      const res = await fetch("/api/admin/announcements", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deletingAnnouncement.id }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setDeleteOpen(false);
     setDeletingAnnouncement(null);
   }
 
+  // ── Column definitions ────────────────────────────────────────────
   const columns = [
     {
       key: "title",
@@ -201,6 +221,15 @@ export default function AnnouncementManagementPage() {
       ),
     },
   ];
+
+  // ── Loading state ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -1,19 +1,14 @@
 "use client";
 
-import { Users, DollarSign, Calendar, Heart, CalendarPlus, Megaphone, UserPlus, MessageCircle, HandCoins, ClipboardList, Clock, MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users, DollarSign, Calendar, Heart, CalendarPlus, Megaphone, UserPlus, MessageCircle, HandCoins, ClipboardList, Clock, MapPin, Loader2 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FadeIn } from "@/components/motion/fade-in";
-import { MOCK_PROFILES, MOCK_DONATIONS, MOCK_EVENTS, MOCK_PRAYER_REQUESTS } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
-
-// Compute stat values
-const totalMembers = MOCK_PROFILES.length;
-const mayDonations = MOCK_DONATIONS.filter((d) => d.date.startsWith("2026-05")).reduce((sum, d) => sum + d.amount, 0);
-const upcomingEvents = MOCK_EVENTS.filter((e) => new Date(e.start_date) > new Date("2026-05-22")).length;
-const prayerRequests = MOCK_PRAYER_REQUESTS.length;
+import type { Event } from "@/types";
 
 // Hard-coded recent activity feed
 const recentActivity = [
@@ -24,13 +19,74 @@ const recentActivity = [
   { id: 5, icon: Megaphone, text: "Announcement published: VBS Volunteer Sign-Up", time: "3 days ago" },
 ];
 
-// Next 5 upcoming events
-const nextEvents = MOCK_EVENTS
-  .filter((e) => new Date(e.start_date) > new Date("2026-05-22"))
-  .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
-  .slice(0, 5);
-
 export default function AdminDashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [monthlyDonations, setMonthlyDonations] = useState(0);
+  const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
+  const [prayerRequestsCount, setPrayerRequestsCount] = useState(0);
+  const [nextEvents, setNextEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        const [membersRes, eventsRes, donationsRes, prayerRes] = await Promise.all([
+          fetch("/api/admin/members"),
+          fetch("/api/admin/events"),
+          fetch("/api/admin/donations"),
+          fetch("/api/admin/prayer-requests"),
+        ]);
+
+        if (membersRes.ok) {
+          const data = await membersRes.json();
+          setTotalMembers(data.members?.length ?? 0);
+        }
+
+        if (eventsRes.ok) {
+          const data = await eventsRes.json();
+          const events: Event[] = data.events ?? [];
+          const now = new Date();
+          const upcoming = events
+            .filter((e) => new Date(e.start_date) > now)
+            .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+          setUpcomingEventsCount(upcoming.length);
+          setNextEvents(upcoming.slice(0, 5));
+        }
+
+        if (donationsRes.ok) {
+          const data = await donationsRes.json();
+          const donations = data.donations ?? [];
+          const now = new Date();
+          const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+          const monthTotal = donations
+            .filter((d: { date: string }) => d.date.startsWith(currentMonth))
+            .reduce((sum: number, d: { amount: number }) => sum + d.amount, 0);
+          setMonthlyDonations(monthTotal);
+        }
+
+        if (prayerRes.ok) {
+          const data = await prayerRes.json();
+          const requests = data.prayer_requests ?? data.prayerRequests ?? [];
+          setPrayerRequestsCount(requests.length);
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadDashboard();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <AdminPageHeader
@@ -50,20 +106,20 @@ export default function AdminDashboardPage() {
         <StatCard
           icon={DollarSign}
           label="Monthly Donations"
-          value={`$${mayDonations.toLocaleString()}`}
+          value={`$${monthlyDonations.toLocaleString()}`}
           trend="+12% from last month"
           trendUp
         />
         <StatCard
           icon={Calendar}
           label="Upcoming Events"
-          value={upcomingEvents}
-          trend="Next: June 7"
+          value={upcomingEventsCount}
+          trend={nextEvents.length > 0 ? `Next: ${formatDate(nextEvents[0].start_date)}` : "None scheduled"}
         />
         <StatCard
           icon={Heart}
           label="Prayer Requests"
-          value={prayerRequests}
+          value={prayerRequestsCount}
           trend="+2 this week"
           trendUp
         />

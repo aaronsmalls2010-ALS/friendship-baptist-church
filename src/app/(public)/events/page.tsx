@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   MapPin,
   CalendarDays,
   Clock,
   Users,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -23,22 +24,47 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { MOCK_EVENTS, MOCK_MINISTRIES, getBirthdayEvents } from "@/lib/mock-data";
+import { getBirthdayEvents } from "@/lib/mock-data";
 import { formatDate, formatTime } from "@/lib/utils";
-
-function getMinistryName(ministryId?: string): string | null {
-  if (!ministryId) return null;
-  const ministry = MOCK_MINISTRIES.find((m) => m.id === ministryId);
-  return ministry?.name ?? null;
-}
+import type { Event, Ministry } from "@/types";
 
 export default function EventsPage() {
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [ministries, setMinistries] = useState<Ministry[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [eventsRes, ministriesRes] = await Promise.all([
+          fetch("/api/public/events"),
+          fetch("/api/public/ministries"),
+        ]);
+        const eventsData = await eventsRes.json();
+        const ministriesData = await ministriesRes.json();
+        setEvents(eventsData.events ?? []);
+        setMinistries(ministriesData.ministries ?? []);
+      } catch (err) {
+        console.error("Failed to load events:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
   const now = new Date();
+
+  function getMinistryName(ministryId?: string): string | null {
+    if (!ministryId) return null;
+    const ministry = ministries.find((m) => m.id === ministryId);
+    return ministry?.name ?? null;
+  }
 
   const { featuredEvent, upcomingEvents, pastEvents } = useMemo(() => {
     // Merge regular events with birthday events
     const birthdayEvents = getBirthdayEvents();
-    const allEvents = [...MOCK_EVENTS, ...birthdayEvents];
+    const allEvents = [...events, ...birthdayEvents];
     const published = allEvents.filter((e) => e.is_published);
     const upcoming = published
       .filter((e) => new Date(e.start_date) > now)
@@ -60,7 +86,22 @@ export default function EventsPage() {
 
     return { featuredEvent: featured, upcomingEvents: rest, pastEvents: past };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [events]);
+
+  if (loading) {
+    return (
+      <>
+        <PageHero
+          title={<EditableText id="events.hero.title" fallback="Events & Happenings" as="span" />}
+          subtitle={<EditableText id="events.hero.subtitle" fallback="Join us for worship, fellowship, and community" as="span" />}
+          breadcrumbs={[{ label: "Events" }]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

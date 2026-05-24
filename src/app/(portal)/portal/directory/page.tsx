@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, Phone, Mail } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Search, Phone, Mail, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/select";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
-import { MOCK_PROFILES, MOCK_MINISTRIES } from "@/lib/mock-data";
 import type { UserRole } from "@/types";
 
 const roleBadgeStyles: Record<UserRole, string> = {
@@ -34,12 +33,35 @@ const roleOptions: { value: string; label: string }[] = [
 ];
 
 export default function ChurchDirectoryPage() {
+  const [loading, setLoading] = useState(true);
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [ministries, setMinistries] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [ministryFilter, setMinistryFilter] = useState("all");
 
+  useEffect(() => {
+    async function fetchDirectory() {
+      try {
+        const res = await fetch("/api/portal/directory");
+        if (res.ok) {
+          const data = await res.json();
+          setProfiles(data.profiles || data || []);
+          if (data.ministries) {
+            setMinistries(data.ministries);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch directory:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDirectory();
+  }, []);
+
   const filteredMembers = useMemo(() => {
-    return MOCK_PROFILES.filter((profile) => {
+    return profiles.filter((profile) => {
       // Search by name or email
       const query = searchQuery.toLowerCase();
       const matchesSearch =
@@ -53,12 +75,20 @@ export default function ChurchDirectoryPage() {
       const matchesRole =
         roleFilter === "all" || profile.role === roleFilter;
 
-      // Ministry filter (mock — in real app, profiles would have ministry_ids)
+      // Ministry filter
       const matchesMinistry = ministryFilter === "all";
 
       return matchesSearch && matchesRole && matchesMinistry;
     });
-  }, [searchQuery, roleFilter, ministryFilter]);
+  }, [profiles, searchQuery, roleFilter, ministryFilter]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -69,7 +99,7 @@ export default function ChurchDirectoryPage() {
             Church Directory
           </h1>
           <p className="text-warm-500 mt-1">
-            {MOCK_PROFILES.length} members in our church family
+            {profiles.length} members in our church family
           </p>
         </div>
       </FadeIn>
@@ -93,7 +123,7 @@ export default function ChurchDirectoryPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Ministries</SelectItem>
-                {MOCK_MINISTRIES.map((m) => (
+                {ministries.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.name}
                   </SelectItem>
@@ -118,7 +148,7 @@ export default function ChurchDirectoryPage() {
 
       {/* Count */}
       <p className="text-sm text-warm-500">
-        Showing {filteredMembers.length} of {MOCK_PROFILES.length} members
+        Showing {filteredMembers.length} of {profiles.length} members
       </p>
 
       {/* Member Grid */}
@@ -126,7 +156,7 @@ export default function ChurchDirectoryPage() {
         {filteredMembers.map((profile) => {
           const memberInitials = `${profile.first_name[0]}${profile.last_name[0]}`;
           const badgeStyle =
-            roleBadgeStyles[profile.role] || roleBadgeStyles.member;
+            roleBadgeStyles[profile.role as UserRole] || roleBadgeStyles.member;
 
           return (
             <SlideUpItem key={profile.id}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PageHero } from "@/components/shared/page-hero";
 import { FadeIn } from "@/components/motion/fade-in";
 import {
@@ -12,11 +12,6 @@ import { EditableText } from "@/components/cms/editable-text";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import {
-  WORSHIP_SERVICES,
-  MOCK_MUSIC_TRACKS,
-  MOCK_TESTIMONIES,
-} from "@/lib/mock-data";
 import { useMusicPlayer } from "@/providers/music-provider";
 import { formatDuration, formatDate } from "@/lib/utils";
 import {
@@ -35,22 +30,24 @@ import {
   ChevronUp,
   MessageCircleHeart,
   Image as ImageIcon,
+  Loader2,
 } from "lucide-react";
+import type { WorshipService, MusicTrack, Testimony } from "@/types";
 
 // ─── Services Tab (real worship service archive) ────────────────────
-function ServicesTab() {
+function ServicesTab({ services }: { services: WorshipService[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeYear, setActiveYear] = useState<string | null>(null);
   const [expandedService, setExpandedService] = useState<string | null>(null);
 
   const years = useMemo(() => {
     const yrs = new Set<string>();
-    WORSHIP_SERVICES.forEach((ws) => yrs.add(ws.date.slice(0, 4)));
+    services.forEach((ws) => yrs.add(ws.date.slice(0, 4)));
     return Array.from(yrs).sort().reverse();
-  }, []);
+  }, [services]);
 
   const filteredServices = useMemo(() => {
-    return WORSHIP_SERVICES.filter((ws) => {
+    return services.filter((ws) => {
       const term = searchTerm.toLowerCase();
       const matchesSearch =
         !searchTerm ||
@@ -66,7 +63,7 @@ function ServicesTab() {
 
       return matchesSearch && matchesYear;
     });
-  }, [searchTerm, activeYear]);
+  }, [searchTerm, activeYear, services]);
 
   const serviceCount = filteredServices.length;
 
@@ -279,10 +276,10 @@ function ServicesTab() {
 }
 
 // ─── Music Tab ───────────────────────────────────────────────────────
-function MusicTab() {
+function MusicTab({ tracks }: { tracks: MusicTrack[] }) {
   const { play, addToQueue, setQueue } = useMusicPlayer();
 
-  const playableTracks = MOCK_MUSIC_TRACKS.filter((t) => t.audio_url);
+  const playableTracks = tracks.filter((t) => t.audio_url);
 
   const handlePlayAll = () => {
     if (playableTracks.length > 0) {
@@ -299,7 +296,7 @@ function MusicTab() {
           <div>
             <h3 className="font-heading font-bold text-purple-900">Worship Music Collection</h3>
             <p className="mt-1 text-sm text-purple-700">
-              {MOCK_MUSIC_TRACKS.length} gospel and worship tracks from our church music library.
+              {tracks.length} gospel and worship tracks from our church music library.
               Tracks will be available for streaming once uploaded.
             </p>
           </div>
@@ -317,7 +314,7 @@ function MusicTab() {
 
       {/* Track List */}
       <SlideUpContainer className="space-y-3">
-        {MOCK_MUSIC_TRACKS.map((track) => (
+        {tracks.map((track) => (
           <SlideUpItem key={track.id}>
             <div className="group flex flex-col gap-4 rounded-xl border border-warm-200 bg-white p-4 transition-all duration-300 hover:shadow-card-hover sm:flex-row sm:items-center">
               {/* Play Button */}
@@ -401,8 +398,8 @@ function GalleryTab() {
 }
 
 // ─── Testimonies Tab ─────────────────────────────────────────────────
-function TestimoniesTab() {
-  const approvedTestimonies = MOCK_TESTIMONIES.filter((t) => t.is_approved);
+function TestimoniesTab({ testimonies }: { testimonies: Testimony[] }) {
+  const approvedTestimonies = testimonies.filter((t) => t.is_approved);
 
   return (
     <div className="space-y-10">
@@ -447,6 +444,49 @@ function TestimoniesTab() {
 
 // ─── Main Page ───────────────────────────────────────────────────────
 export default function MediaPage() {
+  const [loading, setLoading] = useState(true);
+  const [services, setServices] = useState<WorshipService[]>([]);
+  const [tracks, setTracks] = useState<MusicTrack[]>([]);
+  const [testimonies, setTestimonies] = useState<Testimony[]>([]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [sermonsRes, musicRes, testimoniesRes] = await Promise.all([
+          fetch("/api/public/sermons"),
+          fetch("/api/public/music"),
+          fetch("/api/public/testimonies"),
+        ]);
+        const sermonsData = await sermonsRes.json();
+        const musicData = await musicRes.json();
+        const testimoniesData = await testimoniesRes.json();
+        setServices(sermonsData.sermons ?? []);
+        setTracks(musicData.music ?? musicData.tracks ?? []);
+        setTestimonies(testimoniesData.testimonies ?? []);
+      } catch (err) {
+        console.error("Failed to load media:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <>
+        <PageHero
+          title={<EditableText id="media.hero.title" fallback="Media Center" as="span" />}
+          subtitle={<EditableText id="media.hero.subtitle" fallback="Worship services, music, and testimonies to feed your spirit" as="span" />}
+          breadcrumbs={[{ label: "Media" }]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageHero
@@ -491,11 +531,11 @@ export default function MediaPage() {
               </TabsList>
 
               <TabsContent value="services">
-                <ServicesTab />
+                <ServicesTab services={services} />
               </TabsContent>
 
               <TabsContent value="music">
-                <MusicTab />
+                <MusicTab tracks={tracks} />
               </TabsContent>
 
               <TabsContent value="gallery">
@@ -503,7 +543,7 @@ export default function MediaPage() {
               </TabsContent>
 
               <TabsContent value="testimonies">
-                <TestimoniesTab />
+                <TestimoniesTab testimonies={testimonies} />
               </TabsContent>
             </Tabs>
           </FadeIn>

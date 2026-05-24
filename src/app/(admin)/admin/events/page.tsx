@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -17,13 +17,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MOCK_EVENTS } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import type { Event } from "@/types";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 
 export default function EventManagementPage() {
-  const [events, setEvents] = useState<Event[]>([...MOCK_EVENTS]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Form dialog state
   const [formOpen, setFormOpen] = useState(false);
@@ -42,6 +42,24 @@ export default function EventManagementPage() {
   const [formRsvpEnabled, setFormRsvpEnabled] = useState(false);
   const [formIsPublished, setFormIsPublished] = useState(false);
 
+  // ── Data fetching ─────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const res = await fetch("/api/admin/events");
+      const data = await res.json();
+      setEvents(data.events ?? []);
+    } catch (err) {
+      console.error("Failed to load events:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // ── Form helpers ──────────────────────────────────────────────────
   function resetForm() {
     setFormTitle("");
     setFormDescription("");
@@ -70,41 +88,35 @@ export default function EventManagementPage() {
     setFormOpen(true);
   }
 
-  function handleSave() {
+  async function handleSave() {
+    const payload = {
+      title: formTitle,
+      description: formDescription,
+      start_date: formStartDate,
+      end_date: formEndDate || undefined,
+      location: formLocation || undefined,
+      rsvp_enabled: formRsvpEnabled,
+      is_published: formIsPublished,
+    };
+
     if (editingEvent) {
-      // Update existing event
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === editingEvent.id
-            ? {
-                ...e,
-                title: formTitle,
-                description: formDescription,
-                start_date: formStartDate,
-                end_date: formEndDate || undefined,
-                location: formLocation || undefined,
-                rsvp_enabled: formRsvpEnabled,
-                is_published: formIsPublished,
-              }
-            : e
-        )
-      );
+      const res = await fetch("/api/admin/events", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingEvent.id, ...payload }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     } else {
-      // Create new event
-      const newEvent: Event = {
-        id: `e${Date.now()}`,
-        title: formTitle,
-        description: formDescription,
-        start_date: formStartDate,
-        end_date: formEndDate || undefined,
-        location: formLocation || undefined,
-        ministry_id: undefined,
-        image_url: undefined,
-        rsvp_enabled: formRsvpEnabled,
-        is_published: formIsPublished,
-        created_at: new Date().toISOString(),
-      };
-      setEvents((prev) => [...prev, newEvent]);
+      const res = await fetch("/api/admin/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setFormOpen(false);
     resetForm();
@@ -115,14 +127,22 @@ export default function EventManagementPage() {
     setDeleteOpen(true);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (deletingEvent) {
-      setEvents((prev) => prev.filter((e) => e.id !== deletingEvent.id));
+      const res = await fetch("/api/admin/events", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deletingEvent.id }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setDeleteOpen(false);
     setDeletingEvent(null);
   }
 
+  // ── Column definitions ────────────────────────────────────────────
   const columns = [
     {
       key: "title",
@@ -191,6 +211,15 @@ export default function EventManagementPage() {
       ),
     },
   ];
+
+  // ── Loading state ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

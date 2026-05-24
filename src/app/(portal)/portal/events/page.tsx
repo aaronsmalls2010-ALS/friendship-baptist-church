@@ -1,40 +1,71 @@
 "use client";
 
-import { useState } from "react";
-import { MOCK_EVENTS } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { formatDate, formatTime } from "@/lib/utils";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, MapPin, Clock, CheckCircle } from "lucide-react";
-
-const now = new Date("2026-05-22T12:00:00");
-
-// Upcoming events (future start_date)
-const upcomingEvents = MOCK_EVENTS.filter(
-  (e) => new Date(e.start_date) >= now
-);
-
-// Registered events: pick first 3 upcoming
-const registeredEvents = upcomingEvents.slice(0, 3);
-
-// Recommended events: events with ministry_id that aren't in registered
-const recommendedEvents = upcomingEvents
-  .filter(
-    (e) =>
-      e.ministry_id &&
-      !registeredEvents.some((r) => r.id === e.id)
-  )
-  .slice(0, 3);
-
-// Past events
-const pastEvents = MOCK_EVENTS.filter(
-  (e) => new Date(e.start_date) < now
-);
+import { CalendarDays, MapPin, Clock, CheckCircle, Loader2 } from "lucide-react";
 
 export default function MyEventsPage() {
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("registered");
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
+  const [pastEvents, setPastEvents] = useState<any[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
+  const [recommendedEvents, setRecommendedEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchEvents() {
+      try {
+        const res = await fetch("/api/portal/events");
+        if (res.ok) {
+          const data = await res.json();
+          const events = data.events || [];
+          const now = new Date();
+
+          // Split into upcoming vs past
+          const upcoming = events.filter(
+            (e: any) => new Date(e.start_date) >= now
+          );
+          const past = events.filter(
+            (e: any) => new Date(e.start_date) < now
+          );
+
+          setUpcomingEvents(upcoming);
+          setPastEvents(past);
+
+          // Registered events: pick first 3 upcoming
+          setRegisteredEvents(upcoming.slice(0, 3));
+
+          // Recommended events: events with ministry_id that aren't in registered
+          const registered = upcoming.slice(0, 3);
+          const recommended = upcoming
+            .filter(
+              (e: any) =>
+                e.ministry_id &&
+                !registered.some((r: any) => r.id === e.id)
+            )
+            .slice(0, 3);
+          setRecommendedEvents(recommended);
+        }
+      } catch (error) {
+        console.error("Failed to fetch events:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchEvents();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

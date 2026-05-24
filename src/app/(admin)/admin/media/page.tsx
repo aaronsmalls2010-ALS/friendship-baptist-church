@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -23,16 +23,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { MOCK_SERMONS, MOCK_MUSIC_TRACKS } from "@/lib/mock-data";
 import { formatDate, formatDuration } from "@/lib/utils";
 import type { Sermon, MusicTrack } from "@/types";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 
 type Row = Record<string, unknown>;
 
 export default function MediaManagementPage() {
-  const [sermons, setSermons] = useState<Sermon[]>([...MOCK_SERMONS]);
-  const [tracks, setTracks] = useState<MusicTrack[]>([...MOCK_MUSIC_TRACKS]);
+  const [sermons, setSermons] = useState<Sermon[]>([]);
+  const [tracks, setTracks] = useState<MusicTrack[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Sermon form state
   const [sermonFormOpen, setSermonFormOpen] = useState(false);
@@ -60,6 +60,33 @@ export default function MediaManagementPage() {
   const [musicDeleteOpen, setMusicDeleteOpen] = useState(false);
   const [deletingTrack, setDeletingTrack] = useState<MusicTrack | null>(null);
 
+  // ── Data fetching ─────────────────────────────────────────────────
+  async function loadData() {
+    try {
+      const [sermonsRes, musicRes] = await Promise.all([
+        fetch("/api/admin/sermons"),
+        fetch("/api/admin/music"),
+      ]);
+
+      if (sermonsRes.ok) {
+        const data = await sermonsRes.json();
+        setSermons(data.sermons ?? []);
+      }
+      if (musicRes.ok) {
+        const data = await musicRes.json();
+        setTracks(data.tracks ?? data.music ?? []);
+      }
+    } catch (err) {
+      console.error("Failed to load media:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   // ── Sermon CRUD ─────────────────────────────────────────────────────
 
   function resetSermonForm() {
@@ -86,46 +113,53 @@ export default function MediaManagementPage() {
     setSermonFormOpen(true);
   }
 
-  function handleSaveSermon() {
+  async function handleSaveSermon() {
     const topics = sermonTopics
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
 
+    const payload = {
+      title: sermonTitle,
+      speaker: sermonSpeaker,
+      date: sermonDate,
+      scripture: sermonScripture || undefined,
+      topics,
+    };
+
     if (editingSermon) {
-      setSermons((prev) =>
-        prev.map((s) =>
-          s.id === editingSermon.id
-            ? {
-                ...s,
-                title: sermonTitle,
-                speaker: sermonSpeaker,
-                date: sermonDate,
-                scripture: sermonScripture || undefined,
-                topics,
-              }
-            : s
-        )
-      );
+      const res = await fetch("/api/admin/sermons", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingSermon.id, ...payload }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     } else {
-      const newSermon: Sermon = {
-        id: `s${Date.now()}`,
-        title: sermonTitle,
-        speaker: sermonSpeaker,
-        date: sermonDate,
-        scripture: sermonScripture || undefined,
-        topics,
-        created_at: new Date().toISOString(),
-      };
-      setSermons((prev) => [...prev, newSermon]);
+      const res = await fetch("/api/admin/sermons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setSermonFormOpen(false);
     resetSermonForm();
   }
 
-  function handleDeleteSermon() {
+  async function handleDeleteSermon() {
     if (deletingSermon) {
-      setSermons((prev) => prev.filter((s) => s.id !== deletingSermon.id));
+      const res = await fetch("/api/admin/sermons", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deletingSermon.id }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setSermonDeleteOpen(false);
     setDeletingSermon(null);
@@ -157,42 +191,48 @@ export default function MediaManagementPage() {
     setMusicFormOpen(true);
   }
 
-  function handleSaveMusic() {
+  async function handleSaveMusic() {
+    const payload = {
+      title: musicTitle,
+      artist: musicArtist,
+      album: musicAlbum || undefined,
+      track_type: musicType,
+      duration: Number(musicDuration) || 0,
+    };
+
     if (editingTrack) {
-      setTracks((prev) =>
-        prev.map((t) =>
-          t.id === editingTrack.id
-            ? {
-                ...t,
-                title: musicTitle,
-                artist: musicArtist,
-                album: musicAlbum || undefined,
-                track_type: musicType,
-                duration: Number(musicDuration) || t.duration,
-              }
-            : t
-        )
-      );
+      const res = await fetch("/api/admin/music", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingTrack.id, ...payload }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     } else {
-      const newTrack: MusicTrack = {
-        id: `mt${Date.now()}`,
-        title: musicTitle,
-        artist: musicArtist,
-        album: musicAlbum || undefined,
-        audio_url: "",
-        duration: Number(musicDuration) || 0,
-        track_type: musicType,
-        created_at: new Date().toISOString(),
-      };
-      setTracks((prev) => [...prev, newTrack]);
+      const res = await fetch("/api/admin/music", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setMusicFormOpen(false);
     resetMusicForm();
   }
 
-  function handleDeleteMusic() {
+  async function handleDeleteMusic() {
     if (deletingTrack) {
-      setTracks((prev) => prev.filter((t) => t.id !== deletingTrack.id));
+      const res = await fetch("/api/admin/music", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deletingTrack.id }),
+      });
+      if (res.ok) {
+        loadData();
+      }
     }
     setMusicDeleteOpen(false);
     setDeletingTrack(null);
@@ -336,6 +376,15 @@ export default function MediaManagementPage() {
       },
     },
   ];
+
+  // ── Loading state ─────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

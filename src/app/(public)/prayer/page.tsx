@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Heart, Clock, CheckCircle2, HandHeart } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, Clock, CheckCircle2, HandHeart, Loader2 } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { PageHero } from "@/components/shared/page-hero";
@@ -20,8 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_PRAYER_REQUESTS } from "@/lib/mock-data";
 import { EditableText } from "@/components/cms/editable-text";
+import type { PrayerRequest } from "@/types";
 
 const categories = [
   "Health",
@@ -60,6 +60,8 @@ function formatDate(dateStr: string) {
 }
 
 export default function PrayerPage() {
+  const [loading, setLoading] = useState(true);
+  const [prayerRequests, setPrayerRequests] = useState<PrayerRequest[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [category, setCategory] = useState("");
@@ -67,12 +69,47 @@ export default function PrayerPage() {
   const [isPublic, setIsPublic] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const publicRequests = MOCK_PRAYER_REQUESTS.filter((pr) => pr.is_public);
+  async function fetchPrayerRequests() {
+    try {
+      const res = await fetch("/api/public/prayer-requests");
+      const data = await res.json();
+      setPrayerRequests(data.prayer_requests ?? data.prayerRequests ?? []);
+    } catch (err) {
+      console.error("Failed to load prayer requests:", err);
+    }
+  }
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    async function load() {
+      await fetchPrayerRequests();
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const publicRequests = prayerRequests.filter((pr) => pr.is_public);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !request.trim()) return;
-    setSubmitted(true);
+    try {
+      await fetch("/api/public/prayer-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim() || undefined,
+          category: category || undefined,
+          request: request.trim(),
+          is_public: isPublic,
+        }),
+      });
+      setSubmitted(true);
+      // Refetch prayer requests after successful submission
+      await fetchPrayerRequests();
+    } catch (err) {
+      console.error("Failed to submit prayer request:", err);
+    }
   }
 
   function handleReset() {
@@ -82,6 +119,21 @@ export default function PrayerPage() {
     setRequest("");
     setIsPublic(false);
     setSubmitted(false);
+  }
+
+  if (loading) {
+    return (
+      <>
+        <PageHero
+          title="Prayer Requests"
+          subtitle="Bear one another's burdens, and so fulfill the law of Christ"
+          breadcrumbs={[{ label: "Prayer" }]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </div>
+      </>
+    );
   }
 
   return (

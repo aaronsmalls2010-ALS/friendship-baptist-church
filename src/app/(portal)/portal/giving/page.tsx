@@ -1,6 +1,6 @@
 "use client";
 
-import { MOCK_DONATIONS } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { formatDate } from "@/lib/utils";
 import { CTAButton } from "@/components/shared/cta-button";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -14,20 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, HandHeart } from "lucide-react";
-
-// Sort donations by date descending
-const sortedDonations = [...MOCK_DONATIONS].sort(
-  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-);
-
-// Summary calculations
-const yearToDate = MOCK_DONATIONS.reduce((sum, d) => sum + d.amount, 0);
-const thisMonth = MOCK_DONATIONS.filter((d) => {
-  const date = new Date(d.date);
-  return date.getMonth() === 4 && date.getFullYear() === 2026; // May 2026
-}).reduce((sum, d) => sum + d.amount, 0);
-const lastGift = sortedDonations[0];
+import { Download, HandHeart, Loader2 } from "lucide-react";
 
 function formatDonationType(type: string): string {
   return type
@@ -36,6 +23,60 @@ function formatDonationType(type: string): string {
 }
 
 export default function GivingHistoryPage() {
+  const [loading, setLoading] = useState(true);
+  const [sortedDonations, setSortedDonations] = useState<any[]>([]);
+  const [yearToDate, setYearToDate] = useState(0);
+  const [thisMonth, setThisMonth] = useState(0);
+  const [lastGift, setLastGift] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchGiving() {
+      try {
+        const res = await fetch("/api/portal/giving");
+        if (res.ok) {
+          const data = await res.json();
+          const donations = data.donations || [];
+
+          // Sort donations by date descending
+          const sorted = [...donations].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          setSortedDonations(sorted);
+
+          // Compute YTD total
+          const ytd = donations.reduce((sum: number, d: any) => sum + d.amount, 0);
+          setYearToDate(ytd);
+
+          // Compute this month total
+          const now = new Date();
+          const monthTotal = donations
+            .filter((d: any) => {
+              const date = new Date(d.date);
+              return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+            })
+            .reduce((sum: number, d: any) => sum + d.amount, 0);
+          setThisMonth(monthTotal);
+
+          // Last gift
+          setLastGift(sorted[0] || null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch giving data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchGiving();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -73,11 +114,13 @@ export default function GivingHistoryPage() {
           <div className="bg-white rounded-xl p-6 shadow-sm">
             <p className="text-sm text-warm-500">Last Gift</p>
             <p className="text-fluid-2xl font-bold text-purple-700 mt-1">
-              ${lastGift.amount.toLocaleString()}
+              ${lastGift ? lastGift.amount.toLocaleString() : 0}
             </p>
-            <p className="text-xs text-warm-400 mt-1">
-              {formatDate(lastGift.date)}
-            </p>
+            {lastGift && (
+              <p className="text-xs text-warm-400 mt-1">
+                {formatDate(lastGift.date)}
+              </p>
+            )}
           </div>
         </div>
       </FadeIn>

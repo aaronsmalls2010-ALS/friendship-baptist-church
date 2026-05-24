@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, Phone, Mail, Globe, Plus } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Search, Phone, Mail, Globe, Plus, Loader2 } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { PageHero } from "@/components/shared/page-hero";
@@ -25,21 +25,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_BUSINESSES } from "@/lib/mock-data";
 import { EditableText } from "@/components/cms/editable-text";
-
-const ALL_CATEGORIES = [
-  "All",
-  ...Array.from(new Set(MOCK_BUSINESSES.map((b) => b.category))).sort(),
-];
-
-const SUBMIT_CATEGORIES = Array.from(
-  new Set(MOCK_BUSINESSES.map((b) => b.category))
-).sort();
+import type { Business } from "@/types";
 
 export default function BusinessDirectoryPage() {
+  const [loading, setLoading] = useState(true);
+  const [businesses, setBusinesses] = useState<Business[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/public/businesses");
+        const data = await res.json();
+        setBusinesses(data.businesses ?? []);
+      } catch (err) {
+        console.error("Failed to load businesses:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const ALL_CATEGORIES = useMemo(
+    () => ["All", ...Array.from(new Set(businesses.map((b) => b.category))).sort()],
+    [businesses]
+  );
+
+  const SUBMIT_CATEGORIES = useMemo(
+    () => Array.from(new Set(businesses.map((b) => b.category))).sort(),
+    [businesses]
+  );
 
   // Submit form state
   const [formName, setFormName] = useState("");
@@ -52,7 +70,7 @@ export default function BusinessDirectoryPage() {
   const [formSubmitted, setFormSubmitted] = useState(false);
 
   const filteredBusinesses = useMemo(() => {
-    const approvedBusinesses = MOCK_BUSINESSES.filter((b) => b.is_approved);
+    const approvedBusinesses = businesses.filter((b) => b.is_approved);
     return approvedBusinesses.filter((business) => {
       const matchesSearch =
         !searchTerm ||
@@ -63,7 +81,7 @@ export default function BusinessDirectoryPage() {
         activeCategory === "All" || business.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchTerm, activeCategory]);
+  }, [searchTerm, activeCategory, businesses]);
 
   function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +98,21 @@ export default function BusinessDirectoryPage() {
     setFormEmail("");
     setFormWebsite("");
     setFormSubmitted(false);
+  }
+
+  if (loading) {
+    return (
+      <>
+        <PageHero
+          title="Business Directory"
+          subtitle="Support our church family's businesses and services"
+          breadcrumbs={[{ label: "Business Directory" }]}
+        />
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </div>
+      </>
+    );
   }
 
   return (

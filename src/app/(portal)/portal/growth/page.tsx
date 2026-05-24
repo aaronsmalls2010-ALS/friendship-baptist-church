@@ -16,6 +16,7 @@ import {
   DollarSign,
   Flame,
   GraduationCap,
+  Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,6 @@ import {
 } from "@/components/ui/dialog";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
-import { MOCK_SPIRITUAL_GOALS } from "@/lib/mock-data";
 import type { SpiritualGoal } from "@/types";
 
 const typeConfig: Record<
@@ -93,8 +93,8 @@ const periodLabels: Record<string, string> = {
 
 const STORAGE_KEY = "fbc_spiritual_goals";
 
-function loadGoals(): SpiritualGoal[] {
-  if (typeof window === "undefined") return [...MOCK_SPIRITUAL_GOALS];
+function loadGoalsFromLocalStorage(): SpiritualGoal[] | null {
+  if (typeof window === "undefined") return null;
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -102,17 +102,18 @@ function loadGoals(): SpiritualGoal[] {
       if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     }
   } catch {}
-  return [...MOCK_SPIRITUAL_GOALS];
+  return null;
 }
 
-function saveGoals(goals: SpiritualGoal[]) {
+function saveGoalsToLocalStorage(goals: SpiritualGoal[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
   } catch {}
 }
 
 export default function SpiritualGrowthPage() {
-  const [goals, setGoals] = useState<SpiritualGoal[]>(loadGoals);
+  const [loading, setLoading] = useState(true);
+  const [goals, setGoals] = useState<SpiritualGoal[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalType, setGoalType] = useState("");
@@ -133,10 +134,40 @@ export default function SpiritualGrowthPage() {
   // Celebration state — tracks recently completed goal ids
   const [celebratingIds, setCelebratingIds] = useState<Set<string>>(new Set());
 
-  // Persist goals to localStorage whenever they change
+  // Fetch goals on mount: try API first, fall back to localStorage
   useEffect(() => {
-    saveGoals(goals);
-  }, [goals]);
+    async function fetchGoals() {
+      try {
+        const res = await fetch("/api/portal/growth");
+        if (res.ok) {
+          const data = await res.json();
+          const apiGoals = data.goals || [];
+          if (apiGoals.length > 0) {
+            setGoals(apiGoals);
+            saveGoalsToLocalStorage(apiGoals);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch goals from API:", error);
+      }
+
+      // Fall back to localStorage
+      const localGoals = loadGoalsFromLocalStorage();
+      if (localGoals) {
+        setGoals(localGoals);
+      }
+    }
+
+    fetchGoals().finally(() => setLoading(false));
+  }, []);
+
+  // Persist goals to localStorage whenever they change (cache layer)
+  useEffect(() => {
+    if (!loading) {
+      saveGoalsToLocalStorage(goals);
+    }
+  }, [goals, loading]);
 
   const activeGoals = goals.filter((g) => !g.is_completed);
   const completedGoals = goals.filter((g) => g.is_completed);
@@ -150,7 +181,7 @@ export default function SpiritualGrowthPage() {
         )
       : 0;
 
-  const handleCreateGoal = () => {
+  const handleCreateGoal = async () => {
     const newGoal: SpiritualGoal = {
       id: `sg-${Date.now()}`,
       profile_id: "p7",
@@ -168,9 +199,21 @@ export default function SpiritualGrowthPage() {
     setGoalType("");
     setGoalTarget("");
     setGoalPeriod("");
+
+    // Persist to API
+    try {
+      await fetch("/api/portal/growth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newGoal),
+      });
+    } catch (error) {
+      console.error("Failed to save new goal to API:", error);
+    }
   };
 
   const handleIncrement = (goalId: string) => {
+    let updatedGoal: SpiritualGoal | null = null;
     setGoals((prev) =>
       prev.map((g) => {
         if (g.id !== goalId || g.is_completed) return g;
@@ -187,22 +230,45 @@ export default function SpiritualGrowthPage() {
             });
           }, 2000);
         }
-        return {
+        updatedGoal = {
           ...g,
           current: newCurrent,
           is_completed: justCompleted,
         };
+        return updatedGoal;
       })
     );
+
+    // Persist to API
+    if (updatedGoal) {
+      const goalToSave = updatedGoal;
+      fetch("/api/portal/growth", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(goalToSave),
+      }).catch((error) => console.error("Failed to update goal:", error));
+    }
   };
 
   const handleDecrement = (goalId: string) => {
+    let updatedGoal: SpiritualGoal | null = null;
     setGoals((prev) =>
       prev.map((g) => {
         if (g.id !== goalId || g.is_completed) return g;
-        return { ...g, current: Math.max(g.current - 1, 0) };
+        updatedGoal = { ...g, current: Math.max(g.current - 1, 0) };
+        return updatedGoal;
       })
     );
+
+    // Persist to API
+    if (updatedGoal) {
+      const goalToSave = updatedGoal;
+      fetch("/api/portal/growth", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(goalToSave),
+      }).catch((error) => console.error("Failed to update goal:", error));
+    }
   };
 
   const handleOpenEdit = (goal: SpiritualGoal) => {
@@ -214,13 +280,14 @@ export default function SpiritualGrowthPage() {
     setEditDialogOpen(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingGoal) return;
+    let updatedGoal: SpiritualGoal | null = null;
     setGoals((prev) =>
       prev.map((g) => {
         if (g.id !== editingGoal.id) return g;
         const newTarget = parseInt(editTarget, 10);
-        return {
+        updatedGoal = {
           ...g,
           title: editTitle,
           type: editType as SpiritualGoal["type"],
@@ -229,16 +296,47 @@ export default function SpiritualGrowthPage() {
           // If new target is now <= current, mark complete
           is_completed: g.current >= newTarget,
         };
+        return updatedGoal;
       })
     );
     setEditDialogOpen(false);
     setEditingGoal(null);
+
+    // Persist to API
+    if (updatedGoal) {
+      try {
+        await fetch("/api/portal/growth", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedGoal),
+        });
+      } catch (error) {
+        console.error("Failed to update goal:", error);
+      }
+    }
   };
 
-  const handleDelete = (goalId: string) => {
+  const handleDelete = async (goalId: string) => {
     setGoals((prev) => prev.filter((g) => g.id !== goalId));
     setDeleteConfirmId(null);
+
+    // Persist to API
+    try {
+      await fetch(`/api/portal/growth?id=${goalId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("Failed to delete goal:", error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

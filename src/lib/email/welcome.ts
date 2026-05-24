@@ -1,8 +1,12 @@
 /**
  * Welcome email HTML template for new Friendship Baptist Church members.
  * Sent server-side after successful account creation.
+ * Includes a verification link that the member must click to confirm their email.
  */
-export function getWelcomeEmailHtml(firstName: string): string {
+export function getWelcomeEmailHtml(
+  firstName: string,
+  verificationUrl?: string
+): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -53,15 +57,48 @@ export function getWelcomeEmailHtml(firstName: string): string {
             </td>
           </tr>
 
-          <!-- CTA Button -->
+          <!-- Email Verification CTA -->
+          ${
+            verificationUrl
+              ? `<tr>
+            <td style="padding:0 40px 10px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                     style="background-color:#fef3c7;border-radius:12px;border-left:4px solid #d97706;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 4px;font-size:16px;font-weight:bold;color:#92400e;">
+                      One more step!
+                    </p>
+                    <p style="margin:0;font-size:14px;line-height:1.5;color:#78350f;">
+                      Please verify your email address by clicking the button below.
+                      After verification, a church administrator will review and approve your account.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
           <tr>
+            <td style="padding:10px 40px 30px;text-align:center;">
+              <a href="${verificationUrl}"
+                 style="display:inline-block;padding:16px 48px;background-color:#059669;color:#ffffff;text-decoration:none;border-radius:12px;font-size:18px;font-weight:bold;letter-spacing:0.3px;">
+                Verify Your Email
+              </a>
+              <p style="margin:12px 0 0;font-size:12px;color:#78716c;">
+                If the button does not work, copy and paste this link into your browser:<br>
+                <a href="${verificationUrl}" style="color:#6d28d9;word-break:break-all;">${verificationUrl}</a>
+              </p>
+            </td>
+          </tr>`
+              : `<tr>
             <td style="padding:0 40px 30px;text-align:center;">
               <a href="https://thefriendshipbaptist.com/auth/login"
                  style="display:inline-block;padding:14px 40px;background-color:#4c1d95;color:#ffffff;text-decoration:none;border-radius:12px;font-size:16px;font-weight:bold;letter-spacing:0.3px;">
                 Sign In to Your Account
               </a>
             </td>
-          </tr>
+          </tr>`
+          }
 
           <!-- Scripture Quote -->
           <tr>
@@ -163,7 +200,22 @@ export function getWelcomeEmailHtml(firstName: string): string {
 /**
  * Plain text version of the welcome email.
  */
-export function getWelcomeEmailText(firstName: string): string {
+export function getWelcomeEmailText(
+  firstName: string,
+  verificationUrl?: string
+): string {
+  const verificationSection = verificationUrl
+    ? `
+ONE MORE STEP: Please verify your email address by visiting the link below:
+${verificationUrl}
+
+After verification, a church administrator will review and approve your account.
+You will be notified by email once your account is approved and ready to use.
+`
+    : `
+Sign in at: https://thefriendshipbaptist.com/auth/login
+`;
+
   return `
 Welcome to The Friendship Baptist Church, ${firstName}!
 
@@ -177,9 +229,7 @@ Your new account gives you access to our member portal where you can:
 - Watch sermons and listen to worship music
 - Connect with our church family through the member directory
 - Track your spiritual growth journey
-
-Sign in at: https://thefriendshipbaptist.com/auth/login
-
+${verificationSection}
 "For where two or three gather in my name, there am I with them." - Matthew 18:20
 
 God bless you,

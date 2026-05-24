@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getWelcomeEmailHtml, getWelcomeEmailText } from "@/lib/email/welcome";
@@ -89,7 +90,11 @@ export async function POST(request: NextRequest) {
     const sanitizedEmail = email.trim().toLowerCase().slice(0, 255);
     const sanitizedPhone = phone ? phone.trim().slice(0, 20) : undefined;
 
-    // Create user with admin API — auto-confirms email so they can log in immediately
+    // Generate a verification token for email confirmation
+    const verificationToken = randomUUID();
+
+    // Create user with admin API — auto-confirm in Supabase auth so the
+    // account exists, but we track email verification separately on the profile.
     const supabase = createAdminClient();
 
     const { data, error } = await supabase.auth.admin.createUser({
@@ -101,6 +106,7 @@ export async function POST(request: NextRequest) {
         last_name: sanitizedLastName,
         phone: sanitizedPhone,
         role: "member",
+        email_verification_token: verificationToken,
       },
     });
 
@@ -119,7 +125,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update profile role (trigger creates it, we ensure it's set)
+    // Update profile with name, phone, and verification fields.
+    // The trigger creates the profile row; we set additional fields here.
     if (data.user) {
       await supabase
         .from("profiles")
@@ -127,16 +134,23 @@ export async function POST(request: NextRequest) {
           first_name: sanitizedFirstName,
           last_name: sanitizedLastName,
           phone: sanitizedPhone || null,
+          is_email_verified: false,
+          is_approved: false,
         })
         .eq("id", data.user.id);
     }
 
-    // Send welcome email (non-blocking — don't fail signup if email fails)
+    // Build the verification URL
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || "https://thefriendshipbaptist.com";
+    const verificationUrl = `${siteUrl}/auth/verify-email?token=${verificationToken}`;
+
+    // Send welcome email with verification link (non-blocking)
     sendEmail({
       to: sanitizedEmail,
-      subject: `Welcome to Friendship Baptist Church, ${sanitizedFirstName}!`,
-      html: getWelcomeEmailHtml(sanitizedFirstName),
-      text: getWelcomeEmailText(sanitizedFirstName),
+      subject: `Welcome to Friendship Baptist Church, ${sanitizedFirstName}! Please verify your email`,
+      html: getWelcomeEmailHtml(sanitizedFirstName, verificationUrl),
+      text: getWelcomeEmailText(sanitizedFirstName, verificationUrl),
     }).catch((err) => {
       console.error("[EMAIL] Welcome email failed:", err);
     });
@@ -150,8 +164,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: "Account created successfully! You can now sign in.",
+        message:
+          "Account created successfully! Please check your email to verify your address.",
         userId: data.user?.id,
+        requiresVerification: true,
       },
       { status: 201 }
     );

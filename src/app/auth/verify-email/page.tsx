@@ -5,11 +5,16 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import { createClient } from "@/lib/supabase/client";
-import { CheckCircle, XCircle, Loader2, ArrowLeft } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Loader2,
+  ArrowLeft,
+  Clock,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
-type VerifyState = "loading" | "success" | "error";
+type VerifyState = "loading" | "success" | "already_verified" | "error";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -18,10 +23,9 @@ function VerifyEmailContent() {
 
   useEffect(() => {
     async function verifyEmail() {
-      const tokenHash = searchParams.get("token_hash");
-      const type = searchParams.get("type");
+      const token = searchParams.get("token");
 
-      if (!tokenHash || type !== "email") {
+      if (!token) {
         setState("error");
         setErrorMessage(
           "Invalid verification link. The link may be malformed or incomplete."
@@ -30,26 +34,21 @@ function VerifyEmailContent() {
       }
 
       try {
-        const supabase = createClient();
-        const { error } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: "email",
-        });
+        const response = await fetch(
+          `/api/auth/verify-email?token=${encodeURIComponent(token)}`
+        );
+        const data = await response.json();
 
-        if (error) {
+        if (!response.ok) {
           setState("error");
-          if (
-            error.message.includes("expired") ||
-            error.message.includes("invalid")
-          ) {
-            setErrorMessage(
-              "This verification link has expired or is no longer valid. Please request a new one."
-            );
-          } else {
-            setErrorMessage(
-              error.message || "Verification failed. Please try again."
-            );
-          }
+          setErrorMessage(
+            data.error || "Verification failed. Please try again."
+          );
+          return;
+        }
+
+        if (data.alreadyVerified) {
+          setState("already_verified");
           return;
         }
 
@@ -64,10 +63,6 @@ function VerifyEmailContent() {
 
     verifyEmail();
   }, [searchParams]);
-
-  function handleResendVerification() {
-    window.location.href = "/auth/login";
-  }
 
   return (
     <>
@@ -108,7 +103,60 @@ function VerifyEmailContent() {
             Email Verified!
           </h1>
           <p className="mt-2 text-center text-warm-500">
-            Your account has been verified. You can now sign in.
+            Your email address has been verified successfully.
+          </p>
+
+          {/* Pending Approval Notice */}
+          <div className="mt-6 w-full rounded-xl bg-amber-50 border border-amber-200 p-4">
+            <div className="flex items-start gap-3">
+              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold text-amber-900">
+                  Pending Admin Approval
+                </p>
+                <p className="mt-1 text-sm text-amber-700">
+                  Your account is now awaiting approval from a church
+                  administrator. You will receive an email notification once
+                  your account has been approved and is ready to use.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Link href="/" className="mt-6 w-full">
+            <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
+              Return to Website
+            </Button>
+          </Link>
+        </motion.div>
+      )}
+
+      {/* Already Verified State */}
+      {state === "already_verified" && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          className="mt-8 flex flex-col items-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{
+              duration: 0.3,
+              delay: 0.15,
+              type: "spring",
+              stiffness: 200,
+            }}
+          >
+            <CheckCircle className="h-16 w-16 text-green-500" />
+          </motion.div>
+          <h1 className="mt-4 text-center font-heading text-fluid-xl font-bold text-warm-900">
+            Already Verified
+          </h1>
+          <p className="mt-2 text-center text-warm-500">
+            Your email address has already been verified. If your account has
+            been approved, you can sign in below.
           </p>
           <Link href="/auth/login" className="mt-6 w-full">
             <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
@@ -142,12 +190,11 @@ function VerifyEmailContent() {
             Verification Failed
           </h1>
           <p className="mt-2 text-center text-warm-500">{errorMessage}</p>
-          <Button
-            onClick={handleResendVerification}
-            className="mt-6 w-full bg-purple-700 text-white hover:bg-purple-800"
-          >
-            Resend Verification Email
-          </Button>
+          <Link href="/contact" className="mt-6 w-full">
+            <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
+              Contact the Church Office
+            </Button>
+          </Link>
         </motion.div>
       )}
     </>

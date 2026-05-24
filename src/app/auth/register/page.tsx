@@ -124,9 +124,7 @@ export default function RegisterPage() {
             <div className="mt-6">
               <FormSuccess
                 title="Account Created!"
-                message="Welcome to the Friendship Baptist Church family! Your account is ready. You can now sign in and explore your member portal."
-                actionLabel="Go to Login"
-                actionHref="/auth/login"
+                message="Your account has been created! Please check your email to verify your address. Once verified, a church administrator will review and approve your account. You will be notified when your account is ready."
               />
             </div>
           ) : (

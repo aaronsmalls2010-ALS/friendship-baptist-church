@@ -2,6 +2,7 @@ export type UserRole =
   | "member"
   | "deacon"
   | "minister"
+  | "musician"
   | "admin"
   | "super_admin";
 

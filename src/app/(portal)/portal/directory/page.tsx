@@ -20,6 +20,7 @@ const roleBadgeStyles: Record<UserRole, string> = {
   admin: "bg-gold-500 text-white",
   deacon: "bg-purple-600 text-white",
   minister: "bg-peach-500 text-white",
+  musician: "bg-teal-500 text-white",
   member: "bg-warm-200 text-warm-700",
   super_admin: "bg-gold-500 text-white",
 };

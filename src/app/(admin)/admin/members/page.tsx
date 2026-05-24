@@ -39,6 +39,7 @@ import {
   CheckCircle,
   RefreshCw,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import type { UserRole, Ward, Deacon } from "@/types";
 
@@ -60,6 +61,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
   member: "Member",
   deacon: "Deacon",
   minister: "Minister",
+  musician: "Musician",
   admin: "Admin",
   super_admin: "Super Admin",
 };
@@ -71,6 +73,8 @@ const ROLE_BADGE_COLORS: Record<UserRole, string> = {
     "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
   minister:
     "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  musician:
+    "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
   admin: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
   super_admin:
     "bg-red-200 text-red-900 dark:bg-red-900/60 dark:text-red-200",
@@ -80,6 +84,7 @@ const ALL_ROLES: UserRole[] = [
   "member",
   "deacon",
   "minister",
+  "musician",
   "admin",
   "super_admin",
 ];
@@ -268,6 +273,34 @@ export default function MemberManagementPage() {
       setEditDeaconId(deacon?.id ?? "");
     } else {
       setEditDeaconId("");
+    }
+  }
+
+  // ── Delete member ────────────────────────────────────────────────
+  async function handleDeleteMember(member: Member) {
+    if (!confirm(`Are you sure you want to remove ${member.first_name} ${member.last_name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/members", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: member.id }),
+      });
+
+      if (res.ok) {
+        setMembers((prev) => prev.filter((m) => m.id !== member.id));
+        setToast({
+          type: "success",
+          message: `${member.first_name} ${member.last_name} has been removed.`,
+        });
+      } else {
+        const data = await res.json();
+        setToast({ type: "error", message: data.error || "Failed to delete member." });
+      }
+    } catch {
+      setToast({ type: "error", message: "Network error. Please try again." });
     }
   }
 
@@ -516,15 +549,26 @@ export default function MemberManagementPage() {
 
                       {/* Actions */}
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditMemberDialog(member)}
-                          className="h-8 w-8 p-0 text-warm-500 hover:text-purple-700 hover:bg-purple-50"
-                          title="Edit ward/deacon assignment"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditMemberDialog(member)}
+                            className="h-8 w-8 p-0 text-warm-500 hover:text-purple-700 hover:bg-purple-50"
+                            title="Edit ward/deacon assignment"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteMember(member)}
+                            className="h-8 w-8 p-0 text-warm-400 hover:text-red-600 hover:bg-red-50"
+                            title="Remove member"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

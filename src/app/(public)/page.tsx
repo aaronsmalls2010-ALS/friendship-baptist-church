@@ -11,8 +11,11 @@ import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { CHURCH_INFO } from "@/lib/constants";
 import { EditableText } from "@/components/cms/editable-text";
 import { EditableImage } from "@/components/cms/editable-image";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 
 export default function HomePage() {
+  const { watchLiveEnabled } = useSiteSettings();
+
   return (
     <>
       {/* Hero Section */}
@@ -82,9 +85,11 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.9 }}
             className="flex flex-wrap items-center justify-center gap-4"
           >
-            <CTAButton href="/media?tab=live" variant="gold" size="lg" icon={<Video className="h-5 w-5" />}>
-              Watch Live
-            </CTAButton>
+            {watchLiveEnabled && (
+              <CTAButton href="/media?tab=live" variant="gold" size="lg" icon={<Video className="h-5 w-5" />}>
+                Watch Live
+              </CTAButton>
+            )}
             <CTAButton href="/give" variant="outline" size="lg" icon={<Heart className="h-5 w-5" />}>
               Give
             </CTAButton>

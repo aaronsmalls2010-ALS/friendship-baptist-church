@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ── Failed login tracking (account lockout) ──
 const failedAttempts = new Map<
@@ -115,6 +116,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Invalid email or password." },
         { status: 401 }
+      );
+    }
+
+    // ── Check email verification and admin approval ──
+    // Use admin client to bypass RLS and read profile fields directly.
+    const adminClient = createAdminClient();
+    const { data: profile } = await adminClient
+      .from("profiles")
+      .select("is_email_verified, is_approved")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profile && profile.is_email_verified === false) {
+      // Sign the user out so the session isn't left active
+      await supabase.auth.signOut();
+
+      return NextResponse.json(
+        {
+          error:
+            "Please verify your email address first. Check your inbox for the verification link.",
+          code: "EMAIL_NOT_VERIFIED",
+        },
+        { status: 403 }
+      );
+    }
+
+    if (profile && profile.is_approved === false) {
+      // Sign the user out so the session isn't left active
+      await supabase.auth.signOut();
+
+      return NextResponse.json(
+        {
+          error:
+            "Your account is pending approval from the church administrator. You will be notified when approved.",
+          code: "NOT_APPROVED",
+        },
+        { status: 403 }
       );
     }
 

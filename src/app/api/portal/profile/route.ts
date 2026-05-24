@@ -12,6 +12,7 @@ const ALLOWED_FIELDS = [
   "state",
   "zip",
   "date_of_birth",
+  "birthday",
   "gender",
   "about_bio",
   "emergency_contact_name",
@@ -20,6 +21,9 @@ const ALLOWED_FIELDS = [
   "baptism_date",
   "ward_id",
   "photo_url",
+  "email_notifications",
+  "sms_notifications",
+  "public_directory",
 ] as const;
 
 /**

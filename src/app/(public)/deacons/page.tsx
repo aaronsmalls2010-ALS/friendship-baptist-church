@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Phone, Users, Loader2 } from "lucide-react";
+import { Phone, Loader2 } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { CTAButton } from "@/components/shared/cta-button";
 import { PageHero } from "@/components/shared/page-hero";
@@ -196,9 +196,6 @@ export default function DeaconsPage() {
                     <TableHead className="font-heading font-semibold text-purple-900">
                       Deacon
                     </TableHead>
-                    <TableHead className="font-heading font-semibold text-purple-900 text-center">
-                      Families
-                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -209,12 +206,6 @@ export default function DeaconsPage() {
                       </TableCell>
                       <TableCell className="text-warm-600">
                         {getDeaconsForWard(ward.id)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <span className="inline-flex items-center gap-1 text-warm-600">
-                          <Users className="h-4 w-4 text-purple-500" />
-                          {ward.families_count}
-                        </span>
                       </TableCell>
                     </TableRow>
                   ))}

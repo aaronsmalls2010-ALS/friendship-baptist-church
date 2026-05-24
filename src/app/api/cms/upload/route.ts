@@ -44,8 +44,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique filename
-    const filename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    // ── File type validation ──
+    const ALLOWED_MIME_TYPES = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/avif",
+      "image/svg+xml",
+    ];
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "File type not allowed. Only images are accepted." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 10 MB." },
+        { status: 400 }
+      );
+    }
+
+    // Generate unique filename (sanitize to alphanumeric + safe chars)
+    const filename = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
     const path = `cms/${Date.now()}-${filename}`;
 
     // Upload to Supabase Storage

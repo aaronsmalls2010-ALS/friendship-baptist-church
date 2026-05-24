@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { PageHero } from "@/components/shared/page-hero";
 import { FadeIn } from "@/components/motion/fade-in";
 import {
@@ -31,8 +32,12 @@ import {
   MessageCircleHeart,
   Image as ImageIcon,
   Loader2,
+  Archive,
 } from "lucide-react";
 import type { WorshipService, MusicTrack, Testimony } from "@/types";
+
+const VALID_TABS = ["services", "music", "gallery", "testimonies", "archives"] as const;
+type MediaTab = (typeof VALID_TABS)[number];
 
 // ─── Services Tab (real worship service archive) ────────────────────
 function ServicesTab({ services }: { services: WorshipService[] }) {
@@ -442,12 +447,321 @@ function TestimoniesTab({ testimonies }: { testimonies: Testimony[] }) {
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────
+// ─── Archives Tab (services older than 1 year) ─────────────────────
+function ArchivesTab({ services }: { services: WorshipService[] }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeYear, setActiveYear] = useState<string | null>(null);
+  const [expandedService, setExpandedService] = useState<string | null>(null);
+
+  const years = useMemo(() => {
+    const yrs = new Set<string>();
+    services.forEach((ws) => yrs.add(ws.date.slice(0, 4)));
+    return Array.from(yrs).sort().reverse();
+  }, [services]);
+
+  const filteredServices = useMemo(() => {
+    return services.filter((ws) => {
+      const term = searchTerm.toLowerCase();
+      const matchesSearch =
+        !searchTerm ||
+        ws.title.toLowerCase().includes(term) ||
+        ws.speaker.toLowerCase().includes(term) ||
+        ws.date.includes(term) ||
+        ws.scripture?.toLowerCase().includes(term) ||
+        ws.sermon_title?.toLowerCase().includes(term) ||
+        ws.description?.toLowerCase().includes(term) ||
+        ws.videos.some((v) => v.description?.toLowerCase().includes(term));
+
+      const matchesYear = !activeYear || ws.date.startsWith(activeYear);
+
+      return matchesSearch && matchesYear;
+    });
+  }, [searchTerm, activeYear, services]);
+
+  const serviceCount = filteredServices.length;
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <FadeIn>
+        <div className="rounded-xl bg-warm-50 border border-warm-200 p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Archive className="h-5 w-5 text-warm-500" />
+            <h3 className="font-heading font-bold text-warm-800">Sermon Archives</h3>
+          </div>
+          <p className="text-sm text-warm-500">
+            Worship services and sermons from more than one year ago. Browse our rich history of faithful preaching and worship.
+          </p>
+        </div>
+      </FadeIn>
+
+      {/* Search + Info */}
+      <FadeIn>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
+            <Input
+              type="text"
+              placeholder="Search archives by title, speaker, scripture..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-xl border-warm-200 bg-white focus-visible:ring-purple-500"
+            />
+          </div>
+          <p className="text-sm text-warm-500">
+            {serviceCount} archived service{serviceCount !== 1 ? "s" : ""}
+          </p>
+        </div>
+      </FadeIn>
+
+      {/* Year Filters */}
+      {years.length > 0 && (
+        <FadeIn delay={0.1}>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setActiveYear(null)} className="focus:outline-none">
+              <Badge
+                variant={activeYear === null ? "default" : "outline"}
+                className={activeYear === null ? "bg-purple-700 text-white cursor-pointer" : "cursor-pointer hover:bg-warm-100"}
+              >
+                All Years
+              </Badge>
+            </button>
+            {years.map((year) => (
+              <button
+                key={year}
+                onClick={() => setActiveYear(activeYear === year ? null : year)}
+                className="focus:outline-none"
+              >
+                <Badge
+                  variant={activeYear === year ? "default" : "outline"}
+                  className={activeYear === year ? "bg-purple-700 text-white cursor-pointer" : "cursor-pointer hover:bg-warm-100"}
+                >
+                  {year}
+                </Badge>
+              </button>
+            ))}
+          </div>
+        </FadeIn>
+      )}
+
+      {/* Service Cards */}
+      {filteredServices.length === 0 ? (
+        <FadeIn>
+          <div className="rounded-xl border border-warm-200 bg-warm-50 p-12 text-center">
+            <Archive className="mx-auto mb-3 h-10 w-10 text-warm-300" />
+            <p className="text-warm-500">
+              {services.length === 0
+                ? "No archived services yet. Services older than one year will appear here automatically."
+                : "No archived services match your search."}
+            </p>
+          </div>
+        </FadeIn>
+      ) : (
+        <SlideUpContainer className="space-y-4">
+          {filteredServices.map((service) => {
+            const isExpanded = expandedService === service.id;
+
+            return (
+              <SlideUpItem key={service.id}>
+                <div className="overflow-hidden rounded-xl border border-warm-200 bg-white transition-all duration-300 hover:shadow-card-hover">
+                  <button
+                    onClick={() => setExpandedService(isExpanded ? null : service.id)}
+                    className="flex w-full items-center gap-4 p-5 text-left focus:outline-none"
+                  >
+                    <div className="flex h-14 w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-warm-100">
+                      <span className="text-xs font-semibold uppercase text-warm-500">
+                        {new Date(service.date + "T12:00:00").toLocaleDateString("en-US", { month: "short" })}
+                      </span>
+                      <span className="text-lg font-bold text-warm-700 leading-tight">
+                        {new Date(service.date + "T12:00:00").getDate()}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-heading text-lg font-bold text-warm-900">
+                          {service.title}
+                        </h3>
+                        {service.is_special && (
+                          <Badge className="bg-gold-100 text-gold-700 border-gold-200 hover:bg-gold-100 text-xs">
+                            <Star className="mr-1 h-3 w-3" />
+                            Special
+                          </Badge>
+                        )}
+                        {service.scripture && (
+                          <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50 text-xs">
+                            <BookOpen className="mr-1 h-3 w-3" />
+                            {service.scripture}
+                          </Badge>
+                        )}
+                      </div>
+                      {service.sermon_title && service.sermon_title !== service.title && (
+                        <p className="mt-0.5 text-sm font-medium text-purple-700 italic">
+                          &ldquo;{service.sermon_title}&rdquo;
+                        </p>
+                      )}
+                      <div className="mt-1 flex items-center gap-4 text-sm text-warm-500 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <User className="h-3.5 w-3.5" />
+                          {service.speaker}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(service.date)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 text-sm text-warm-400">
+                        <Video className="h-4 w-4" />
+                        <span>{service.videos.length}</span>
+                      </div>
+                      {isExpanded ? (
+                        <ChevronUp className="h-5 w-5 text-warm-400" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-warm-400" />
+                      )}
+                    </div>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="border-t border-warm-100 bg-warm-50/50 p-5">
+                      {service.special_notes && (
+                        <div className="mb-4 flex items-start gap-2 rounded-lg bg-purple-50 border border-purple-100 p-3">
+                          <Star className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-400" />
+                          <p className="text-sm text-purple-700">{service.special_notes}</p>
+                        </div>
+                      )}
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {service.videos.map((video, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-lg border border-warm-200 bg-white p-4 transition-all hover:border-purple-200"
+                          >
+                            {video.youtube_id ? (
+                              <div className="mb-3 aspect-video overflow-hidden rounded-lg">
+                                <iframe
+                                  src={`https://www.youtube.com/embed/${video.youtube_id}`}
+                                  title={video.label}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="h-full w-full"
+                                  loading="lazy"
+                                />
+                              </div>
+                            ) : (
+                              <div className="mb-3 flex aspect-video flex-col items-center justify-center rounded-lg bg-warm-100">
+                                <Video className="mb-2 h-8 w-8 text-warm-300" />
+                                <p className="text-xs text-warm-400">Coming to YouTube</p>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="secondary"
+                                className={
+                                  video.type === "sermon"
+                                    ? "bg-purple-100 text-purple-700 text-xs"
+                                    : video.type === "prayer"
+                                    ? "bg-blue-100 text-blue-700 text-xs"
+                                    : video.type === "scripture"
+                                    ? "bg-green-100 text-green-700 text-xs"
+                                    : "bg-gold-100 text-gold-700 text-xs"
+                                }
+                              >
+                                {video.type === "sermon" ? "Sermon" :
+                                 video.type === "prayer" ? "Prayer" :
+                                 video.type === "scripture" ? "Scripture" : "Special"}
+                              </Badge>
+                              <span className="text-sm font-medium text-warm-700">{video.label}</span>
+                            </div>
+                            {video.description && (
+                              <p className="mt-2 text-xs text-warm-500 italic">{video.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </SlideUpItem>
+            );
+          })}
+        </SlideUpContainer>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Page (wrapped in Suspense for useSearchParams) ────────────
 export default function MediaPage() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <PageHero
+            title="Media Center"
+            subtitle="Worship services, music, and testimonies to feed your spirit"
+            breadcrumbs={[{ label: "Media" }]}
+          />
+          <div className="flex items-center justify-center py-24">
+            <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+          </div>
+        </>
+      }
+    >
+      <MediaPageInner />
+    </Suspense>
+  );
+}
+
+function MediaPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [services, setServices] = useState<WorshipService[]>([]);
+  const [allServices, setAllServices] = useState<WorshipService[]>([]);
   const [tracks, setTracks] = useState<MusicTrack[]>([]);
   const [testimonies, setTestimonies] = useState<Testimony[]>([]);
+
+  // Read initial tab from URL ?tab= parameter
+  const tabParam = searchParams.get("tab");
+  const initialTab: MediaTab =
+    tabParam && VALID_TABS.includes(tabParam as MediaTab)
+      ? (tabParam as MediaTab)
+      : "services";
+  const [activeTab, setActiveTab] = useState<MediaTab>(initialTab);
+
+  // Update tab when URL changes (e.g. back/forward navigation)
+  useEffect(() => {
+    const newTab = searchParams.get("tab");
+    if (newTab && VALID_TABS.includes(newTab as MediaTab)) {
+      setActiveTab(newTab as MediaTab);
+    }
+  }, [searchParams]);
+
+  // Update URL when tab changes via click
+  function handleTabChange(value: string) {
+    const tab = value as MediaTab;
+    setActiveTab(tab);
+    // Update URL without full navigation
+    const url = tab === "services" ? "/media" : `/media?tab=${tab}`;
+    router.replace(url, { scroll: false });
+  }
+
+  // Split services into recent (< 1 year) and archived (>= 1 year)
+  const oneYearAgo = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return d.toISOString().slice(0, 10);
+  }, []);
+
+  const recentServices = useMemo(
+    () => allServices.filter((s) => s.date >= oneYearAgo),
+    [allServices, oneYearAgo]
+  );
+
+  const archivedServices = useMemo(
+    () => allServices.filter((s) => s.date < oneYearAgo),
+    [allServices, oneYearAgo]
+  );
 
   useEffect(() => {
     async function load() {
@@ -460,7 +774,7 @@ export default function MediaPage() {
         const sermonsData = await sermonsRes.json();
         const musicData = await musicRes.json();
         const testimoniesData = await testimoniesRes.json();
-        setServices(sermonsData.sermons ?? []);
+        setAllServices(sermonsData.sermons ?? []);
         setTracks(musicData.music ?? musicData.tracks ?? []);
         setTestimonies(testimoniesData.testimonies ?? []);
       } catch (err) {
@@ -498,7 +812,7 @@ export default function MediaPage() {
       <section className="section-padding">
         <div className="container-wide">
           <FadeIn>
-            <Tabs defaultValue="services" className="w-full">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="mb-8 flex w-full flex-wrap gap-1 bg-warm-100 p-1.5 rounded-xl h-auto">
                 <TabsTrigger
                   value="services"
@@ -528,10 +842,17 @@ export default function MediaPage() {
                   <Quote className="h-4 w-4" />
                   Testimonies
                 </TabsTrigger>
+                <TabsTrigger
+                  value="archives"
+                  className="flex-1 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
+                >
+                  <Archive className="h-4 w-4" />
+                  Archives
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="services">
-                <ServicesTab services={services} />
+                <ServicesTab services={recentServices} />
               </TabsContent>
 
               <TabsContent value="music">
@@ -544,6 +865,10 @@ export default function MediaPage() {
 
               <TabsContent value="testimonies">
                 <TestimoniesTab testimonies={testimonies} />
+              </TabsContent>
+
+              <TabsContent value="archives">
+                <ArchivesTab services={archivedServices} />
               </TabsContent>
             </Tabs>
           </FadeIn>

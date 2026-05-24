@@ -10,6 +10,7 @@ const cspDirectives = [
   "font-src 'self' https://fonts.gstatic.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "media-src 'self' https://*.supabase.co",
+  "frame-src 'self' https://www.youtube.com https://youtube.com",
   "frame-ancestors 'none'",
   "form-action 'self'",
   "base-uri 'self'",

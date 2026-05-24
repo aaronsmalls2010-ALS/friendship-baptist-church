@@ -41,7 +41,6 @@ export const PUBLIC_NAV: NavItem[] = [
     href: "/events",
     children: [
       { label: "Events", href: "/events" },
-      { label: "Watch Live", href: "/media?tab=live" },
       { label: "Prayer Requests", href: "/prayer" },
     ],
   },
@@ -61,10 +60,11 @@ export const PUBLIC_NAV: NavItem[] = [
     label: "Media",
     href: "/media",
     children: [
-      { label: "Sermons", href: "/media?tab=sermons" },
+      { label: "Sermons", href: "/media?tab=services" },
       { label: "Music", href: "/media?tab=music" },
       { label: "Photo Gallery", href: "/media?tab=gallery" },
       { label: "Testimonies", href: "/media?tab=testimonies" },
+      { label: "Archives", href: "/media?tab=archives" },
     ],
   },
   { label: "Give", href: "/give" },

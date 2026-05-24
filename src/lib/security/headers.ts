@@ -46,6 +46,9 @@ export function getCSPHeader(nonce?: string): string {
     // Media: self + Supabase storage
     `media-src 'self' https://*.supabase.co`,
 
+    // Allow YouTube embeds for worship service videos
+    `frame-src 'self' https://www.youtube.com https://youtube.com`,
+
     // Disallow embedding in frames
     `frame-ancestors 'none'`,
 

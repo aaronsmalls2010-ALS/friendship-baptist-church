@@ -317,7 +317,7 @@ export default function MyProfilePage() {
 
     // Preferences from profile
     const eNotifs = p.email_notifications !== false; // default true
-    const sNotifs = p.sms_opt_in === true; // default false
+    const sNotifs = p.sms_opt_in !== false; // default true
     const pubDir = p.public_directory !== false; // default true
     setEmailNotifs(eNotifs);
     setSmsNotifs(sNotifs);

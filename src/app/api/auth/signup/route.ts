@@ -134,6 +134,9 @@ export async function POST(request: NextRequest) {
           first_name: sanitizedFirstName,
           last_name: sanitizedLastName,
           phone: sanitizedPhone || null,
+          sms_opt_in: true,
+          email_notifications: true,
+          public_directory: true,
           is_email_verified: false,
           is_approved: false,
         })

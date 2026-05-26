@@ -8,8 +8,11 @@
 --   SMS messages will only be sent to members with sms_opt_in = true.
 -- ============================================================================
 
--- Add sms_opt_in column (default false — members must explicitly opt in)
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sms_opt_in BOOLEAN NOT NULL DEFAULT false;
+-- Add sms_opt_in column (default true — members are opted in at signup and can opt out)
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS sms_opt_in BOOLEAN NOT NULL DEFAULT true;
+
+-- Opt in all existing members who have a phone number
+UPDATE profiles SET sms_opt_in = true WHERE phone IS NOT NULL AND phone != '';
 
 -- Add email_notifications column (default true)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email_notifications BOOLEAN NOT NULL DEFAULT true;

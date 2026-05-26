@@ -315,6 +315,14 @@ export default function MyProfilePage() {
     setEmergencyName(emName);
     setEmergencyPhone(emPhone);
 
+    // Preferences from profile
+    const eNotifs = p.email_notifications !== false; // default true
+    const sNotifs = p.sms_opt_in === true; // default false
+    const pubDir = p.public_directory !== false; // default true
+    setEmailNotifs(eNotifs);
+    setSmsNotifs(sNotifs);
+    setPublicDirectory(pubDir);
+
     // Store snapshot for dirty detection
     const snapshot: FormSnapshot = {
       firstName: fName,
@@ -331,9 +339,9 @@ export default function MyProfilePage() {
       zip: zp,
       emergencyName: emName,
       emergencyPhone: emPhone,
-      emailNotifs: true,
-      smsNotifs: false,
-      publicDirectory: true,
+      emailNotifs: eNotifs,
+      smsNotifs: sNotifs,
+      publicDirectory: pubDir,
     };
     setSavedSnapshot(snapshot);
   }
@@ -537,15 +545,31 @@ export default function MyProfilePage() {
   // ── Save preferences ───────────────────────────────────────────
   const [savingPreferences, setSavingPreferences] = useState(false);
 
-  function handleSavePreferences() {
+  async function handleSavePreferences() {
     setSavingPreferences(true);
-    // Simulate a brief network delay since there's no backend yet
-    setTimeout(() => {
-      setSavingPreferences(false);
-      // Update saved snapshot
+    try {
+      const res = await fetch("/api/portal/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email_notifications: emailNotifs,
+          sms_opt_in: smsNotifs,
+          public_directory: publicDirectory,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save preferences");
+      setProfile(data.profile);
       setSavedSnapshot(getCurrentSnapshot());
       setToast({ type: "success", message: "Preferences saved successfully" });
-    }, 600);
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Save failed",
+      });
+    } finally {
+      setSavingPreferences(false);
+    }
   }
 
   // ── Create family ───────────────────────────────────────────────
@@ -1687,10 +1711,10 @@ export default function MyProfilePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-warm-800">
-                      SMS Notifications
+                      SMS Text Messages
                     </p>
                     <p className="text-sm text-warm-500">
-                      Receive text messages for urgent announcements
+                      Opt in to receive text messages from the church (announcements, events, prayer alerts)
                     </p>
                   </div>
                   <Switch

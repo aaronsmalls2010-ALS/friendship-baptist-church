@@ -23,6 +23,7 @@ const ALLOWED_FIELDS = [
   "photo_url",
   "email_notifications",
   "sms_notifications",
+  "sms_opt_in",
   "public_directory",
 ] as const;
 

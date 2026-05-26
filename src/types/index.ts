@@ -28,6 +28,9 @@ export interface Profile {
   family_id?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
+  sms_opt_in?: boolean;
+  email_notifications?: boolean;
+  public_directory?: boolean;
   created_at: string;
   updated_at: string;
 }

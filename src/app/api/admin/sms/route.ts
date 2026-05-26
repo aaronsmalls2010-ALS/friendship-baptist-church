@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     if (recipientGroup === "custom" && customNumbers) {
       phoneNumbers = customNumbers;
     } else {
-      let query = admin.from("profiles").select("phone");
+      let query = admin.from("profiles").select("phone, sms_opt_in");
 
       if (recipientGroup === "deacons") {
         query = query.in("role", ["deacon"]);
@@ -92,8 +92,10 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Only send to members who have opted in to SMS and have a valid phone number
       phoneNumbers = (profiles || [])
-        .map((p: Record<string, string | null>) => p.phone)
+        .filter((p: Record<string, unknown>) => p.sms_opt_in === true)
+        .map((p: Record<string, unknown>) => p.phone as string)
         .filter((phone: string | null): phone is string => !!phone && phone.length >= 10);
     }
 

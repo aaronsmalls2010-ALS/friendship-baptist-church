@@ -37,20 +37,19 @@ export const PUBLIC_NAV: NavItem[] = [
   },
   {
     label: "Worship",
-    href: "/events",
+    href: "/prayer",
     children: [
-      { label: "Events", href: "/events" },
       { label: "Prayer Requests", href: "/prayer" },
+      { label: "Ministries", href: "/ministries" },
+      { label: "New Here?", href: "/welcome" },
     ],
   },
   {
     label: "Connect",
-    href: "/ministries",
+    href: "/events",
     children: [
-      { label: "Ministries", href: "/ministries" },
       { label: "Events", href: "/events" },
       { label: "Calendar", href: "/calendar" },
-      { label: "New Here?", href: "/welcome" },
       { label: "Bible Trivia", href: "/trivia" },
       { label: "Business Directory", href: "/business-directory" },
     ],

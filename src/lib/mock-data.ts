@@ -25,8 +25,7 @@ import type {
 
 // ─── Wards ──────────────────────────────────────────────────────────
 export const MOCK_WARDS: Ward[] = [
-  { id: "w1", name: "Ward 1", description: "Church families assigned to Ward 1", deacon_id: "d1", families_count: 18, created_at: "2024-01-01" },
-  { id: "w2", name: "Ward 2", description: "Church families assigned to Ward 2", deacon_id: "d1", families_count: 22, created_at: "2024-01-01" },
+  { id: "w1", name: "Ward 1 & 2", description: "Church families assigned to Ward 1 & 2", deacon_id: "d1", families_count: 40, created_at: "2024-01-01" },
   { id: "w3", name: "Ward 3", description: "Church families assigned to Ward 3", deacon_id: "d2", families_count: 15, created_at: "2024-01-01" },
   { id: "w4", name: "Ward 4", description: "Church families assigned to Ward 4", deacon_id: "d3", families_count: 20, created_at: "2024-01-01" },
   { id: "w5", name: "Ward 5", description: "Church families assigned to Ward 5", deacon_id: "d5", families_count: 17, created_at: "2024-01-01" },
@@ -38,52 +37,52 @@ export const MOCK_DEACONS: Deacon[] = [
   {
     id: "d1", profile_id: "p1", ward_id: "w1", ordained_date: "2005-06-15",
     title: "Chairman",
-    bio: "Chairman Deacon Simmons has faithfully served the church for many years. He leads the deacon board with wisdom and integrity, guiding the spiritual care of multiple ward families with a heart devoted to prayer and service.",
+    bio: "After years of working in New York, Deacon Simmons answered God's call to come back home to the Lowcountry and serve his church family. As Chairman of the Deacon Board, he leads with quiet wisdom and steadfast integrity, drawing on his life experiences to guide and encourage ward families through every season.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Edward", last_name: "Simmons", phone: "(646) 201-0833", photo_url: undefined, ward_name: "Ward 1 & Ward 2",
   },
   {
     id: "d2", profile_id: "p2", ward_id: "w3", ordained_date: "2010-03-22",
-    bio: "Deacon Moultrie brings warmth and dedication to his ward families. He is known for his steadfast commitment to visiting the sick and comforting those in need, embodying the servant leadership that defines our deacon ministry.",
+    bio: "Deacon Moultrie is a man of strong will and deep passion for the work of the Lord. His bold, unwavering spirit inspires those around him to stand firm in their faith. Whether visiting the sick or leading devotion, he brings an intensity and sincerity that uplifts the entire congregation.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Leon", last_name: "Moultrie", photo_url: undefined, ward_name: "Ward 3",
   },
   {
     id: "d3", profile_id: "p3", ward_id: "w4", ordained_date: "2012-09-10",
-    bio: "Deacon Grant serves alongside Deacon Brisbane to shepherd the families of Ward 4. His compassionate spirit and commitment to outreach make him a pillar of strength in the congregation.",
+    bio: "Deacon Grant brings discipline, energy, and structure to everything he does in service to the Lord. His organized approach to ministry and his enthusiastic spirit set a powerful example for the congregation. Whether coordinating ward activities or serving at the altar, he gives his very best with purpose and dedication.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Terry", last_name: "Grant", phone: "(843) 271-4581", photo_url: undefined, ward_name: "Ward 4",
   },
   {
     id: "d4", profile_id: "p4", ward_id: "w4", ordained_date: "2015-01-18",
     title: "Emeritus",
-    bio: "Emeritus Deacon Brisbane has given decades of faithful service to the church. His wisdom, generous heart, and steadfast devotion continue to inspire and guide the congregation.",
+    bio: "Emeritus Deacon Brisbane is a pillar of wisdom and a true prayer warrior whose intercession has carried this church through countless seasons. His deep knowledge of Scripture and unwavering commitment to prayer make him a spiritual anchor for the congregation. When he prays, heaven listens.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Horace", last_name: "Brisbane", photo_url: undefined, ward_name: "Ward 4",
   },
   {
     id: "d5", profile_id: "p5", ward_id: "w5", ordained_date: "2018-05-27",
     title: "Vice Chairman",
-    bio: "Vice Chairman Deacon Smalls is a lifelong member of Friendship Baptist Church. His energy and dedication inspire both young and old in the congregation, and he serves as a trusted advisor on the deacon board.",
+    bio: "Vice Chairman Deacon Oscar Smalls is a man of remarkable growth and courage, always striving to put on the full armor of God as described in Ephesians 6. His journey of faith has strengthened his resolve to lead boldly, and he encourages every member to stand firm in the battle against spiritual adversity.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Oscar", last_name: "Smalls", phone: "(843) 263-0027", photo_url: undefined, ward_name: "Ward 5",
   },
   {
     id: "d6", profile_id: "p6", ward_id: "w5", ordained_date: "2020-11-08",
-    bio: "Deacon Gwyn works alongside Vice Chairman Deacon Smalls to minister to the families of Ward 5. He brings a spirit of fellowship and devotion to every aspect of his service.",
+    bio: "Deacon Cecil Gwyn is a passionate and heartfelt servant of God who found a newfound home at Friendship Baptist Church. Since joining the congregation, his love for worship and genuine care for others have made a lasting impact. He pours his whole heart into ministry, and his warmth is felt by everyone he encounters.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Cecil", last_name: "Gwyn", phone: "(912) 344-0500", photo_url: undefined, ward_name: "Ward 5",
   },
   {
     id: "d7", profile_id: "p7", ward_id: "w6", ordained_date: "2019-04-14",
-    bio: "Deacon Aaron Smalls faithfully shepherds the families of Ward 6. His quiet strength and unwavering commitment to the church make him a dependable source of spiritual support for his ward families.",
+    bio: "Deacon Aaron Smalls is a kindhearted and quiet young man with an eager desire to learn and grow in the Lord. His humble spirit and willingness to serve wherever needed make him a valued member of the deacon board. He represents the next generation of servant leadership at Friendship Baptist Church.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Aaron", last_name: "Smalls", phone: "(843) 263-0072", photo_url: undefined, ward_name: "Ward 6",
   },
   {
     id: "d8", profile_id: "p15", ward_id: "w1", ordained_date: "1990-05-20",
     title: "Emeritus",
-    bio: "Emeritus Deacon Seigler has served Friendship Baptist Church with honor and distinction for many years. His legacy of faithful service, prayer, and devotion to the church family continues to be a guiding light for all who follow.",
+    bio: "Emeritus Deacon Seigler is a man of quiet determination and soft-spoken strength. His steady, faithful presence has been a constant source of encouragement for the church family over many years. He leads not with loud words but with consistent action, and his humble devotion to God speaks volumes to all who know him.",
     is_active: true, created_at: "2024-01-01",
     first_name: "Mikell", last_name: "Seigler", phone: "(843) 812-4321", photo_url: undefined, ward_name: "Ward 1 & Ward 2",
   },
@@ -158,6 +157,107 @@ export const MOCK_EVENTS: Event[] = [
   {
     id: "e8", title: "Spring Revival", description: "Three nights of powerful preaching, worship, and spiritual renewal. Guest Evangelist Rev. Dr. Calvin Harris.",
     start_date: "2026-03-18T19:00:00", end_date: "2026-03-20T21:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  // ── Major Holidays & African American Religious / Family Holidays ───
+  {
+    id: "e-ny", title: "New Year's Day Watch Night Service", description: "Ring in the new year in the presence of the Lord. Join us as we praise God for His faithfulness and step into the new year with prayer and worship.",
+    start_date: "2026-01-01T00:00:00", end_date: "2026-01-01T01:30:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-mlk", title: "Dr. Martin Luther King Jr. Day Celebration", description: "Honoring the life and legacy of Dr. Martin Luther King Jr. through worship, reflection, and community service in the spirit of love and justice.",
+    start_date: "2026-01-19T10:00:00", end_date: "2026-01-19T13:00:00", location: "Main Sanctuary & Fellowship Hall", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-bhm", title: "Black History Month Celebration", description: "A month-long celebration of African American heritage, faith, and achievement. Special programs, guest speakers, and cultural presentations throughout February.",
+    start_date: "2026-02-01T10:00:00", end_date: "2026-02-01T13:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-val", title: "Valentine's Day Couples Fellowship", description: "A special evening for couples to celebrate love and strengthen their bonds through faith, fellowship, dinner, and devotion.",
+    start_date: "2026-02-14T18:00:00", end_date: "2026-02-14T21:00:00", location: "Fellowship Hall", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: true, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-palm", title: "Palm Sunday Worship", description: "Join us as we celebrate Jesus' triumphant entry into Jerusalem. A joyful service of praise, palms, and proclamation.",
+    start_date: "2026-03-29T10:00:00", end_date: "2026-03-29T12:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-gf", title: "Good Friday Service", description: "A solemn service remembering the crucifixion and sacrifice of our Lord Jesus Christ. Join us for Scripture reading, hymns, and reflection.",
+    start_date: "2026-04-03T19:00:00", end_date: "2026-04-03T21:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-easter", title: "Easter Sunday Sunrise & Worship Service", description: "Celebrate the resurrection of Jesus Christ! Join us for a glorious sunrise service followed by our main Easter worship celebration with special music and praise.",
+    start_date: "2026-04-05T06:30:00", end_date: "2026-04-05T13:00:00", location: "Church Grounds & Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-mom", title: "Mother's Day Celebration", description: "Honoring the mothers, grandmothers, and mother figures of our church family. A special service of love, recognition, and gratitude for their sacrifice and faithfulness.",
+    start_date: "2026-05-10T10:00:00", end_date: "2026-05-10T13:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-mem", title: "Memorial Day Remembrance", description: "We honor and remember those who gave their lives in service to our country. A time of reflection, prayer, and patriotic worship.",
+    start_date: "2026-05-25T10:00:00", end_date: "2026-05-25T12:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-june", title: "Juneteenth Freedom Celebration", description: "Celebrating the emancipation of enslaved African Americans. A day of worship, Gullah Geechee cultural heritage, food, music, and giving thanks for God's deliverance.",
+    start_date: "2026-06-19T10:00:00", end_date: "2026-06-19T16:00:00", location: "Church Grounds", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-dad", title: "Father's Day Celebration", description: "Honoring the fathers, grandfathers, and father figures of Friendship Baptist. A special service of appreciation for the men who lead our families in faith.",
+    start_date: "2026-06-21T10:00:00", end_date: "2026-06-21T13:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-labor", title: "Labor Day Family Cookout", description: "A fun-filled day of fellowship, food, and family activities as we close out the summer together. Bring your favorite dish and enjoy the Lowcountry fellowship.",
+    start_date: "2026-09-07T11:00:00", end_date: "2026-09-07T16:00:00", location: "Church Grounds", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-grand", title: "Grandparents Day Recognition", description: "A heartfelt service honoring the grandparents of our congregation. Their wisdom, prayers, and love are the foundation of our church family.",
+    start_date: "2026-09-13T10:00:00", end_date: "2026-09-13T12:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-harvest", title: "Fall Harvest Festival", description: "A family-friendly harvest celebration with games, food, hayrides, and fellowship. A wholesome alternative for the whole community.",
+    start_date: "2026-10-31T15:00:00", end_date: "2026-10-31T19:00:00", location: "Church Grounds", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: true, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-vet", title: "Veterans Day Honor Service", description: "We salute and honor all veterans in our church family and community. Thank you for your service and sacrifice.",
+    start_date: "2026-11-11T10:00:00", end_date: "2026-11-11T12:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-thanks", title: "Thanksgiving Day Worship & Community Dinner", description: "A special Thanksgiving worship service followed by a community dinner for all. We give thanks to God for His blessings and share a meal with those in need.",
+    start_date: "2026-11-26T10:00:00", end_date: "2026-11-26T15:00:00", location: "Main Sanctuary & Fellowship Hall", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: true, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-xmas-prog", title: "Christmas Program & Nativity", description: "Our annual Christmas program featuring the youth nativity play, choir performances, and the retelling of the birth of Jesus Christ. A joyful celebration for the whole family.",
+    start_date: "2026-12-20T17:00:00", end_date: "2026-12-20T20:00:00", location: "Main Sanctuary", ministry_id: "m3", image_url: undefined,
+    rsvp_enabled: true, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-xmas", title: "Christmas Day Worship Service", description: "Celebrate the birth of our Lord and Savior Jesus Christ with a special Christmas morning worship service filled with carols, praise, and the Word of God.",
+    start_date: "2026-12-25T10:00:00", end_date: "2026-12-25T12:00:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-watch", title: "Watch Night Service", description: "Close out the year in the house of the Lord. A powerful night of worship, testimony, and prayer as we cross over into the new year together.",
+    start_date: "2026-12-31T22:00:00", end_date: "2027-01-01T00:30:00", location: "Main Sanctuary", ministry_id: undefined, image_url: undefined,
+    rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
+  },
+  {
+    id: "e-kwanzaa", title: "Kwanzaa Celebration", description: "Celebrating the seven principles of Kwanzaa — unity, self-determination, collective work, cooperative economics, purpose, creativity, and faith. A cultural and spiritual gathering for the community.",
+    start_date: "2026-12-26T17:00:00", end_date: "2026-12-26T20:00:00", location: "Fellowship Hall", ministry_id: undefined, image_url: undefined,
     rsvp_enabled: false, is_published: true, created_at: "2024-01-01",
   },
 ];

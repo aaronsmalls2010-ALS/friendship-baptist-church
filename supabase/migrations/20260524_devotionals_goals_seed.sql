@@ -2745,26 +2745,21 @@ CREATE TABLE IF NOT EXISTS sms_log (
 -- Enable RLS
 ALTER TABLE sms_log ENABLE ROW LEVEL SECURITY;
 
--- Only admins can read SMS logs
-CREATE POLICY "Admins can read sms_log"
-  ON sms_log FOR SELECT
-  USING (is_admin());
-
--- Only admins can insert SMS logs
-CREATE POLICY "Admins can insert sms_log"
-  ON sms_log FOR INSERT
-  WITH CHECK (is_admin());
-
--- Only admins can update SMS logs
-CREATE POLICY "Admins can update sms_log"
-  ON sms_log FOR UPDATE
-  USING (is_admin())
-  WITH CHECK (is_admin());
-
--- Only admins can delete SMS logs
-CREATE POLICY "Admins can delete sms_log"
-  ON sms_log FOR DELETE
-  USING (is_admin());
+-- Only admins can access SMS logs (skip if policies already exist)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can read sms_log') THEN
+    CREATE POLICY "Admins can read sms_log" ON sms_log FOR SELECT USING (is_admin());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can insert sms_log') THEN
+    CREATE POLICY "Admins can insert sms_log" ON sms_log FOR INSERT WITH CHECK (is_admin());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can update sms_log') THEN
+    CREATE POLICY "Admins can update sms_log" ON sms_log FOR UPDATE USING (is_admin()) WITH CHECK (is_admin());
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins can delete sms_log') THEN
+    CREATE POLICY "Admins can delete sms_log" ON sms_log FOR DELETE USING (is_admin());
+  END IF;
+END $$;
 
 
 -- ============================================================================

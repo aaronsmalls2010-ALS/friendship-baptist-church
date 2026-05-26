@@ -75,17 +75,17 @@ const visionCards = [
   },
   {
     icon: Users,
-    title: "Community Engagement",
+    title: "Living By The Word",
     descId: "pastor.vision.community",
     description:
-      "The church does not exist within four walls. Pastor Smalls has championed outreach programs, partnerships with local organizations, and a culture of service that extends the love of Christ into the neighborhoods, schools, and families of Beaufort.",
+      "Pastor Smalls leads by example, anchoring every aspect of ministry in the authority and promises of Scripture. He encourages the congregation to apply God's Word daily — in their homes, workplaces, and relationships — believing that a life built on the Bible is a life that bears lasting fruit.",
   },
   {
     icon: Heart,
-    title: "Spiritual Formation",
+    title: "Agape Love",
     descId: "pastor.vision.formation",
     description:
-      "Discipleship is at the heart of his ministry. Through Bible study, mentoring, prayer groups, and intentional fellowship, Pastor Smalls cultivates an environment where every member is growing deeper in their relationship with God and bearing fruit in their daily lives.",
+      "At the center of Pastor Smalls' ministry is the unconditional, sacrificial love of Christ. He teaches that agape love — love that gives without expecting in return — is the mark of a true believer. Through compassion, forgiveness, and genuine care for one another, the church reflects the heart of God to the world.",
   },
 ];
 

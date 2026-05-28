@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Cormorant_Garamond } from "next/font/google";
+import Script from "next/script";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { MusicProvider } from "@/providers/music-provider";
 import { AuthProvider } from "@/providers/auth-provider";
@@ -80,6 +81,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script
+          defer
+          src="https://analytics.integritywebcreations.com/script.js"
+          data-website-id="0ecb8961-97b0-4a4f-9ba1-3e438bd0d04d"
+          strategy="afterInteractive"
+        />
+      </head>
       <body
         className={`${inter.variable} ${playfair.variable} ${cormorant.variable} font-body antialiased`}
       >

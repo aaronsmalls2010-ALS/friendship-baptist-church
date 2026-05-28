@@ -29,7 +29,7 @@ export function getCSPHeader(nonce?: string): string {
     `default-src 'self'`,
 
     // Scripts: self + optional nonce for inline scripts
-    `script-src ${scriptSrc}`,
+    `script-src ${scriptSrc} https://analytics.integritywebcreations.com`,
 
     // Styles: self + unsafe-inline (needed for Tailwind) + Google Fonts
     `style-src ${styleSrc}`,
@@ -41,7 +41,7 @@ export function getCSPHeader(nonce?: string): string {
     `font-src 'self' https://fonts.gstatic.com`,
 
     // API connections: self + Supabase
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co`,
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://analytics.integritywebcreations.com`,
 
     // Media: self + Supabase storage
     `media-src 'self' https://*.supabase.co`,

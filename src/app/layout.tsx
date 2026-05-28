@@ -7,6 +7,7 @@ import { AuthProvider } from "@/providers/auth-provider";
 import { SiteSettingsProvider } from "@/contexts/site-settings-context";
 import { MusicPlayer } from "@/components/media/music-player";
 import { CMSWrapper } from "@/components/cms/cms-wrapper";
+import { JsonLd, churchSchema, websiteSchema } from "@/components/seo/json-ld";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,6 +31,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.thefriendshipbaptist.com"),
   title: {
     default: "The Friendship Baptist Church — The Church That Christ Built",
     template: "%s | Friendship Baptist Church",
@@ -48,6 +50,13 @@ export const metadata: Metadata = {
     "Bible study",
   ],
   authors: [{ name: "The Friendship Baptist Church" }],
+  icons: {
+    icon: "/images/logos/fbc-icon.png",
+    apple: "/images/logos/fbc-icon.png",
+  },
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -92,6 +101,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${playfair.variable} ${cormorant.variable} font-body antialiased`}
       >
+        <JsonLd data={[churchSchema, websiteSchema]} />
         <ThemeProvider>
           <AuthProvider>
             <SiteSettingsProvider>

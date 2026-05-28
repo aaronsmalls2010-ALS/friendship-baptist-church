@@ -22,6 +22,12 @@ export function PublicHeader() {
 
   return (
     <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-[10000] focus:bg-primary focus:text-white focus:px-6 focus:py-3 focus:text-sm focus:font-semibold"
+      >
+        Skip to main content
+      </a>
       <motion.header
         className={cn(
           "fixed top-0 left-0 right-0 z-50 transition-all duration-300",

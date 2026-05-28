@@ -1,16 +1,17 @@
 import type { NextConfig } from "next";
 
 // Build CSP inline (avoid importing TS from src at config level)
-// Next.js requires 'unsafe-inline' + 'unsafe-eval' for hydration and HMR
+// Next.js requires 'unsafe-inline' for hydration; 'unsafe-eval' only for dev HMR
+const isDev = process.env.NODE_ENV === "development";
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' https://fonts.gstatic.com",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "media-src 'self' https://*.supabase.co",
-  "frame-src 'self' https://www.youtube.com https://youtube.com",
+  "frame-src 'self' https://www.youtube.com https://youtube.com https://www.google.com",
   "frame-ancestors 'none'",
   "form-action 'self'",
   "base-uri 'self'",
@@ -130,6 +131,9 @@ const nextConfig: NextConfig = {
 
   // ── Strict mode for React ──
   reactStrictMode: true,
+
+  // ── Disable source maps in production (prevents code exposure) ──
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;

@@ -18,7 +18,7 @@ export default function HistoryPage() {
       {/* Hero */}
       <PageHero
         title="Our History"
-        subtitle="A legacy of faith since 1865"
+        subtitle="A legacy of faith since 1872"
         overlay="warm"
         breadcrumbs={[
           { label: "About", href: "/about" },
@@ -39,7 +39,7 @@ export default function HistoryPage() {
                 as="p"
                 multiline
                 className="mt-4 text-fluid-base text-warm-600"
-                fallback="From humble gatherings beneath Lowcountry oaks to a thriving congregation, the story of Friendship Baptist Church is a testament to God's faithfulness across generations."
+                fallback="Over 150 years ago, a small group of Christians on Coosaw Island organized a church that would endure division, reunification, and generations of faithful leadership. The story of Friendship Baptist Church is a testament to God's faithfulness and the unwavering devotion of His people."
               />
             </div>
           </FadeIn>
@@ -137,7 +137,7 @@ export default function HistoryPage() {
                 as="p"
                 multiline
                 className="mt-6 text-fluid-base text-warm-600 leading-relaxed"
-                fallback="For over 160 years, Friendship Baptist Church has stood as a beacon of hope in Beaufort, South Carolina. Born from the prayers of the formerly enslaved and nurtured by generation after generation of faithful believers, this church is more than a building — it is a living testimony."
+                fallback="From its origins as the Independence Baptist Church on Coosaw Island in 1872, through a division that created two congregations, and a God-inspired reunification in 1961 that formed Friendship Baptist Church — 'The Church that Christ Built' — this congregation has been guided by the hand of God through every season."
               />
 
               <EditableText
@@ -145,7 +145,7 @@ export default function HistoryPage() {
                 as="p"
                 multiline
                 className="mt-4 font-scripture text-fluid-lg italic text-purple-800 leading-relaxed"
-                fallback="From the Gullah Geechee traditions that echo in our praise to the oak-shaded grounds where the gospel was first spoken in freedom, every brick and every hymn carries the weight of our ancestors' faith."
+                fallback="'Where there is no vision, the people perish.' — Proverbs 29:18. With God as our Father, Jesus as our personal Savior, and Pastor Smalls as our under shepherd, we press forward toward the mark of the prize, of the high calling and our victory in Jesus Christ."
               />
 
               <EditableText
@@ -153,7 +153,7 @@ export default function HistoryPage() {
                 as="p"
                 multiline
                 className="mt-4 text-fluid-base text-warm-600 leading-relaxed"
-                fallback="Today, under the leadership of Pastor Isiah Smalls, Friendship Baptist continues to press forward — honoring the past while embracing a bold future. The same spirit that gathered beneath the trees in 1865 still burns in this congregation: a spirit of love, resilience, and unwavering devotion to the Lord."
+                fallback="Today, under the leadership of Pastor Isiah Smalls, Friendship Baptist continues to press forward — debt-free, growing, and faithfully serving God's people. The church has paid off its mortgage, expanded its facilities, and been blessed with the gift of five acres of adjacent land. The same spirit of faith and perseverance that united two churches on Coosaw Island still burns brightly in this congregation."
               />
             </div>
           </FadeIn>

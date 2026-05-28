@@ -13,12 +13,12 @@
  * @returns The CSP header value string.
  */
 export function getCSPHeader(nonce?: string): string {
-  // Next.js requires 'unsafe-inline' for hydration bootstrap scripts
-  // and 'unsafe-eval' for development mode / hot reload.
-  // In production with nonces, we can be more restrictive.
+  // Next.js requires 'unsafe-inline' for hydration bootstrap scripts.
+  // 'unsafe-eval' is only needed in development mode for hot reload.
+  const isDev = process.env.NODE_ENV === "development";
   const scriptSrc = nonce
     ? `'self' 'nonce-${nonce}'`
-    : `'self' 'unsafe-inline' 'unsafe-eval'`;
+    : `'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`;
 
   const styleSrc = nonce
     ? `'self' 'unsafe-inline' 'nonce-${nonce}' https://fonts.googleapis.com`
@@ -46,8 +46,8 @@ export function getCSPHeader(nonce?: string): string {
     // Media: self + Supabase storage
     `media-src 'self' https://*.supabase.co`,
 
-    // Allow YouTube embeds for worship service videos
-    `frame-src 'self' https://www.youtube.com https://youtube.com`,
+    // Allow YouTube embeds for worship service videos + Google Maps
+    `frame-src 'self' https://www.youtube.com https://youtube.com https://www.google.com`,
 
     // Disallow embedding in frames
     `frame-ancestors 'none'`,

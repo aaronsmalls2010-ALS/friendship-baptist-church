@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { SECURITY_HEADERS } from "@/lib/security/headers";
 
 // ─── Rate Limiting (in-memory, edge-compatible) ─────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -72,11 +73,19 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── Session management + route protection ──
+  let response: NextResponse;
   try {
-    return await updateSession(request);
+    response = await updateSession(request);
   } catch {
-    return NextResponse.next();
+    response = NextResponse.next();
   }
+
+  // ── Apply security headers to every response ──
+  for (const { key, value } of SECURITY_HEADERS) {
+    response.headers.set(key, value);
+  }
+
+  return response;
 }
 
 export const config = {

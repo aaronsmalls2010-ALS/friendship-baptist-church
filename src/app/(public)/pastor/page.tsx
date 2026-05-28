@@ -29,63 +29,70 @@ import { MOCK_SERMONS } from "@/lib/mock-data";
 
 const milestones = [
   {
-    year: "1988",
-    title: "Called to Ministry",
-    descId: "pastor.timeline.1988",
+    year: "1967",
+    title: "Baptized into the Body of Christ",
+    descId: "pastor.timeline.1967",
     description:
-      "As a young man growing up in the Lowcountry, Isiah Smalls felt the undeniable call of God on his life during a revival meeting. Surrendering to that call, he began preaching and teaching in local churches, discovering the gift God had placed within him.",
+      "On August 27, 1967, at the age of 11, Isiah Smalls was baptized and became a member of the Friendship Baptist Church. Even at that early age, he was in the service of the Lord — sweeping, cutting grass, carrying building materials, and caring for the church's 'Praise House' on Sam's Point, following in the footsteps of his father, Dea. Louis Smalls, Chairman of the Trustee Board.",
+  },
+  {
+    year: "1978",
+    title: "Education & Career",
+    descId: "pastor.timeline.1978",
+    description:
+      "A 1974 graduate of Beaufort High School, Pastor Smalls graduated cum laude from South Carolina State University in 1978 with a bachelor's degree in business administration and economics. He went on to serve 30 years with the City of Beaufort, including 21 years as Director of Public Works, retiring June 30, 2015.",
   },
   {
     year: "1994",
-    title: "Seminary Education",
+    title: "Called to Serve as Deacon",
     descId: "pastor.timeline.1994",
     description:
-      "Answering the call to deepen his knowledge of the Word, he pursued theological studies at Morris College and later earned his Master of Divinity, equipping himself to rightly divide the truth and shepherd God's people with wisdom.",
-  },
-  {
-    year: "1998",
-    title: "Early Pastoral Ministry",
-    descId: "pastor.timeline.1998",
-    description:
-      "Pastor Smalls served faithfully in several congregations across the Lowcountry, building a reputation as a compassionate shepherd, a powerful preacher, and a man devoted to prayer and community service.",
+      "Pastor Smalls served as a deacon at Friendship Baptist for 16 years (1994–2010), including six years as Assistant Chairman (2004–2010). During this time, he served as Project and Finance Manager for the most extensive renovation in the church's history — a $375,000 remodeling of the sanctuary and addition of 1,700 square feet of classroom and office space.",
   },
   {
     year: "2010",
-    title: "Called to Friendship Baptist",
+    title: "Licensed & Ordained",
     descId: "pastor.timeline.2010",
     description:
-      "The Lord led Pastor Smalls to The Friendship Baptist Church in Beaufort, South Carolina. Under his leadership, the church experienced a season of spiritual renewal, growth in membership, and a deepened commitment to community outreach.",
+      "In September 1991, the Lord revealed a ministry to then-Brother Smalls. For 19 years, God shaped his spiritual growth through trials, tribulations, and revelations — teaching him servitude through patience, steadfastness, boldness, and humbleness. In 2010, he received the confirmation of a higher calling and was licensed on May 30, 2010 and ordained on September 26, 2010.",
+  },
+  {
+    year: "2011",
+    title: "Installed as Pastor",
+    descId: "pastor.timeline.2011",
+    description:
+      "On October 10, 2011, the Friendship Baptist Church selected Minister Smalls as their Pastor, with formal installation services held November 20, 2011. Pastor Smalls loves God, God's people, and God's sanctuary. He has served on various ministries throughout his entire life at Friendship: Trustee Ministry (10 years), Sunday School teacher (25 years), and Youth/Adult/Senior Choirs (44+ years combined).",
   },
   {
     year: "Present",
-    title: "A Vision for the Future",
+    title: "Pressing Forward",
     descId: "pastor.timeline.present",
     description:
-      "Today, Pastor Smalls continues to lead Friendship Baptist with a vision rooted in Biblical truth and community transformation. From launching digital ministry to strengthening youth programs, he is building a bridge between the rich heritage of the church and the needs of a new generation.",
+      "Under Pastor Smalls' leadership, the church mortgage was paid off in 2014, the fellowship hall was expanded by nearly 1,000 sq ft ($270,000, debt-free), and five acres of adjacent land were gifted to the church, doubling its property to 10 acres. Through the Covid-19 pandemic, his innovative Parking Lot Services kept the congregation worshiping safely for over 15 months. He continues to unapologetically teach the Word of God, reach out to the lost, and win souls for the Kingdom.",
   },
 ];
 
 const visionCards = [
   {
     icon: BookOpen,
-    title: "Biblical Teaching",
+    title: "Teacher of the Word",
     descId: "pastor.vision.teaching",
     description:
-      "Pastor Smalls is committed to verse-by-verse, spirit-led teaching of God's Word. He believes the Bible is the living, breathing foundation for every decision, every relationship, and every season of life. His sermons challenge, encourage, and equip believers to walk in truth.",
+      "Pastor Smalls is a teacher of the Word. He encourages members to be part of Sunday School and Bible Study ministries, where the Word is taught in depth and detail. He has kindled new vigor, vitality, commitment, and spirituality in Word-based worship services at Friendship.",
   },
   {
     icon: Users,
-    title: "Living By The Word",
+    title: "Vision & Stewardship",
     descId: "pastor.vision.community",
     description:
-      "Pastor Smalls leads by example, anchoring every aspect of ministry in the authority and promises of Scripture. He encourages the congregation to apply God's Word daily — in their homes, workplaces, and relationships — believing that a life built on the Bible is a life that bears lasting fruit.",
+      "Pastor Smalls reminds Friendship of Proverbs 29:18 — 'Where there is no vision, the people perish.' He constantly directs focus toward the physical and structural needs of the church while caring for God's people spiritually, physically, financially, economically, and socially. He computerized church finances and implemented a culture of transparency.",
   },
   {
     icon: Heart,
-    title: "Agape Love",
+    title: "Love & Non-Judgment",
     descId: "pastor.vision.formation",
     description:
-      "At the center of Pastor Smalls' ministry is the unconditional, sacrificial love of Christ. He teaches that agape love — love that gives without expecting in return — is the mark of a true believer. Through compassion, forgiveness, and genuine care for one another, the church reflects the heart of God to the world.",
+      "Pastor Smalls has fostered a culture of non-judgment, friendliness, kindness, forgiveness, and love at Friendship. He eliminated traditions that hindered people from coming to Christ, believing faithfully in the saying: 'Do good, and good will come back to you.' His life philosophy is rooted in Luke 12:48 — 'For unto whomsoever much is given, of him shall be much required.'",
   },
 ];
 
@@ -133,14 +140,14 @@ export default function PastorPage() {
                   as="blockquote"
                   multiline
                   className="font-scripture italic text-fluid-xl text-gold-700 dark:text-gold-400 leading-relaxed mb-6"
-                  fallback={`“This church is not just a building — it is a family knit together by the love of God. When you walk through those doors, you are not a stranger. You are a brother, a sister, a child of the Most High. And we are here to walk with you, pray with you, and believe with you for every promise God has spoken over your life.”`}
+                  fallback={`”Like the Prophet Isaiah, when the Lord asked, 'Whom shall I send? And who will go for us?' I answered, 'Here am I. Send me!' God wants us to get back to Eden and start living on top of the world. Do good, and good will come back to you.”`}
                 />
                 <EditableText
                   id="pastor.welcome.desc"
                   as="p"
                   multiline
                   className="text-warm-600 dark:text-warm-400 mb-4"
-                  fallback="Pastor Smalls brings a shepherd's heart and a teacher's mind to every aspect of ministry at Friendship Baptist. His leadership is defined by compassion, Biblical conviction, and a genuine love for every soul that enters the church."
+                  fallback="Pastor Smalls is the 5th and youngest child of the late Dea. Louis Smalls and the late Susie Porter Smalls. Baptized into the body of Christ at Friendship 58 years ago, he has dedicated his entire life to the service of the Lord, his family, the church, and the community. A cum laude graduate of South Carolina State University and retired Director of Public Works for the City of Beaufort, Pastor Smalls has served Friendship in every capacity — from cutting grass as a boy to leading the congregation as its shepherd."
                 />
                 <p className="font-heading text-fluid-lg font-bold italic text-purple-700 dark:text-purple-400">
                   &ldquo;To God be the Glory!&rdquo;
@@ -200,14 +207,14 @@ export default function PastorPage() {
                   as="p"
                   multiline
                   className="text-warm-600 dark:text-warm-400 leading-relaxed mb-4"
-                  fallback="Behind every great ministry stands a partnership rooted in faith, love, and shared calling. First Lady Marie Smalls is not simply beside Pastor Smalls — she walks with him in purpose. Together, they carry the vision God has placed on Friendship Baptist Church, each one strengthening what the other builds."
+                  fallback="On June 7, 1980, Pastor Smalls married his best friend, childhood sweetheart, and love of his life, First Lady Marie Simmons Smalls. Together, they carry the vision God has placed on Friendship Baptist Church, each one strengthening what the other builds."
                 />
                 <EditableText
                   id="firstlady.heart"
                   as="p"
                   multiline
                   className="text-warm-600 dark:text-warm-400 leading-relaxed mb-4"
-                  fallback="Known for her warmth, her grace, and her genuine love for every person who walks through the doors of the church, First Lady Smalls has a gift for making people feel seen and valued. Whether offering a word of encouragement to a young mother, organizing fellowship events, or quietly praying over a family in need, her ministry touches lives in ways both seen and unseen."
+                  fallback="They are the proud parents of four children: Natarcia (Thomas) Bloomfield, Isiah 'Ike' Smalls II, Patrice (Devin) Dash, and Aaron Louis (Janay) Smalls. They are also blessed with 13 grandchildren. Known for her warmth, grace, and genuine love for every person who walks through the doors of the church, First Lady Smalls has a gift for making people feel seen and valued."
                 />
                 <EditableText
                   id="firstlady.legacy"

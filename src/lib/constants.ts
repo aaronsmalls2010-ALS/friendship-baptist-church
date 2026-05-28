@@ -52,6 +52,7 @@ export const PUBLIC_NAV: NavItem[] = [
       { label: "Calendar", href: "/calendar" },
       { label: "Bible Trivia", href: "/trivia" },
       { label: "Business Directory", href: "/business-directory" },
+      { label: "Contact Us", href: "/contact" },
     ],
   },
   {

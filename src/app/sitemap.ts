@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.thefriendshipbaptist.com";
+// Hardcoded to ensure www. prefix — must match Google Search Console property
+const BASE_URL = "https://www.thefriendshipbaptist.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const publicRoutes = [

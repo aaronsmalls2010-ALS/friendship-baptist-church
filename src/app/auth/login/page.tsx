@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { loginSchema } from "@/lib/validations/auth";
-import { toE164, looksLikeEmail } from "@/lib/phone";
+import { looksLikeEmail } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/client";
 import {
   AtSign,
@@ -43,25 +43,6 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  function getAuthErrorMessage(errorMessage: string): string {
-    if (errorMessage.includes("Invalid login credentials")) {
-      return "Invalid login. Please check your email/phone and password.";
-    }
-    if (
-      errorMessage.includes("Email not confirmed") ||
-      errorMessage.includes("Phone not confirmed")
-    ) {
-      return "Your account has not been verified yet. Please check your email or text messages.";
-    }
-    if (
-      errorMessage.includes("rate limit") ||
-      errorMessage.includes("too many")
-    ) {
-      return "Too many login attempts. Please try again later.";
-    }
-    return errorMessage || "Something went wrong. Please try again.";
-  }
-
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
@@ -93,71 +74,31 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
+      // All logins go through the server route. It accepts an email OR a phone
+      // identifier, resolves a phone to the account's email server-side, signs
+      // in, enforces the verification gate, and sets the session cookies.
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          identifier: result.data.identifier,
+          password: result.data.password,
+        }),
+      });
 
-      // Resolve the identifier into an email or E.164 phone sign-in.
-      const value = result.data.identifier;
-      const isEmail = looksLikeEmail(value);
-      const e164 = isEmail ? null : toE164(value);
+      const data = await response.json();
 
-      const { error: authError } = isEmail
-        ? await supabase.auth.signInWithPassword({
-            email: value.toLowerCase(),
-            password: result.data.password,
-          })
-        : await supabase.auth.signInWithPassword({
-            phone: e164 as string,
-            password: result.data.password,
-          });
-
-      if (authError) {
+      if (!response.ok) {
         setFailedAttempts((prev) => prev + 1);
-        setError(getAuthErrorMessage(authError.message));
+        setError(
+          data.error || "Invalid login. Please check your details and try again."
+        );
         return;
       }
 
-      // Success — determine role + verification status for redirect.
-      // We do this entirely client-side to avoid cookie race conditions
-      // with server API routes immediately after sign-in.
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser();
-
-      // ── Verification gate: the account is active once EITHER channel is
-      // verified. Unverified accounts are signed back out. ──
-      let role =
-        authUser?.user_metadata?.role || authUser?.app_metadata?.role;
-
-      if (authUser) {
-        try {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role, is_email_verified, is_phone_verified")
-            .eq("id", authUser.id)
-            .single();
-
-          if (
-            profile &&
-            profile.is_email_verified !== true &&
-            profile.is_phone_verified !== true
-          ) {
-            await supabase.auth.signOut();
-            setError(
-              "Please verify your account first. Check your email or text messages for your verification code."
-            );
-            return;
-          }
-
-          role = role || profile?.role;
-        } catch {
-          // Fall through — default to portal
-        }
-      }
-
-      // Fire off metadata sync in the background for future logins
-      // (don't await — we already have the role)
-      fetch("/api/auth/get-role").catch(() => {});
-
+      // Success — the server set the session cookies. Use a full-page
+      // navigation so middleware and the session re-read cleanly from cookies.
+      const role = data.user?.role;
       if (role === "admin" || role === "super_admin") {
         window.location.href = "/admin";
       } else {

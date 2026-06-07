@@ -109,17 +109,50 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Attempt login (with email or phone) ──
-    const supabase = await createServerSupabaseClient();
-    const { data, error } = sanitizedEmail
-      ? await supabase.auth.signInWithPassword({
-          email: sanitizedEmail,
-          password,
-        })
-      : await supabase.auth.signInWithPassword({
-          phone: e164Phone!,
-          password,
+    // ── Resolve the login email ──
+    // Email logins use the email directly. Phone logins are resolved to the
+    // account's auth email server-side (the phone is NOT a Supabase auth
+    // identity — it lives on the profile). This is what lets phone login work
+    // without enabling Supabase's phone provider.
+    let loginEmail = sanitizedEmail;
+
+    if (!loginEmail && e164Phone) {
+      const adminLookup = createAdminClient();
+      const { data: profileRow } = await adminLookup
+        .from("profiles")
+        .select("id")
+        .eq("phone", e164Phone)
+        .maybeSingle();
+
+      if (profileRow?.id) {
+        const { data: authUser } =
+          await adminLookup.auth.admin.getUserById(profileRow.id);
+        loginEmail = authUser.user?.email ?? null;
+      }
+
+      if (!loginEmail) {
+        // No account with that phone — record a failed attempt and return the
+        // same generic error as a bad password (no user enumeration).
+        recordFailedAttempt(lockoutKey);
+        console.log("[AUDIT] auth.failed_login", {
+          identifier: e164Phone,
+          ip,
+          reason: "phone_not_found",
+          timestamp: new Date().toISOString(),
         });
+        return NextResponse.json(
+          { error: "Invalid login. Please check your details and try again." },
+          { status: 401 }
+        );
+      }
+    }
+
+    // ── Attempt login ──
+    const supabase = await createServerSupabaseClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: loginEmail!,
+      password,
+    });
 
     if (error || !data.user) {
       recordFailedAttempt(lockoutKey);

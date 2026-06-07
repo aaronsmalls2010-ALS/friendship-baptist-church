@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getWelcomeEmailHtml, getWelcomeEmailText } from "@/lib/email/welcome";
-import { toE164, isValidUsPhone } from "@/lib/phone";
+import { toE164, isValidUsPhone, syntheticEmailForPhone } from "@/lib/phone";
 import { issuePhoneOtp } from "@/lib/auth/phone-otp";
 
 // ── Rate limiting for signup ──
@@ -148,14 +148,27 @@ export async function POST(request: NextRequest) {
     // Email verification token (only used on the email path).
     const verificationToken = randomUUID();
 
+    // Auth identity is ALWAYS an email. If the member gave a real email we use
+    // it; otherwise we mint an internal stand-in email from their phone. We
+    // never bind the phone to the Supabase auth record — phone login resolves
+    // to this email server-side, so we don't depend on Supabase's phone
+    // provider at all. The real phone lives only on the profile.
+    const authEmail = sanitizedEmail || syntheticEmailForPhone(e164Phone);
+    if (!authEmail) {
+      return NextResponse.json(
+        { error: "Please provide an email address or phone number." },
+        { status: 400 }
+      );
+    }
+
     // Create the auth user. We auto-confirm in Supabase (so password sign-in
     // works) and track our own verification flags on the profile.
     const createPayload: Parameters<
       typeof supabase.auth.admin.createUser
     >[0] = {
+      email: authEmail,
       password,
       email_confirm: true,
-      phone_confirm: true,
       user_metadata: {
         first_name: sanitizedFirstName,
         last_name: sanitizedLastName,
@@ -165,8 +178,6 @@ export async function POST(request: NextRequest) {
           : {}),
       },
     };
-    if (sanitizedEmail) createPayload.email = sanitizedEmail;
-    if (e164Phone) createPayload.phone = e164Phone;
 
     const { data, error } = await supabase.auth.admin.createUser(createPayload);
 

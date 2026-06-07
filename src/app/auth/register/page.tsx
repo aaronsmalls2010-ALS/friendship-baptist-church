@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FormSuccess } from "@/components/shared/form-success";
 import { PasswordStrengthMeter } from "@/components/auth/password-strength-meter";
 import { signUpSchema, type SignUpFormData } from "@/lib/validations/auth";
+import { maskPhone } from "@/lib/phone";
 import {
   Mail,
   Lock,
@@ -19,12 +20,18 @@ import {
   AlertCircle,
   Loader2,
   ArrowLeft,
+  MessageSquare,
 } from "lucide-react";
 
+type ContactMethod = "email" | "phone";
+type Step = "form" | "otp";
+
 export default function RegisterPage() {
+  const [method, setMethod] = useState<ContactMethod>("email");
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: "",
     lastName: "",
+    contactMethod: "email",
     email: "",
     phone: "",
     password: "",
@@ -35,13 +42,27 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<Step>("form");
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  // Phone-verification (OTP) state
+  const [userId, setUserId] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendNote, setResendNote] = useState("");
+
+  function selectMethod(next: ContactMethod) {
+    setMethod(next);
+    setFormData((prev) => ({ ...prev, contactMethod: next }));
+    setFieldErrors({});
+  }
+
   function updateField(field: keyof SignUpFormData, value: string | boolean) {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors((prev) => {
         const next = { ...prev };
@@ -56,15 +77,12 @@ export default function RegisterPage() {
     setServerError("");
     setFieldErrors({});
 
-    // Validate with Zod
-    const result = signUpSchema.safeParse(formData);
+    const result = signUpSchema.safeParse({ ...formData, contactMethod: method });
     if (!result.success) {
       const errors: Record<string, string> = {};
       for (const issue of result.error.issues) {
         const field = issue.path[0] as string;
-        if (!errors[field]) {
-          errors[field] = issue.message;
-        }
+        if (!errors[field]) errors[field] = issue.message;
       }
       setFieldErrors(errors);
       return;
@@ -77,11 +95,12 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: result.data.email,
+          contactMethod: method,
+          email: result.data.email || "",
+          phone: result.data.phone || "",
           password: result.data.password,
           firstName: result.data.firstName,
           lastName: result.data.lastName,
-          phone: result.data.phone || "",
           honeypot: result.data.honeypot || "",
         }),
       });
@@ -93,13 +112,76 @@ export default function RegisterPage() {
         return;
       }
 
-      setSuccess(true);
+      if (data.requiresVerification === "phone") {
+        setUserId(data.userId);
+        setStep("otp");
+      } else {
+        setSuccess(true);
+      }
     } catch {
       setServerError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }
   }
+
+  async function handleVerifyOtp(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setOtpError("");
+    setResendNote("");
+
+    if (!/^\d{6}$/.test(otpCode)) {
+      setOtpError("Enter the 6-digit code from your text message.");
+      return;
+    }
+
+    setOtpLoading(true);
+    try {
+      const response = await fetch("/api/auth/phone/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, code: otpCode }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setOtpError(data.error || "Verification failed. Please try again.");
+        return;
+      }
+
+      setSuccess(true);
+    } catch {
+      setOtpError("An unexpected error occurred. Please try again.");
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    setOtpError("");
+    setResendNote("");
+    setResendLoading(true);
+    try {
+      const response = await fetch("/api/auth/phone/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setOtpError(data.error || "Could not resend the code. Please try again.");
+        return;
+      }
+      setResendNote("A new code is on its way.");
+    } catch {
+      setOtpError("An unexpected error occurred. Please try again.");
+    } finally {
+      setResendLoading(false);
+    }
+  }
+
+  const showSuccess = success;
+  const showOtp = step === "otp" && !success;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-950 via-purple-900 to-purple-800 py-8">
@@ -120,12 +202,99 @@ export default function RegisterPage() {
             <Logo variant="full" size="lg" />
           </div>
 
-          {success ? (
+          {showSuccess ? (
             <div className="mt-6">
               <FormSuccess
                 title="Account Created!"
-                message="Your account has been created! Please check your email to verify your address. Once verified, a church administrator will review and approve your account. You will be notified when your account is ready."
+                message={
+                  method === "phone"
+                    ? "Your phone number is verified and your account is ready. You can sign in now."
+                    : "Your account has been created! Please check your email to verify your address. Once verified, you can sign in."
+                }
               />
+              <Link href="/auth/login" className="mt-6 block">
+                <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
+                  Go to Sign In
+                </Button>
+              </Link>
+            </div>
+          ) : showOtp ? (
+            /* ── Step 2: enter SMS code ── */
+            <div className="mt-6">
+              <div className="mx-auto flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-purple-100">
+                  <MessageSquare className="h-7 w-7 text-purple-700" />
+                </div>
+              </div>
+              <h1 className="mt-4 text-center font-heading text-fluid-xl font-bold text-warm-900">
+                Enter Your Code
+              </h1>
+              <p className="mt-2 text-center text-warm-500">
+                We texted a 6-digit code to{" "}
+                <span className="font-medium text-warm-700">
+                  {maskPhone(formData.phone || "")}
+                </span>
+                .
+              </p>
+
+              {otpError && (
+                <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{otpError}</span>
+                </div>
+              )}
+              {resendNote && (
+                <div className="mt-4 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+                  {resendNote}
+                </div>
+              )}
+
+              <form onSubmit={handleVerifyOtp} className="mt-6 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="otp">Verification Code</Label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="123456"
+                    value={otpCode}
+                    onChange={(e) =>
+                      setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                    }
+                    className="text-center text-2xl tracking-[0.5em]"
+                    aria-invalid={!!otpError}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={otpLoading}
+                  className="w-full bg-purple-700 text-white hover:bg-purple-800"
+                >
+                  {otpLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify & Continue"
+                  )}
+                </Button>
+              </form>
+
+              <div className="mt-4 text-center text-sm text-warm-500">
+                Didn&apos;t get it?{" "}
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendLoading}
+                  className="font-medium text-purple-600 hover:text-purple-700 hover:underline disabled:opacity-50"
+                >
+                  {resendLoading ? "Sending..." : "Resend code"}
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -135,6 +304,41 @@ export default function RegisterPage() {
               </h1>
               <p className="mt-2 text-center text-warm-500">
                 Join our church family online
+              </p>
+
+              {/* Method toggle */}
+              <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-warm-100 p-1">
+                <button
+                  type="button"
+                  onClick={() => selectMethod("email")}
+                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    method === "email"
+                      ? "bg-white text-purple-700 shadow-sm"
+                      : "text-warm-500 hover:text-warm-700"
+                  }`}
+                  aria-pressed={method === "email"}
+                >
+                  <Mail className="h-4 w-4" />
+                  Use Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectMethod("phone")}
+                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    method === "phone"
+                      ? "bg-white text-purple-700 shadow-sm"
+                      : "text-warm-500 hover:text-warm-700"
+                  }`}
+                  aria-pressed={method === "phone"}
+                >
+                  <Phone className="h-4 w-4" />
+                  Use Phone
+                </button>
+              </div>
+              <p className="mt-2 text-center text-xs text-warm-400">
+                {method === "email"
+                  ? "We'll email you a link to verify your account."
+                  : "We'll text you a 6-digit code to verify your account."}
               </p>
 
               {/* Server error */}
@@ -203,14 +407,19 @@ export default function RegisterPage() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">
+                    Email Address{" "}
+                    {method === "phone" && (
+                      <span className="text-warm-400">(optional)</span>
+                    )}
+                  </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="you@example.com"
-                      value={formData.email}
+                      value={formData.email || ""}
                       onChange={(e) => updateField("email", e.target.value)}
                       className="pl-10"
                       aria-invalid={!!fieldErrors.email}
@@ -221,11 +430,13 @@ export default function RegisterPage() {
                   )}
                 </div>
 
-                {/* Phone (optional) */}
+                {/* Phone */}
                 <div className="space-y-2">
                   <Label htmlFor="phone">
-                    Phone{" "}
-                    <span className="text-warm-400">(optional)</span>
+                    Phone Number{" "}
+                    {method === "email" && (
+                      <span className="text-warm-400">(optional)</span>
+                    )}
                   </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
@@ -236,8 +447,12 @@ export default function RegisterPage() {
                       value={formData.phone || ""}
                       onChange={(e) => updateField("phone", e.target.value)}
                       className="pl-10"
+                      aria-invalid={!!fieldErrors.phone}
                     />
                   </div>
+                  {fieldErrors.phone && (
+                    <p className="text-xs text-red-600">{fieldErrors.phone}</p>
+                  )}
                 </div>
 
                 {/* Password */}

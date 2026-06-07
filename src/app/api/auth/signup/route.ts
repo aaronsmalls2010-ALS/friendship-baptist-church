@@ -3,6 +3,8 @@ import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getWelcomeEmailHtml, getWelcomeEmailText } from "@/lib/email/welcome";
+import { toE164, isValidUsPhone } from "@/lib/phone";
+import { issuePhoneOtp } from "@/lib/auth/phone-otp";
 
 // ── Rate limiting for signup ──
 const signupAttempts = new Map<string, { count: number; resetTime: number }>();
@@ -26,6 +28,8 @@ function checkSignupLimit(ip: string): boolean {
   return entry.count <= 5;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export async function POST(request: NextRequest) {
   try {
     const ip =
@@ -41,28 +45,34 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, password, firstName, lastName, phone, honeypot } = body;
+    const {
+      email,
+      password,
+      firstName,
+      lastName,
+      phone,
+      contactMethod,
+      honeypot,
+    } = body;
 
-    // Honeypot check
+    // Honeypot check — pretend success so bots get no signal.
     if (honeypot) {
       return NextResponse.json(
-        { message: "Account created successfully. Please check your email." },
+        { message: "Account created successfully.", requiresVerification: "email" },
         { status: 200 }
       );
     }
 
-    // Basic validation
-    if (!email || !password || !firstName || !lastName) {
+    // ── Validate common fields ──
+    if (!password || !firstName || !lastName) {
       return NextResponse.json(
         { error: "All required fields must be provided." },
         { status: 400 }
       );
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (contactMethod !== "email" && contactMethod !== "phone") {
       return NextResponse.json(
-        { error: "Invalid email format." },
+        { error: "Please choose how you'd like to verify your account." },
         { status: 400 }
       );
     }
@@ -84,36 +94,94 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Password must contain a special character." }, { status: 400 });
     }
 
-    // Sanitize
+    // ── Normalize + validate identifiers (one required, both allowed) ──
+    const rawEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    const rawPhone = typeof phone === "string" ? phone.trim() : "";
+
+    const sanitizedEmail = rawEmail ? rawEmail.slice(0, 255) : null;
+    const e164Phone = rawPhone ? toE164(rawPhone) : null;
+
+    if (sanitizedEmail && !EMAIL_RE.test(sanitizedEmail)) {
+      return NextResponse.json({ error: "Invalid email format." }, { status: 400 });
+    }
+    if (rawPhone && !e164Phone) {
+      return NextResponse.json({ error: "Invalid phone number." }, { status: 400 });
+    }
+
+    // The chosen verification channel must be present.
+    if (contactMethod === "email" && !sanitizedEmail) {
+      return NextResponse.json(
+        { error: "Please enter your email address." },
+        { status: 400 }
+      );
+    }
+    if (contactMethod === "phone" && !e164Phone) {
+      return NextResponse.json(
+        { error: "Please enter a valid phone number." },
+        { status: 400 }
+      );
+    }
+    if (!sanitizedEmail && !e164Phone) {
+      return NextResponse.json(
+        { error: "Please provide an email address or phone number." },
+        { status: 400 }
+      );
+    }
+
     const sanitizedFirstName = firstName.trim().slice(0, 50);
     const sanitizedLastName = lastName.trim().slice(0, 50);
-    const sanitizedEmail = email.trim().toLowerCase().slice(0, 255);
-    const sanitizedPhone = phone ? phone.trim().slice(0, 20) : undefined;
 
-    // Generate a verification token for email confirmation
-    const verificationToken = randomUUID();
-
-    // Create user with admin API — auto-confirm in Supabase auth so the
-    // account exists, but we track email verification separately on the profile.
     const supabase = createAdminClient();
 
-    const { data, error } = await supabase.auth.admin.createUser({
-      email: sanitizedEmail,
+    // ── Pre-check for an existing account on either identifier ──
+    // (auth.admin.createUser will also reject duplicates, but checking first
+    //  lets us return a clean, specific message.)
+    const conflict = await findIdentifierConflict(
+      supabase,
+      sanitizedEmail,
+      e164Phone
+    );
+    if (conflict) {
+      return NextResponse.json({ error: conflict }, { status: 409 });
+    }
+
+    // Email verification token (only used on the email path).
+    const verificationToken = randomUUID();
+
+    // Create the auth user. We auto-confirm in Supabase (so password sign-in
+    // works) and track our own verification flags on the profile.
+    const createPayload: Parameters<
+      typeof supabase.auth.admin.createUser
+    >[0] = {
       password,
       email_confirm: true,
+      phone_confirm: true,
       user_metadata: {
         first_name: sanitizedFirstName,
         last_name: sanitizedLastName,
-        phone: sanitizedPhone,
         role: "member",
-        email_verification_token: verificationToken,
+        ...(contactMethod === "email"
+          ? { email_verification_token: verificationToken }
+          : {}),
       },
-    });
+    };
+    if (sanitizedEmail) createPayload.email = sanitizedEmail;
+    if (e164Phone) createPayload.phone = e164Phone;
+
+    const { data, error } = await supabase.auth.admin.createUser(createPayload);
 
     if (error) {
-      if (error.message.includes("already been registered") || error.message.includes("already exists")) {
+      const msg = error.message.toLowerCase();
+      if (
+        msg.includes("already been registered") ||
+        msg.includes("already exists") ||
+        msg.includes("already registered")
+      ) {
         return NextResponse.json(
-          { error: "An account with this email already exists. Please sign in instead." },
+          {
+            error:
+              "An account with this email or phone already exists. Please sign in instead.",
+          },
           { status: 409 }
         );
       }
@@ -125,32 +193,68 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update profile with name, phone, and verification fields.
-    // The trigger creates the profile row; we set additional fields here.
-    if (data.user) {
+    const userId = data.user?.id;
+
+    // Populate profile fields. The trigger created the row; we enrich it.
+    if (userId) {
       await supabase
         .from("profiles")
         .update({
           first_name: sanitizedFirstName,
           last_name: sanitizedLastName,
-          phone: sanitizedPhone || null,
-          sms_opt_in: true,
-          email_notifications: true,
+          email: sanitizedEmail,
+          phone: e164Phone,
+          sms_opt_in: !!e164Phone,
+          email_notifications: !!sanitizedEmail,
           public_directory: true,
           is_email_verified: false,
+          is_phone_verified: false,
           is_approved: false,
         })
-        .eq("id", data.user.id);
+        .eq("id", userId);
     }
 
-    // Build the verification URL
+    // ── Phone path: send the SMS code ──
+    if (contactMethod === "phone" && userId && e164Phone) {
+      const issued = await issuePhoneOtp(supabase, userId, e164Phone, "signup");
+      if (!issued.ok) {
+        // Roll the account back so the member can retry cleanly.
+        await supabase.auth.admin.deleteUser(userId);
+        return NextResponse.json(
+          { error: issued.error },
+          {
+            status: issued.status,
+            headers: issued.retryAfter
+              ? { "Retry-After": issued.retryAfter.toString() }
+              : undefined,
+          }
+        );
+      }
+
+      console.log("[AUDIT] auth.signup", {
+        userId,
+        channel: "phone",
+        ip,
+        timestamp: new Date().toISOString(),
+      });
+
+      return NextResponse.json(
+        {
+          message: "Account created. Enter the code we just texted you.",
+          userId,
+          requiresVerification: "phone",
+        },
+        { status: 201 }
+      );
+    }
+
+    // ── Email path: send the verification link ──
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || "https://thefriendshipbaptist.com";
     const verificationUrl = `${siteUrl}/auth/verify-email?token=${verificationToken}`;
 
-    // Send welcome email with verification link (non-blocking)
     sendEmail({
-      to: sanitizedEmail,
+      to: sanitizedEmail!,
       subject: `Welcome to Friendship Baptist Church, ${sanitizedFirstName}! Please verify your email`,
       html: getWelcomeEmailHtml(sanitizedFirstName, verificationUrl),
       text: getWelcomeEmailText(sanitizedFirstName, verificationUrl),
@@ -159,8 +263,8 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("[AUDIT] auth.signup", {
-      userId: data.user?.id,
-      email: sanitizedEmail,
+      userId,
+      channel: "email",
       ip,
       timestamp: new Date().toISOString(),
     });
@@ -169,8 +273,8 @@ export async function POST(request: NextRequest) {
       {
         message:
           "Account created successfully! Please check your email to verify your address.",
-        userId: data.user?.id,
-        requiresVerification: true,
+        userId,
+        requiresVerification: "email",
       },
       { status: 201 }
     );
@@ -181,4 +285,36 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Return a user-facing message if the email or phone already belongs to an
+ * existing profile, otherwise null. Uses the admin client (bypasses RLS).
+ */
+async function findIdentifierConflict(
+  admin: ReturnType<typeof createAdminClient>,
+  email: string | null,
+  phone: string | null
+): Promise<string | null> {
+  if (email) {
+    const { data } = await admin
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .maybeSingle();
+    if (data) {
+      return "An account with this email already exists. Please sign in instead.";
+    }
+  }
+  if (phone && isValidUsPhone(phone)) {
+    const { data } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+    if (data) {
+      return "An account with this phone number already exists. Please sign in instead.";
+    }
+  }
+  return null;
 }

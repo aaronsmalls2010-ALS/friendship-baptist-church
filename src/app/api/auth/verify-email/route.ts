@@ -78,10 +78,11 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Mark email as verified on the profile
+    // Mark email as verified on the profile. Verifying any channel activates
+    // the account (auto-approve once verified).
     const { error: updateError } = await supabase
       .from("profiles")
-      .update({ is_email_verified: true })
+      .update({ is_email_verified: true, is_approved: true })
       .eq("id", matchedUser.id);
 
     if (updateError) {
@@ -106,7 +107,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      message: "Email verified successfully! Your account is pending admin approval.",
+      message: "Email verified successfully! Your account is ready to use.",
       verified: true,
     });
   } catch (err) {

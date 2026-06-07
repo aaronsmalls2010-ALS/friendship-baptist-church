@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toE164 } from "@/lib/phone";
 
 /**
  * POST /api/admin/sms
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
         client.messages.create({
           body: message,
           from: fromNumber,
-          to: formatPhoneNumber(to),
+          to: toE164(to) ?? to,
         })
       )
     );
@@ -204,28 +205,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
-
-/** Format a US phone number to E.164 format for Twilio */
-function formatPhoneNumber(phone: string): string {
-  // Strip everything except digits
-  const digits = phone.replace(/\D/g, "");
-
-  // If it's 10 digits (US), prepend +1
-  if (digits.length === 10) {
-    return `+1${digits}`;
-  }
-
-  // If it's 11 digits starting with 1 (US with country code)
-  if (digits.length === 11 && digits.startsWith("1")) {
-    return `+${digits}`;
-  }
-
-  // Already has + prefix or international
-  if (phone.startsWith("+")) {
-    return phone;
-  }
-
-  // Default: prepend +1 for US
-  return `+1${digits}`;
 }

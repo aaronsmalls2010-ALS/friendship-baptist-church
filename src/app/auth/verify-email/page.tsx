@@ -5,13 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
-import {
-  CheckCircle,
-  XCircle,
-  Loader2,
-  ArrowLeft,
-  Clock,
-} from "lucide-react";
+import { CheckCircle, XCircle, Loader2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 
 type VerifyState = "loading" | "success" | "already_verified" | "error";
@@ -103,29 +97,13 @@ function VerifyEmailContent() {
             Email Verified!
           </h1>
           <p className="mt-2 text-center text-warm-500">
-            Your email address has been verified successfully.
+            Your email address has been verified and your account is ready to
+            use. You can sign in now.
           </p>
 
-          {/* Pending Approval Notice */}
-          <div className="mt-6 w-full rounded-xl bg-amber-50 border border-amber-200 p-4">
-            <div className="flex items-start gap-3">
-              <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-              <div>
-                <p className="font-semibold text-amber-900">
-                  Pending Admin Approval
-                </p>
-                <p className="mt-1 text-sm text-amber-700">
-                  Your account is now awaiting approval from a church
-                  administrator. You will receive an email notification once
-                  your account has been approved and is ready to use.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Link href="/" className="mt-6 w-full">
+          <Link href="/auth/login" className="mt-6 w-full">
             <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
-              Return to Website
+              Go to Sign In
             </Button>
           </Link>
         </motion.div>
@@ -155,8 +133,7 @@ function VerifyEmailContent() {
             Already Verified
           </h1>
           <p className="mt-2 text-center text-warm-500">
-            Your email address has already been verified. If your account has
-            been approved, you can sign in below.
+            Your email address has already been verified. You can sign in below.
           </p>
           <Link href="/auth/login" className="mt-6 w-full">
             <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">

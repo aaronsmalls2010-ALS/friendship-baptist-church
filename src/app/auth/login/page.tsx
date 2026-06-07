@@ -9,22 +9,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { loginSchema } from "@/lib/validations/auth";
+import { toE164, looksLikeEmail } from "@/lib/phone";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Mail,
+  AtSign,
   Lock,
   Sparkles,
   AlertCircle,
   Loader2,
   CheckCircle,
   ArrowLeft,
+  UserPlus,
 } from "lucide-react";
 
 const MAX_FAILED_ATTEMPTS = 5;
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMagicLinkLoading, setIsMagicLinkLoading] = useState(false);
@@ -43,10 +45,13 @@ function LoginForm() {
 
   function getAuthErrorMessage(errorMessage: string): string {
     if (errorMessage.includes("Invalid login credentials")) {
-      return "Invalid email or password. Please try again.";
+      return "Invalid login. Please check your email/phone and password.";
     }
-    if (errorMessage.includes("Email not confirmed")) {
-      return "Your email has not been verified. Please check your inbox for a verification link.";
+    if (
+      errorMessage.includes("Email not confirmed") ||
+      errorMessage.includes("Phone not confirmed")
+    ) {
+      return "Your account has not been verified yet. Please check your email or text messages.";
     }
     if (
       errorMessage.includes("rate limit") ||
@@ -72,7 +77,7 @@ function LoginForm() {
     }
 
     // Validate with Zod
-    const result = loginSchema.safeParse({ email, password });
+    const result = loginSchema.safeParse({ identifier, password });
     if (!result.success) {
       const errors: Record<string, string> = {};
       for (const issue of result.error.issues) {
@@ -89,10 +94,21 @@ function LoginForm() {
 
     try {
       const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: result.data.email,
-        password: result.data.password,
-      });
+
+      // Resolve the identifier into an email or E.164 phone sign-in.
+      const value = result.data.identifier;
+      const isEmail = looksLikeEmail(value);
+      const e164 = isEmail ? null : toE164(value);
+
+      const { error: authError } = isEmail
+        ? await supabase.auth.signInWithPassword({
+            email: value.toLowerCase(),
+            password: result.data.password,
+          })
+        : await supabase.auth.signInWithPassword({
+            phone: e164 as string,
+            password: result.data.password,
+          });
 
       if (authError) {
         setFailedAttempts((prev) => prev + 1);
@@ -100,26 +116,39 @@ function LoginForm() {
         return;
       }
 
-      // Success — determine role for redirect.
+      // Success — determine role + verification status for redirect.
       // We do this entirely client-side to avoid cookie race conditions
       // with server API routes immediately after sign-in.
       const {
         data: { user: authUser },
       } = await supabase.auth.getUser();
 
+      // ── Verification gate: the account is active once EITHER channel is
+      // verified. Unverified accounts are signed back out. ──
       let role =
         authUser?.user_metadata?.role || authUser?.app_metadata?.role;
 
-      // If role isn't in auth metadata, query the profiles table directly
-      // (uses the authenticated client, so RLS allows reading own profile)
-      if (!role && authUser) {
+      if (authUser) {
         try {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("role")
+            .select("role, is_email_verified, is_phone_verified")
             .eq("id", authUser.id)
             .single();
-          role = profile?.role;
+
+          if (
+            profile &&
+            profile.is_email_verified !== true &&
+            profile.is_phone_verified !== true
+          ) {
+            await supabase.auth.signOut();
+            setError(
+              "Please verify your account first. Check your email or text messages for your verification code."
+            );
+            return;
+          }
+
+          role = role || profile?.role;
         } catch {
           // Fall through — default to portal
         }
@@ -145,15 +174,17 @@ function LoginForm() {
     setError("");
     setFieldErrors({});
 
-    if (!email) {
-      setFieldErrors({ email: "Please enter your email address first." });
+    if (!identifier) {
+      setFieldErrors({ identifier: "Enter your email address first." });
       return;
     }
 
-    // Basic email validation
-    const emailResult = loginSchema.shape.email.safeParse(email);
-    if (!emailResult.success) {
-      setFieldErrors({ email: "Please enter a valid email address." });
+    // Magic links are email-only.
+    if (!looksLikeEmail(identifier)) {
+      setFieldErrors({
+        identifier:
+          "Magic links are sent by email. Enter your email address, or sign in with your password.",
+      });
       return;
     }
 
@@ -162,7 +193,7 @@ function LoginForm() {
     try {
       const supabase = createClient();
       const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
+        email: identifier.toLowerCase(),
       });
 
       if (otpError) {
@@ -222,29 +253,31 @@ function LoginForm() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email">Email Address</Label>
+          <Label htmlFor="identifier">Email or Phone</Label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
+            <AtSign className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
             <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
+              id="identifier"
+              type="text"
+              inputMode="email"
+              autoComplete="username"
+              placeholder="you@example.com or (843) 555-0123"
+              value={identifier}
               onChange={(e) => {
-                setEmail(e.target.value);
-                if (fieldErrors.email)
+                setIdentifier(e.target.value);
+                if (fieldErrors.identifier)
                   setFieldErrors((prev) => {
                     const next = { ...prev };
-                    delete next.email;
+                    delete next.identifier;
                     return next;
                   });
               }}
               className="pl-10"
-              aria-invalid={!!fieldErrors.email}
+              aria-invalid={!!fieldErrors.identifier}
             />
           </div>
-          {fieldErrors.email && (
-            <p className="text-xs text-red-600">{fieldErrors.email}</p>
+          {fieldErrors.identifier && (
+            <p className="text-xs text-red-600">{fieldErrors.identifier}</p>
           )}
         </div>
 
@@ -327,6 +360,21 @@ function LoginForm() {
           )}
         </Button>
       </form>
+
+      {/* New member? Register */}
+      <div className="mt-6 rounded-xl border border-warm-200 bg-warm-50 p-4 text-center">
+        <p className="text-sm text-warm-600">New to Friendship Baptist Church?</p>
+        <Link href="/auth/register" className="mt-3 block">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-purple-300 text-purple-700 hover:bg-purple-50 hover:text-purple-800"
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Create an Account
+          </Button>
+        </Link>
+      </div>
     </>
   );
 }
@@ -367,17 +415,6 @@ function LoginPageContent() {
 
           <LoginForm />
         </div>
-
-        {/* Below card text */}
-        <p className="mt-6 text-center text-sm text-white/60">
-          New here?{" "}
-          <Link
-            href="/auth/register"
-            className="text-gold-300 hover:text-gold-200 hover:underline"
-          >
-            Create an account
-          </Link>
-        </p>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { toE164, looksLikeEmail } from "@/lib/phone";
 
 // ── Failed login tracking (account lockout) ──
 const failedAttempts = new Map<
@@ -62,19 +63,32 @@ export async function POST(request: NextRequest) {
       "unknown";
 
     const body = await request.json();
-    const { email, password } = body;
+    const { identifier, email, password } = body;
 
-    if (!email || !password) {
+    // Accept either the new `identifier` field or the legacy `email` field.
+    const rawIdentifier = (identifier ?? email ?? "").toString().trim();
+
+    if (!rawIdentifier || !password) {
       return NextResponse.json(
-        { error: "Email and password are required." },
+        { error: "Email or phone and password are required." },
         { status: 400 }
       );
     }
 
-    const sanitizedEmail = email.trim().toLowerCase();
+    // Resolve the identifier into either an email or an E.164 phone.
+    const isEmail = looksLikeEmail(rawIdentifier);
+    const sanitizedEmail = isEmail ? rawIdentifier.toLowerCase() : null;
+    const e164Phone = isEmail ? null : toE164(rawIdentifier);
 
-    // ── Check account lockout (by IP + email combination) ──
-    const lockoutKey = `${ip}:${sanitizedEmail}`;
+    if (!sanitizedEmail && !e164Phone) {
+      return NextResponse.json(
+        { error: "Enter a valid email address or phone number." },
+        { status: 400 }
+      );
+    }
+
+    // ── Check account lockout (by IP + identifier combination) ──
+    const lockoutKey = `${ip}:${sanitizedEmail ?? e164Phone}`;
     const { locked, remainingSeconds } = checkLockout(lockoutKey);
 
     if (locked) {
@@ -95,62 +109,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Attempt login ──
+    // ── Attempt login (with email or phone) ──
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: sanitizedEmail,
-      password,
-    });
+    const { data, error } = sanitizedEmail
+      ? await supabase.auth.signInWithPassword({
+          email: sanitizedEmail,
+          password,
+        })
+      : await supabase.auth.signInWithPassword({
+          phone: e164Phone!,
+          password,
+        });
 
-    if (error) {
+    if (error || !data.user) {
       recordFailedAttempt(lockoutKey);
 
       console.log("[AUDIT] auth.failed_login", {
-        email: sanitizedEmail,
+        identifier: sanitizedEmail ?? e164Phone,
         ip,
-        reason: error.message,
+        reason: error?.message,
         timestamp: new Date().toISOString(),
       });
 
       // Generic error message to prevent user enumeration
       return NextResponse.json(
-        { error: "Invalid email or password." },
+        { error: "Invalid login. Please check your details and try again." },
         { status: 401 }
       );
     }
 
-    // ── Check email verification and admin approval ──
+    // ── Verification gate ──
+    // The account is active once EITHER channel has been verified.
     // Use admin client to bypass RLS and read profile fields directly.
     const adminClient = createAdminClient();
     const { data: profile } = await adminClient
       .from("profiles")
-      .select("is_email_verified, is_approved")
+      .select("is_email_verified, is_phone_verified")
       .eq("id", data.user.id)
       .single();
 
-    if (profile && profile.is_email_verified === false) {
+    const isVerified =
+      !!profile &&
+      (profile.is_email_verified === true || profile.is_phone_verified === true);
+
+    if (!isVerified) {
       // Sign the user out so the session isn't left active
       await supabase.auth.signOut();
 
       return NextResponse.json(
         {
           error:
-            "Please verify your email address first. Check your inbox for the verification link.",
-          code: "EMAIL_NOT_VERIFIED",
-        },
-        { status: 403 }
-      );
-    }
-
-    if (profile && profile.is_approved === false) {
-      // Sign the user out so the session isn't left active
-      await supabase.auth.signOut();
-
-      return NextResponse.json(
-        {
-          error:
-            "Your account is pending approval from the church administrator. You will be notified when approved.",
-          code: "NOT_APPROVED",
+            "Please verify your account first. Check your email or text messages for your verification code.",
+          code: "NOT_VERIFIED",
         },
         { status: 403 }
       );
@@ -161,7 +171,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[AUDIT] auth.login", {
       userId: data.user.id,
-      email: sanitizedEmail,
+      identifier: sanitizedEmail ?? e164Phone,
       ip,
       timestamp: new Date().toISOString(),
     });

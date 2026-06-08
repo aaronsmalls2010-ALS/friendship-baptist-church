@@ -77,7 +77,24 @@ export default function RegisterPage() {
     setServerError("");
     setFieldErrors({});
 
-    const result = signUpSchema.safeParse({ ...formData, contactMethod: method });
+    // Infer the verification channel from what was actually filled in, so a
+    // member who only types a phone number isn't blocked for lacking an email
+    // (and vice versa). The toggle is only the tiebreaker when BOTH are given.
+    const hasEmail = !!formData.email?.trim();
+    const hasPhone = !!formData.phone?.trim();
+    const effectiveMethod: ContactMethod =
+      hasPhone && !hasEmail
+        ? "phone"
+        : hasEmail && !hasPhone
+          ? "email"
+          : method;
+
+    if (effectiveMethod !== method) setMethod(effectiveMethod);
+
+    const result = signUpSchema.safeParse({
+      ...formData,
+      contactMethod: effectiveMethod,
+    });
     if (!result.success) {
       const errors: Record<string, string> = {};
       for (const issue of result.error.issues) {
@@ -95,7 +112,7 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contactMethod: method,
+          contactMethod: effectiveMethod,
           email: result.data.email || "",
           phone: result.data.phone || "",
           password: result.data.password,

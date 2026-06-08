@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Globe,
+  Home,
 } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/brand/logo";
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Members", href: "/admin/members", icon: Users },
+  { label: "Families", href: "/admin/families", icon: Home },
   { label: "Ministries", href: "/admin/ministries", icon: Church },
   { label: "Deacons", href: "/admin/deacons", icon: Shield },
   { label: "Wards", href: "/admin/wards", icon: MapPin },

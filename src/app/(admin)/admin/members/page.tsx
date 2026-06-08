@@ -56,6 +56,12 @@ interface Member {
   photo_url?: string;
   created_at: string;
   ward_id?: string;
+  families?: { id: string; name: string }[];
+}
+
+interface FamilyOption {
+  id: string;
+  name: string;
 }
 
 // ── Constants ────────────────────────────────────────────────────────
@@ -105,6 +111,7 @@ export default function MemberManagementPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [wards, setWards] = useState<Ward[]>([]);
   const [deacons, setDeacons] = useState<Deacon[]>([]);
+  const [allFamilies, setAllFamilies] = useState<FamilyOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -119,6 +126,7 @@ export default function MemberManagementPage() {
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [editWardId, setEditWardId] = useState("");
   const [editDeaconId, setEditDeaconId] = useState("");
+  const [editFamilyIds, setEditFamilyIds] = useState<string[]>([]);
 
   // Roles dialog state
   const [rolesOpen, setRolesOpen] = useState(false);
@@ -130,10 +138,11 @@ export default function MemberManagementPage() {
   const fetchData = useCallback(async () => {
     try {
       setError("");
-      const [membersRes, wardsRes, deaconsRes] = await Promise.all([
+      const [membersRes, wardsRes, deaconsRes, familiesRes] = await Promise.all([
         fetch("/api/admin/members"),
         fetch("/api/admin/wards"),
         fetch("/api/admin/deacons"),
+        fetch("/api/admin/families"),
       ]);
 
       if (!membersRes.ok) {
@@ -151,6 +160,16 @@ export default function MemberManagementPage() {
       if (deaconsRes.ok) {
         const deaconsData = await deaconsRes.json();
         setDeacons(deaconsData.deacons ?? []);
+      }
+
+      if (familiesRes.ok) {
+        const familiesData = await familiesRes.json();
+        setAllFamilies(
+          (familiesData.families ?? []).map((f: FamilyOption) => ({
+            id: f.id,
+            name: f.name,
+          }))
+        );
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
@@ -253,6 +272,7 @@ export default function MemberManagementPage() {
   function openEditMemberDialog(member: Member) {
     setEditingMember(member);
     setEditWardId(member.ward_id ?? "");
+    setEditFamilyIds((member.families ?? []).map((f) => f.id));
     // Find deacon for current ward
     const ward = member.ward_id
       ? wards.find((w) => w.id === member.ward_id)
@@ -270,29 +290,35 @@ export default function MemberManagementPage() {
     // Normalize sentinel value to empty for "unassigned"
     const wardValue = editWardId === "__none__" ? "" : editWardId;
 
-    // Update via API
-    const res = await fetch("/api/admin/members", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: editingMember.id, ward_id: wardValue || null }),
-    });
+    // Update ward + families in parallel.
+    const [wardRes, famRes] = await Promise.all([
+      fetch("/api/admin/members", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingMember.id, ward_id: wardValue || null }),
+      }),
+      fetch(`/api/admin/members/${editingMember.id}/families`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ family_ids: editFamilyIds }),
+      }),
+    ]);
 
-    if (res.ok) {
-      // Update local state
+    if (wardRes.ok && famRes.ok) {
+      const newFamilies = allFamilies.filter((f) => editFamilyIds.includes(f.id));
       setMembers((prev) =>
         prev.map((m) =>
           m.id === editingMember.id
-            ? { ...m, ward_id: wardValue || undefined }
+            ? { ...m, ward_id: wardValue || undefined, families: newFamilies }
             : m
         )
       );
-
       setToast({
         type: "success",
-        message: `${editingMember.first_name} ${editingMember.last_name} ward assignment updated.`,
+        message: `${editingMember.first_name} ${editingMember.last_name} updated.`,
       });
     } else {
-      setToast({ type: "error", message: "Failed to update ward assignment." });
+      setToast({ type: "error", message: "Failed to update member." });
     }
 
     setEditOpen(false);
@@ -489,6 +515,19 @@ export default function MemberManagementPage() {
                         <span className="font-medium text-warm-900 dark:text-warm-50">
                           {member.first_name} {member.last_name}
                         </span>
+                        {member.families && member.families.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {member.families.map((f) => (
+                              <Badge
+                                key={f.id}
+                                variant="outline"
+                                className="border-0 bg-warm-100 text-warm-600 dark:bg-warm-800 dark:text-warm-300 text-[10px] px-1.5 py-0"
+                              >
+                                {f.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </TableCell>
 
                       {/* Email */}
@@ -627,13 +666,14 @@ export default function MemberManagementPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading text-xl">
-              Edit Ward Assignment
+              Edit Member
             </DialogTitle>
           </DialogHeader>
           {editingMember && (
             <div className="space-y-4">
               <p className="text-sm text-warm-600">
-                Assign <span className="font-medium">{editingMember.first_name} {editingMember.last_name}</span> to a ward and deacon.
+                Update ward, deacon, and family assignments for{" "}
+                <span className="font-medium">{editingMember.first_name} {editingMember.last_name}</span>.
               </p>
 
               <div className="space-y-2">
@@ -679,6 +719,44 @@ export default function MemberManagementPage() {
                 </p>
               </div>
 
+              {/* Families */}
+              <div className="space-y-2">
+                <Label>Families</Label>
+                {allFamilies.length === 0 ? (
+                  <p className="text-xs text-warm-400">
+                    No families yet. Create them on the Families page.
+                  </p>
+                ) : (
+                  <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-warm-200 dark:border-warm-800 p-2">
+                    {allFamilies.map((f) => {
+                      const checked = editFamilyIds.includes(f.id);
+                      return (
+                        <label
+                          key={f.id}
+                          htmlFor={`fam-${f.id}`}
+                          className="flex items-center gap-3 rounded-md px-2 py-1.5 cursor-pointer hover:bg-warm-50 dark:hover:bg-warm-800"
+                        >
+                          <Checkbox
+                            id={`fam-${f.id}`}
+                            checked={checked}
+                            onCheckedChange={(v) =>
+                              setEditFamilyIds((prev) =>
+                                v === true
+                                  ? [...new Set([...prev, f.id])]
+                                  : prev.filter((x) => x !== f.id)
+                              )
+                            }
+                          />
+                          <span className="text-sm text-warm-700 dark:text-warm-200">
+                            {f.name}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <DialogFooter>
                 <Button variant="outline" onClick={() => setEditOpen(false)}>
                   Cancel
@@ -687,7 +765,7 @@ export default function MemberManagementPage() {
                   onClick={handleSaveEdit}
                   className="bg-purple-700 hover:bg-purple-600 text-white"
                 >
-                  Save Assignment
+                  Save
                 </Button>
               </DialogFooter>
             </div>

@@ -51,9 +51,22 @@ export async function GET() {
       rolesByUser.set(r.user_id, list);
     }
 
+    // Attach each member's families (id + name).
+    const { data: famRows } = await admin
+      .from("family_members")
+      .select("profile_id, family_id, families(name)");
+    const famsByUser = new Map<string, { id: string; name: string }[]>();
+    for (const row of famRows ?? []) {
+      const fam = row.families as unknown as { name?: string } | null;
+      const list = famsByUser.get(row.profile_id) ?? [];
+      list.push({ id: row.family_id, name: fam?.name ?? "Family" });
+      famsByUser.set(row.profile_id, list);
+    }
+
     const members = (profiles ?? []).map((p) => ({
       ...p,
       roles: rolesByUser.get(p.id) ?? [p.role],
+      families: famsByUser.get(p.id) ?? [],
     }));
 
     return NextResponse.json({ members });

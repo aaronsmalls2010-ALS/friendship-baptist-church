@@ -12,9 +12,7 @@ import {
   Heart,
   DollarSign,
   Settings,
-  Crown,
   Plus,
-  Trash2,
   UserPlus,
   RefreshCw,
   User,
@@ -47,9 +45,6 @@ import { formatDate } from "@/lib/utils";
 import { MOCK_DONATIONS } from "@/lib/mock-data";
 import type {
   Profile,
-  Family,
-  FamilyMember,
-  FamilyRelationship,
   Ministry,
   MinistryMemberStatus,
   MinistryRole,
@@ -58,15 +53,23 @@ import type {
 
 // ── Extended types for API responses ────────────────────────────────
 
-interface FamilyMemberWithProfile extends FamilyMember {
-  profiles?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone?: string;
-    photo_url?: string;
-  };
+// ── Families (multi-family, open self-join) ──────────────────────────
+interface PortalFamilyMember {
+  profile_id: string;
+  relationship: string | null;
+  profiles?: { first_name?: string; last_name?: string; photo_url?: string } | null;
+}
+interface PortalFamily {
+  id: string;
+  name: string;
+  relationship: string | null;
+  members: PortalFamilyMember[];
+}
+interface DirectoryFamily {
+  id: string;
+  name: string;
+  member_count: number;
+  joined: boolean;
 }
 
 interface MinistryWithStatus extends Ministry {
@@ -83,27 +86,6 @@ const ROLE_BADGE_COLORS: Record<string, string> = {
   admin: "bg-red-100 text-red-800",
   super_admin: "bg-red-200 text-red-900",
 };
-
-const RELATIONSHIP_LABELS: Record<FamilyRelationship, string> = {
-  head: "Head of Household",
-  spouse: "Spouse",
-  child: "Child",
-  parent: "Parent",
-  sibling: "Sibling",
-  grandchild: "Grandchild",
-  grandparent: "Grandparent",
-  other: "Other",
-};
-
-const RELATIONSHIP_OPTIONS: FamilyRelationship[] = [
-  "spouse",
-  "child",
-  "parent",
-  "sibling",
-  "grandchild",
-  "grandparent",
-  "other",
-];
 
 const DONATION_TYPE_LABELS: Record<string, string> = {
   tithe: "Tithe",
@@ -217,8 +199,8 @@ function ToastBanner({ toast }: { toast: Toast }) {
 export default function MyProfilePage() {
   // ── Data state ──────────────────────────────────────────────────
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [family, setFamily] = useState<Family | null>(null);
-  const [familyMembers, setFamilyMembers] = useState<FamilyMemberWithProfile[]>([]);
+  const [myFamilies, setMyFamilies] = useState<PortalFamily[]>([]);
+  const [directory, setDirectory] = useState<DirectoryFamily[]>([]);
   const [ministries, setMinistries] = useState<MinistryWithStatus[]>([]);
 
   // ── Loading / error ─────────────────────────────────────────────
@@ -263,13 +245,8 @@ export default function MyProfilePage() {
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // ── Family form ─────────────────────────────────────────────────
-  const [newFamilyName, setNewFamilyName] = useState("");
-  const [creatingFamily, setCreatingFamily] = useState(false);
-  const [addMemberEmail, setAddMemberEmail] = useState("");
-  const [addMemberRelationship, setAddMemberRelationship] = useState<FamilyRelationship>("spouse");
-  const [addingMember, setAddingMember] = useState(false);
-  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  // ── Family actions ──────────────────────────────────────────────
+  const [familyBusyId, setFamilyBusyId] = useState<string | null>(null);
 
   // ── Ministry actions ────────────────────────────────────────────
   const [joiningMinistryId, setJoiningMinistryId] = useState<string | null>(null);
@@ -439,9 +416,10 @@ export default function MyProfilePage() {
   const fetchData = useCallback(async () => {
     try {
       setError("");
-      const [profileRes, familyRes, ministriesRes] = await Promise.all([
+      const [profileRes, familyRes, dirRes, ministriesRes] = await Promise.all([
         fetch("/api/portal/profile"),
         fetch("/api/portal/family"),
+        fetch("/api/portal/family/directory"),
         fetch("/api/portal/ministries"),
       ]);
 
@@ -456,8 +434,12 @@ export default function MyProfilePage() {
 
       if (familyRes.ok) {
         const familyData = await familyRes.json();
-        setFamily(familyData.family);
-        setFamilyMembers(familyData.members || []);
+        setMyFamilies(familyData.families || []);
+      }
+
+      if (dirRes.ok) {
+        const dirData = await dirRes.json();
+        setDirectory(dirData.families || []);
       }
 
       if (ministriesRes.ok) {
@@ -572,94 +554,66 @@ export default function MyProfilePage() {
     }
   }
 
-  // ── Create family ───────────────────────────────────────────────
-  async function handleCreateFamily() {
-    if (!newFamilyName.trim()) return;
-    setCreatingFamily(true);
-    try {
-      const res = await fetch("/api/portal/family", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ family_name: newFamilyName.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to create family");
-      setFamily(data.family);
-      setNewFamilyName("");
-      setToast({ type: "success", message: "Family group created!" });
-      // Refetch to get full member list (including self as head)
-      const familyRes = await fetch("/api/portal/family");
-      if (familyRes.ok) {
-        const fData = await familyRes.json();
-        setFamily(fData.family);
-        setFamilyMembers(fData.members || []);
-      }
-    } catch (err) {
-      setToast({
-        type: "error",
-        message: err instanceof Error ? err.message : "Failed to create family",
-      });
-    } finally {
-      setCreatingFamily(false);
+  // ── Refresh families + directory after a join/leave ─────────────
+  async function refreshFamilyData() {
+    const [familyRes, dirRes] = await Promise.all([
+      fetch("/api/portal/family"),
+      fetch("/api/portal/family/directory"),
+    ]);
+    if (familyRes.ok) {
+      const d = await familyRes.json();
+      setMyFamilies(d.families || []);
+    }
+    if (dirRes.ok) {
+      const d = await dirRes.json();
+      setDirectory(d.families || []);
     }
   }
 
-  // ── Add family member ───────────────────────────────────────────
-  async function handleAddFamilyMember() {
-    if (!addMemberEmail.trim()) return;
-    setAddingMember(true);
+  // ── Join an existing family (open self-join) ────────────────────
+  async function handleJoinFamily(familyId: string) {
+    setFamilyBusyId(familyId);
     try {
-      // For now we pass the email as profile_id; the API expects profile_id.
-      // A real search would look up the profile by email first.
-      // We'll pass it and let the API respond with errors if not found.
-      const res = await fetch("/api/portal/family/members", {
+      const res = await fetch("/api/portal/family/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profile_id: addMemberEmail.trim(),
-          relationship: addMemberRelationship,
-        }),
+        body: JSON.stringify({ family_id: familyId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to add member");
-      setAddMemberEmail("");
-      setToast({ type: "success", message: "Family member added!" });
-      // Refetch family
-      const familyRes = await fetch("/api/portal/family");
-      if (familyRes.ok) {
-        const fData = await familyRes.json();
-        setFamilyMembers(fData.members || []);
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to join family");
+      setToast({ type: "success", message: "You've joined the family." });
+      await refreshFamilyData();
     } catch (err) {
       setToast({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to add member",
+        message: err instanceof Error ? err.message : "Failed to join family",
       });
     } finally {
-      setAddingMember(false);
+      setFamilyBusyId(null);
     }
   }
 
-  // ── Remove family member ────────────────────────────────────────
-  async function handleRemoveFamilyMember(memberId: string) {
-    setRemovingMemberId(memberId);
+  // ── Leave a family (self-remove) ────────────────────────────────
+  async function handleLeaveFamily(familyId: string) {
+    if (!confirm("Leave this family? You can rejoin anytime.")) return;
+    setFamilyBusyId(familyId);
     try {
-      const res = await fetch("/api/portal/family/members", {
-        method: "DELETE",
+      const res = await fetch("/api/portal/family/leave", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ member_id: memberId }),
+        body: JSON.stringify({ family_id: familyId }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to remove member");
-      setFamilyMembers((prev) => prev.filter((m) => m.id !== memberId));
-      setToast({ type: "success", message: "Family member removed." });
+      if (!res.ok) throw new Error(data.error || "Failed to leave family");
+      setToast({ type: "success", message: "You've left the family." });
+      await refreshFamilyData();
     } catch (err) {
       setToast({
         type: "error",
-        message: err instanceof Error ? err.message : "Failed to remove member",
+        message: err instanceof Error ? err.message : "Failed to leave family",
       });
     } finally {
-      setRemovingMemberId(null);
+      setFamilyBusyId(null);
     }
   }
 
@@ -692,11 +646,6 @@ export default function MyProfilePage() {
       setJoiningMinistryId(null);
     }
   }
-
-  // ── Determine if current user is family head ────────────────────
-  const isHead = familyMembers.some(
-    (m) => m.profile_id === profile?.id && m.relationship === "head"
-  );
 
   // ── Giving data (mock) ──────────────────────────────────────────
   const donations: Donation[] = MOCK_DONATIONS;
@@ -750,36 +699,15 @@ export default function MyProfilePage() {
     );
   }
 
-  // ── Family tree helper: organize members by relationship ────────
-  function getFamilyMembersByRelationship(rel: FamilyRelationship) {
-    return familyMembers.filter((m) => m.relationship === rel);
+  // ── Render helpers for family members ───────────────────────────
+  function memberName(m: PortalFamilyMember) {
+    const first = m.profiles?.first_name ?? "";
+    const last = m.profiles?.last_name ?? "";
+    return `${first} ${last}`.trim() || "Member";
   }
 
-  const heads = getFamilyMembersByRelationship("head");
-  const spouses = getFamilyMembersByRelationship("spouse");
-  const children = getFamilyMembersByRelationship("child");
-  const parents = getFamilyMembersByRelationship("parent");
-  const grandparents = getFamilyMembersByRelationship("grandparent");
-  const grandchildren = getFamilyMembersByRelationship("grandchild");
-  const siblings = getFamilyMembersByRelationship("sibling");
-  const others = getFamilyMembersByRelationship("other");
-
-  // ── Render helper: member name from profile join ────────────────
-  function memberName(m: FamilyMemberWithProfile) {
-    if (m.profiles) {
-      return `${m.profiles.first_name} ${m.profiles.last_name}`;
-    }
-    if (m.first_name && m.last_name) {
-      return `${m.first_name} ${m.last_name}`;
-    }
-    return "Unknown";
-  }
-
-  function memberInitials(m: FamilyMemberWithProfile) {
-    if (m.profiles) {
-      return getInitials(m.profiles.first_name, m.profiles.last_name);
-    }
-    return getInitials(m.first_name, m.last_name);
+  function memberInitials(m: PortalFamilyMember) {
+    return getInitials(m.profiles?.first_name ?? "", m.profiles?.last_name ?? "");
   }
 
   // ── Render ──────────────────────────────────────────────────────
@@ -1168,320 +1096,134 @@ export default function MyProfilePage() {
                 Tab 3: Family
                 ════════════════════════════════════════════════════════ */}
             <TabsContent value="family">
-              {!family ? (
-                /* ── No family: show create ─────────────────────────── */
-                <div className="text-center py-10">
-                  <Users className="h-12 w-12 text-warm-300 mx-auto mb-3" />
-                  <h3 className="font-medium text-warm-700 mb-2">
-                    No Family Group Yet
-                  </h3>
-                  <p className="text-sm text-warm-500 mb-4">
-                    Create a family group to connect with your family members.
-                  </p>
-                  <div className="flex items-center justify-center gap-2 max-w-sm mx-auto">
-                    <Input
-                      value={newFamilyName}
-                      onChange={(e) => setNewFamilyName(e.target.value)}
-                      placeholder="e.g. The Smith Family"
-                      className="flex-1"
-                    />
-                    <Button
-                      className="bg-purple-700 hover:bg-purple-800"
-                      onClick={handleCreateFamily}
-                      disabled={creatingFamily || !newFamilyName.trim()}
-                    >
-                      {creatingFamily ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Plus className="h-4 w-4 mr-1" />
-                      )}
-                      Create
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                /* ── Has family ─────────────────────────────────────── */
-                <div className="space-y-6">
-                  {/* Family name header */}
-                  <div className="flex items-center gap-2">
+              <div className="space-y-8">
+                {/* My families */}
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
                     <Users className="h-5 w-5 text-purple-700" />
-                    <h3 className="font-heading font-bold text-lg text-warm-800">
-                      {family.family_name}
+                    <h3 className="font-heading text-lg font-bold text-warm-800">
+                      My Families
                     </h3>
-                    <Badge variant="outline" className="text-xs">
-                      {familyMembers.length} member{familyMembers.length !== 1 ? "s" : ""}
-                    </Badge>
                   </div>
-
-                  {/* Family member cards grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {familyMembers.map((m) => {
-                      const name = memberName(m);
-                      const mi = memberInitials(m);
-                      const memberEmail = m.profiles?.email || m.email || "";
-                      const memberPhone = m.profiles?.phone || m.phone || "";
-                      const memberPhoto = m.profiles?.photo_url || m.photo_url;
-
-                      return (
-                        <Card
-                          key={m.id}
-                          className="p-4 flex items-start gap-3 relative"
-                        >
-                          {/* Avatar */}
-                          {memberPhoto ? (
-                            <img
-                              src={memberPhoto}
-                              alt={name}
-                              className="h-10 w-10 rounded-full object-cover shrink-0"
-                            />
-                          ) : (
-                            <div className="h-10 w-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-bold shrink-0">
-                              {mi}
+                  {myFamilies.length === 0 ? (
+                    <p className="text-sm text-warm-500">
+                      You haven&apos;t joined any families yet. Find yours below.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {myFamilies.map((fam) => (
+                        <Card key={fam.id} className="p-4">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-warm-800">{fam.name}</h4>
+                              <Badge variant="outline" className="text-xs">
+                                {fam.members.length} member
+                                {fam.members.length !== 1 ? "s" : ""}
+                              </Badge>
                             </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              {m.relationship === "head" && (
-                                <Crown className="h-4 w-4 text-amber-500" />
-                              )}
-                              <span className="font-medium text-warm-800 text-sm truncate">
-                                {name}
-                              </span>
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] mt-0.5"
-                            >
-                              {RELATIONSHIP_LABELS[m.relationship] || m.relationship}
-                            </Badge>
-                            {memberPhone && (
-                              <p className="text-xs text-warm-500 mt-1 truncate">
-                                {memberPhone}
-                              </p>
-                            )}
-                            {memberEmail && (
-                              <p className="text-xs text-warm-500 truncate">
-                                {memberEmail}
-                              </p>
-                            )}
-                          </div>
-                          {/* Remove button (head only, can't remove self) */}
-                          {isHead && m.relationship !== "head" && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="absolute top-2 right-2 h-7 w-7 p-0 text-warm-400 hover:text-red-500"
-                              onClick={() => handleRemoveFamilyMember(m.id)}
-                              disabled={removingMemberId === m.id}
-                              title="Remove from family"
+                              className="text-warm-400 hover:text-red-500"
+                              onClick={() => handleLeaveFamily(fam.id)}
+                              disabled={familyBusyId === fam.id}
                             >
-                              {removingMemberId === m.id ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              {familyBusyId === fam.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
                               ) : (
-                                <Trash2 className="h-3.5 w-3.5" />
+                                "Leave"
                               )}
                             </Button>
-                          )}
-                        </Card>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Visual Family Tree ──────────────────────────── */}
-                  {familyMembers.length > 0 && (
-                    <div className="border rounded-lg p-6 bg-warm-50/50">
-                      <h4 className="font-medium text-warm-700 mb-4 text-center">
-                        Family Tree
-                      </h4>
-                      <div className="flex flex-col items-center gap-0">
-                        {/* Grandparents row */}
-                        {grandparents.length > 0 && (
-                          <>
-                            <div className="flex items-center justify-center gap-4 flex-wrap">
-                              {grandparents.map((gp) => (
-                                <TreeNode
-                                  key={gp.id}
-                                  name={memberName(gp)}
-                                  initials={memberInitials(gp)}
-                                  relationship="Grandparent"
-                                  photo={gp.profiles?.photo_url || gp.photo_url}
-                                />
-                              ))}
-                            </div>
-                            <div className="w-px h-6 bg-warm-300" />
-                          </>
-                        )}
-
-                        {/* Parents row */}
-                        {parents.length > 0 && (
-                          <>
-                            <div className="flex items-center justify-center gap-4 flex-wrap">
-                              {parents.map((p) => (
-                                <TreeNode
-                                  key={p.id}
-                                  name={memberName(p)}
-                                  initials={memberInitials(p)}
-                                  relationship="Parent"
-                                  photo={p.profiles?.photo_url || p.photo_url}
-                                />
-                              ))}
-                            </div>
-                            <div className="w-px h-6 bg-warm-300" />
-                          </>
-                        )}
-
-                        {/* Head + Spouse row */}
-                        <div className="flex items-center justify-center gap-2 flex-wrap">
-                          {heads.map((h) => (
-                            <TreeNode
-                              key={h.id}
-                              name={memberName(h)}
-                              initials={memberInitials(h)}
-                              relationship="Head"
-                              photo={h.profiles?.photo_url || h.photo_url}
-                              isHead
-                            />
-                          ))}
-                          {spouses.length > 0 && (
-                            <>
-                              <div className="w-8 h-px bg-purple-400 hidden sm:block" />
-                              <span className="text-purple-400 text-xs sm:hidden">---</span>
-                            </>
-                          )}
-                          {spouses.map((s) => (
-                            <TreeNode
-                              key={s.id}
-                              name={memberName(s)}
-                              initials={memberInitials(s)}
-                              relationship="Spouse"
-                              photo={s.profiles?.photo_url || s.photo_url}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Children row */}
-                        {children.length > 0 && (
-                          <>
-                            <div className="w-px h-6 bg-warm-300" />
-                            <div className="flex items-center justify-center gap-4 flex-wrap">
-                              {children.map((c) => (
-                                <TreeNode
-                                  key={c.id}
-                                  name={memberName(c)}
-                                  initials={memberInitials(c)}
-                                  relationship="Child"
-                                  photo={c.profiles?.photo_url || c.photo_url}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        )}
-
-                        {/* Grandchildren row */}
-                        {grandchildren.length > 0 && (
-                          <>
-                            <div className="w-px h-6 bg-warm-300" />
-                            <div className="flex items-center justify-center gap-4 flex-wrap">
-                              {grandchildren.map((gc) => (
-                                <TreeNode
-                                  key={gc.id}
-                                  name={memberName(gc)}
-                                  initials={memberInitials(gc)}
-                                  relationship="Grandchild"
-                                  photo={gc.profiles?.photo_url || gc.photo_url}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        )}
-
-                        {/* Siblings row */}
-                        {siblings.length > 0 && (
-                          <>
-                            <div className="w-px h-6 bg-warm-300" />
-                            <div className="flex items-center justify-center gap-4 flex-wrap">
-                              {siblings.map((s) => (
-                                <TreeNode
-                                  key={s.id}
-                                  name={memberName(s)}
-                                  initials={memberInitials(s)}
-                                  relationship="Sibling"
-                                  photo={s.profiles?.photo_url || s.photo_url}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        )}
-
-                        {/* Others row */}
-                        {others.length > 0 && (
-                          <>
-                            <div className="w-px h-6 bg-warm-300" />
-                            <div className="flex items-center justify-center gap-4 flex-wrap">
-                              {others.map((o) => (
-                                <TreeNode
-                                  key={o.id}
-                                  name={memberName(o)}
-                                  initials={memberInitials(o)}
-                                  relationship="Other"
-                                  photo={o.profiles?.photo_url || o.photo_url}
-                                />
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ── Add family member (head only) ───────────────── */}
-                  {isHead && (
-                    <div className="border rounded-lg p-4 bg-warm-50/30">
-                      <h4 className="font-medium text-warm-700 mb-3 flex items-center gap-2">
-                        <UserPlus className="h-4 w-4" />
-                        Add Family Member
-                      </h4>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <Input
-                          value={addMemberEmail}
-                          onChange={(e) => setAddMemberEmail(e.target.value)}
-                          placeholder="Member's profile ID or email"
-                          className="flex-1"
-                        />
-                        <Select
-                          value={addMemberRelationship}
-                          onValueChange={(v) =>
-                            setAddMemberRelationship(v as FamilyRelationship)
-                          }
-                        >
-                          <SelectTrigger className="w-full sm:w-[160px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {RELATIONSHIP_OPTIONS.map((r) => (
-                              <SelectItem key={r} value={r}>
-                                {RELATIONSHIP_LABELS[r]}
-                              </SelectItem>
+                          </div>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {fam.members.map((m) => (
+                              <div
+                                key={m.profile_id}
+                                className="flex items-center gap-3 rounded-lg border border-warm-100 p-2.5"
+                              >
+                                {m.profiles?.photo_url ? (
+                                  <img
+                                    src={m.profiles.photo_url}
+                                    alt={memberName(m)}
+                                    className="h-9 w-9 shrink-0 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-purple-700">
+                                    {memberInitials(m)}
+                                  </div>
+                                )}
+                                <span className="truncate text-sm text-warm-700">
+                                  {memberName(m)}
+                                </span>
+                              </div>
                             ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          className="bg-purple-700 hover:bg-purple-800"
-                          onClick={handleAddFamilyMember}
-                          disabled={addingMember || !addMemberEmail.trim()}
-                        >
-                          {addingMember ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Plus className="h-4 w-4 mr-1" />
-                          )}
-                          Add
-                        </Button>
-                      </div>
+                          </div>
+                        </Card>
+                      ))}
                     </div>
                   )}
                 </div>
-              )}
+
+                {/* Join a family */}
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <UserPlus className="h-5 w-5 text-purple-700" />
+                    <h3 className="font-heading text-lg font-bold text-warm-800">
+                      Join a Family
+                    </h3>
+                  </div>
+                  <p className="mb-3 text-sm text-warm-500">
+                    Families are created by the church office. Find yours and join &mdash;
+                    you&apos;ll only see a family&apos;s members after you join.
+                  </p>
+                  {directory.length === 0 ? (
+                    <p className="text-sm text-warm-400">
+                      No families have been set up yet.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {directory.map((d) => (
+                        <div
+                          key={d.id}
+                          className="flex items-center justify-between rounded-lg border border-warm-100 px-3 py-2.5"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-warm-800">{d.name}</p>
+                            <p className="text-xs text-warm-400">
+                              {d.member_count} member{d.member_count !== 1 ? "s" : ""}
+                            </p>
+                          </div>
+                          {d.joined ? (
+                            <Badge
+                              variant="outline"
+                              className="border-0 bg-green-50 text-xs text-green-700"
+                            >
+                              <Check className="mr-1 h-3 w-3" />
+                              Joined
+                            </Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleJoinFamily(d.id)}
+                              disabled={familyBusyId === d.id}
+                            >
+                              {familyBusyId === d.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <Plus className="mr-1 h-3.5 w-3.5" />
+                                  Join
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </TabsContent>
 
             {/* ════════════════════════════════════════════════════════
@@ -1767,55 +1509,6 @@ export default function MyProfilePage() {
         onConfirm={handleSaveAndSwitch}
         onCancel={handleDiscardAndSwitch}
       />
-    </div>
-  );
-}
-
-// ── Tree Node Component ─────────────────────────────────────────────
-
-function TreeNode({
-  name,
-  initials,
-  relationship,
-  photo,
-  isHead = false,
-}: {
-  name: string;
-  initials: string;
-  relationship: string;
-  photo?: string | null;
-  isHead?: boolean;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className="relative">
-        {photo ? (
-          <img
-            src={photo}
-            alt={name}
-            className={`h-12 w-12 rounded-full object-cover border-2 ${
-              isHead ? "border-amber-400" : "border-purple-200"
-            }`}
-          />
-        ) : (
-          <div
-            className={`h-12 w-12 rounded-full flex items-center justify-center text-sm font-bold ${
-              isHead
-                ? "bg-amber-100 text-amber-700 border-2 border-amber-400"
-                : "bg-purple-100 text-purple-700 border-2 border-purple-200"
-            }`}
-          >
-            {initials}
-          </div>
-        )}
-        {isHead && (
-          <Crown className="h-3.5 w-3.5 text-amber-500 absolute -top-1.5 -right-1.5" />
-        )}
-      </div>
-      <span className="text-xs font-medium text-warm-700 text-center max-w-[80px] truncate">
-        {name}
-      </span>
-      <span className="text-[10px] text-warm-400">{relationship}</span>
     </div>
   );
 }

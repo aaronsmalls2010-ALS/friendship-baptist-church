@@ -34,6 +34,9 @@ function LoginForm() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendNotice, setResendNotice] = useState("");
 
   // Check for error params from callback
   useEffect(() => {
@@ -48,6 +51,8 @@ function LoginForm() {
     setError("");
     setFieldErrors({});
     setMagicLinkSent(false);
+    setNeedsVerification(false);
+    setResendNotice("");
 
     // Check lockout
     if (failedAttempts >= MAX_FAILED_ATTEMPTS) {
@@ -89,6 +94,16 @@ function LoginForm() {
       const data = await response.json();
 
       if (!response.ok) {
+        // Unverified accounts get a dedicated path: offer to resend the link
+        // instead of counting it as a failed password attempt.
+        if (data.code === "NOT_VERIFIED") {
+          setNeedsVerification(true);
+          setError(
+            data.error ||
+              "Please verify your account first. Check your email for your verification link."
+          );
+          return;
+        }
         setFailedAttempts((prev) => prev + 1);
         setError(
           data.error || "Invalid login. Please check your details and try again."
@@ -108,6 +123,39 @@ function LoginForm() {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    setResendNotice("");
+
+    if (!looksLikeEmail(identifier)) {
+      setFieldErrors({
+        identifier:
+          "Enter the email address you registered with to resend your verification link.",
+      });
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier.toLowerCase() }),
+      });
+      const data = await response.json().catch(() => ({}));
+      // Response is intentionally generic (no account enumeration).
+      setResendNotice(
+        data.message ||
+          "If an unverified account exists for that email, a new verification link is on its way."
+      );
+    } catch {
+      setResendNotice(
+        "We couldn't request a new link just now. Please try again in a moment."
+      );
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -177,6 +225,41 @@ function LoginForm() {
         <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
+        </div>
+      )}
+
+      {/* Unverified account — offer to resend the verification link */}
+      {needsVerification && (
+        <div className="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Haven&apos;t received your verification email? Enter your email
+              above and resend it.
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-3 w-full border-amber-300 text-amber-800 hover:bg-amber-100"
+            onClick={handleResendVerification}
+            disabled={isResending}
+          >
+            {isResending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Resend verification email
+              </>
+            )}
+          </Button>
+          {resendNotice && (
+            <p className="mt-2 text-xs text-amber-700">{resendNotice}</p>
+          )}
         </div>
       )}
 

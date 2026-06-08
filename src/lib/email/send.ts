@@ -55,12 +55,12 @@ export async function sendEmail({
     }
   }
 
-  // No email service configured — log for manual follow-up
-  console.log("[EMAIL] No email service configured. Would send:", {
-    to,
-    subject,
-    textPreview: text.slice(0, 100) + "...",
-  });
+  // No email service configured. This is a real failure — report it as one so
+  // callers don't tell the member "check your email" when nothing was sent.
+  console.error(
+    "[EMAIL] RESEND_API_KEY is not configured — email NOT sent.",
+    { to, subject }
+  );
 
-  return { success: true }; // Don't block signup if email isn't configured yet
+  return { success: false, error: "Email service is not configured." };
 }

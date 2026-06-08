@@ -71,7 +71,7 @@ export function getWelcomeEmailHtml(
                     </p>
                     <p style="margin:0;font-size:14px;line-height:1.5;color:#78350f;">
                       Please verify your email address by clicking the button below.
-                      After verification, a church administrator will review and approve your account.
+                      Once verified, your account is ready &mdash; you can sign in right away.
                     </p>
                   </td>
                 </tr>
@@ -209,8 +209,7 @@ export function getWelcomeEmailText(
 ONE MORE STEP: Please verify your email address by visiting the link below:
 ${verificationUrl}
 
-After verification, a church administrator will review and approve your account.
-You will be notified by email once your account is approved and ready to use.
+Once verified, your account is ready — you can sign in right away.
 `
     : `
 Sign in at: https://thefriendshipbaptist.com/auth/login

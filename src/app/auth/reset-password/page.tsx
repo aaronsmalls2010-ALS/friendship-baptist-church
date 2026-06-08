@@ -7,22 +7,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormSuccess } from "@/components/shared/form-success";
-import { Mail, ArrowLeft } from "lucide-react";
+import { Mail, ArrowLeft, AlertCircle } from "lucide-react";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
-    console.log("Password reset requested for:", email);
-    // Simulate brief loading
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      const response = await fetch("/api/auth/reset-password/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      // 400 = bad email format; everything else returns a generic success
+      // message (the endpoint never reveals whether an account exists).
+      if (response.status === 400) {
+        setError(data.error || "Please enter a valid email address.");
+        return;
+      }
       setSubmitted(true);
-    }, 800);
+    } catch {
+      setError("Something went wrong. Please try again in a moment.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -61,6 +78,13 @@ export default function ResetPasswordPage() {
               <p className="mt-2 text-center text-warm-500">
                 Enter your email and we&apos;ll send you a reset link
               </p>
+
+              {error && (
+                <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="mt-8 space-y-5">

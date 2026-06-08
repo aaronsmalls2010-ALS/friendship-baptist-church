@@ -264,28 +264,35 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SITE_URL || "https://thefriendshipbaptist.com";
     const verificationUrl = `${siteUrl}/auth/verify-email?token=${verificationToken}`;
 
-    sendEmail({
+    const emailResult = await sendEmail({
       to: sanitizedEmail!,
       subject: `Welcome to Friendship Baptist Church, ${sanitizedFirstName}! Please verify your email`,
       html: getWelcomeEmailHtml(sanitizedFirstName, verificationUrl),
       text: getWelcomeEmailText(sanitizedFirstName, verificationUrl),
     }).catch((err) => {
       console.error("[EMAIL] Welcome email failed:", err);
+      return { success: false as const, error: "Email delivery failed." };
     });
 
     console.log("[AUDIT] auth.signup", {
       userId,
       channel: "email",
+      emailSent: emailResult.success,
       ip,
       timestamp: new Date().toISOString(),
     });
 
+    // The account exists either way. Only promise "check your email" if the
+    // email actually went out — otherwise point them to the resend flow so we
+    // never strand a member the way Resend-not-configured did.
     return NextResponse.json(
       {
-        message:
-          "Account created successfully! Please check your email to verify your address.",
+        message: emailResult.success
+          ? "Account created successfully! Please check your email to verify your address."
+          : "Your account was created, but we couldn't send your verification email just now. Please go to the sign-in page and choose \"Resend verification email,\" or contact the church office.",
         userId,
         requiresVerification: "email",
+        emailSent: emailResult.success,
       },
       { status: 201 }
     );

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
+import { rolesFromUser, ADMIN_ROLES, type Role } from "@/lib/auth/roles";
 
 // Strip BOM (U+FEFF) that can sneak into env vars via copy-paste
 const BOM_RE = new RegExp("^" + String.fromCharCode(0xfeff));
@@ -92,13 +93,14 @@ export async function updateSession(request: NextRequest) {
   if (isAuthRoute && user && !pathname.startsWith("/auth/callback")) {
     const redirect = request.nextUrl.searchParams.get("redirect");
     const url = request.nextUrl.clone();
-    let role = user.user_metadata?.role || user.app_metadata?.role;
 
-    if (!role) {
-      role = await getRoleFromDb(user.id);
+    let roles: Role[] = rolesFromUser(user);
+    if (!roles.length) {
+      const dbRole = await getRoleFromDb(user.id);
+      if (dbRole) roles = [dbRole as Role];
     }
 
-    const isAdminUser = role === "admin" || role === "super_admin";
+    const isAdminUser = roles.some((r) => ADMIN_ROLES.includes(r));
 
     if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) {
       if (isAdminUser && redirect.startsWith("/portal")) {
@@ -115,13 +117,13 @@ export async function updateSession(request: NextRequest) {
 
   // ── Admin role check ──
   if (isAdminRoute && user) {
-    let role = user.user_metadata?.role || user.app_metadata?.role;
-
-    if (!role) {
-      role = await getRoleFromDb(user.id);
+    let roles: Role[] = rolesFromUser(user);
+    if (!roles.length) {
+      const dbRole = await getRoleFromDb(user.id);
+      if (dbRole) roles = [dbRole as Role];
     }
 
-    if (role !== "admin" && role !== "super_admin") {
+    if (!roles.some((r) => ADMIN_ROLES.includes(r))) {
       const url = request.nextUrl.clone();
       url.pathname = "/portal/profile";
       return NextResponse.redirect(url);

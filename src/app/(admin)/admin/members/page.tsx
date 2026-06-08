@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ interface Member {
   last_name: string;
   phone?: string;
   role: UserRole;
+  roles?: UserRole[];
   photo_url?: string;
   created_at: string;
   ward_id?: string;
@@ -111,13 +113,18 @@ export default function MemberManagementPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   // Edit member dialog state
   const [editOpen, setEditOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [editWardId, setEditWardId] = useState("");
   const [editDeaconId, setEditDeaconId] = useState("");
+
+  // Roles dialog state
+  const [rolesOpen, setRolesOpen] = useState(false);
+  const [rolesMember, setRolesMember] = useState<Member | null>(null);
+  const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([]);
+  const [savingRoles, setSavingRoles] = useState(false);
 
   // ── Fetch data from API ─────────────────────────────────────────
   const fetchData = useCallback(async () => {
@@ -164,39 +171,66 @@ export default function MemberManagementPage() {
     }
   }, [toast]);
 
-  // ── Change role ──────────────────────────────────────────────────
-  async function handleRoleChange(memberId: string, newRole: UserRole) {
-    setUpdatingId(memberId);
+  // ── Manage roles (multi) ─────────────────────────────────────────
+  function memberRoles(m: Member): UserRole[] {
+    return m.roles && m.roles.length ? m.roles : [m.role];
+  }
+
+  function openRolesDialog(member: Member) {
+    setRolesMember(member);
+    setSelectedRoles(memberRoles(member));
+    setRolesOpen(true);
+  }
+
+  function toggleRole(role: UserRole, checked: boolean) {
+    setSelectedRoles((prev) => {
+      if (checked) return prev.includes(role) ? prev : [...prev, role];
+      // "member" is the baseline and can't be removed
+      if (role === "member") return prev;
+      return prev.filter((r) => r !== role);
+    });
+  }
+
+  async function handleSaveRoles() {
+    if (!rolesMember) return;
+    setSavingRoles(true);
     setToast(null);
 
+    // Everyone keeps "member" as the baseline.
+    const desired = Array.from(new Set<UserRole>(["member", ...selectedRoles]));
+
     try {
-      const res = await fetch(`/api/admin/members/${memberId}/role`, {
+      const res = await fetch(`/api/admin/members/${rolesMember.id}/role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ roles: desired }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
-        setToast({ type: "error", message: data.error || "Failed to update role" });
+        setToast({ type: "error", message: data.error || "Failed to update roles" });
         return;
       }
 
-      // Update local state
+      const newRoles: UserRole[] = data.roles ?? desired;
+      const newPrimary: UserRole = data.primaryRole ?? newRoles[0];
       setMembers((prev) =>
-        prev.map((m) => (m.id === memberId ? { ...m, role: newRole } : m))
+        prev.map((m) =>
+          m.id === rolesMember.id
+            ? { ...m, roles: newRoles, role: newPrimary }
+            : m
+        )
       );
-
-      const member = members.find((m) => m.id === memberId);
       setToast({
         type: "success",
-        message: `${member?.first_name} ${member?.last_name} is now ${ROLE_LABELS[newRole]}.`,
+        message: `Updated roles for ${rolesMember.first_name} ${rolesMember.last_name}.`,
       });
+      setRolesOpen(false);
+      setRolesMember(null);
     } catch {
       setToast({ type: "error", message: "Network error. Please try again." });
     } finally {
-      setUpdatingId(null);
+      setSavingRoles(false);
     }
   }
 
@@ -462,51 +496,25 @@ export default function MemberManagementPage() {
                         {member.email}
                       </TableCell>
 
-                      {/* Role — inline editable */}
+                      {/* Roles — multi, editable via dialog */}
                       <TableCell>
-                        {updatingId === member.id ? (
-                          <div className="flex items-center gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
-                            <span className="text-sm text-warm-500">
-                              Updating...
-                            </span>
-                          </div>
-                        ) : (
-                          <Select
-                            value={member.role}
-                            onValueChange={(value) =>
-                              handleRoleChange(member.id, value as UserRole)
-                            }
-                          >
-                            <SelectTrigger className="w-[145px] h-8 border-0 bg-transparent hover:bg-warm-50 dark:hover:bg-warm-800 focus:ring-1 focus:ring-purple-500 p-0 pl-1">
-                              <Badge
-                                variant="outline"
-                                className={`border-0 cursor-pointer ${
-                                  ROLE_BADGE_COLORS[member.role] ?? ""
-                                }`}
-                              >
-                                {ROLE_LABELS[member.role] ?? member.role}
-                              </Badge>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ALL_ROLES.map((r) => (
-                                <SelectItem key={r} value={r}>
-                                  <span className="flex items-center gap-2">
-                                    <span
-                                      className={`inline-block h-2 w-2 rounded-full ${
-                                        ROLE_BADGE_COLORS[r]
-                                          ?.split(" ")[0]
-                                          ?.replace("text-", "bg-") ??
-                                        "bg-warm-300"
-                                      }`}
-                                    />
-                                    {ROLE_LABELS[r]}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => openRolesDialog(member)}
+                          className="group flex flex-wrap items-center gap-1 rounded-md p-1 -m-1 text-left hover:bg-warm-50 dark:hover:bg-warm-800 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                          title="Manage roles"
+                        >
+                          {memberRoles(member).map((r) => (
+                            <Badge
+                              key={r}
+                              variant="outline"
+                              className={`border-0 ${ROLE_BADGE_COLORS[r] ?? ""}`}
+                            >
+                              {ROLE_LABELS[r] ?? r}
+                            </Badge>
+                          ))}
+                          <Pencil className="h-3 w-3 text-warm-400 opacity-0 group-hover:opacity-100" />
+                        </button>
                       </TableCell>
 
                       {/* Ward */}
@@ -680,6 +688,97 @@ export default function MemberManagementPage() {
                   className="bg-purple-700 hover:bg-purple-600 text-white"
                 >
                   Save Assignment
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Manage Roles Dialog ─────────────────────────────────────── */}
+      <Dialog
+        open={rolesOpen}
+        onOpenChange={(open) => {
+          setRolesOpen(open);
+          if (!open) setRolesMember(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl">
+              Manage Roles
+            </DialogTitle>
+          </DialogHeader>
+          {rolesMember && (
+            <div className="space-y-4">
+              <p className="text-sm text-warm-600">
+                Assign one or more roles to{" "}
+                <span className="font-medium">
+                  {rolesMember.first_name} {rolesMember.last_name}
+                </span>
+                .
+              </p>
+
+              <div className="space-y-2">
+                {ALL_ROLES.map((r) => {
+                  const checked = selectedRoles.includes(r);
+                  return (
+                    <label
+                      key={r}
+                      htmlFor={`role-${r}`}
+                      className={`flex items-center gap-3 rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                        checked
+                          ? "border-purple-300 bg-purple-50/60 dark:border-purple-700 dark:bg-purple-900/20"
+                          : "border-warm-200 dark:border-warm-800 hover:bg-warm-50 dark:hover:bg-warm-800"
+                      } ${r === "member" ? "opacity-90" : ""}`}
+                    >
+                      <Checkbox
+                        id={`role-${r}`}
+                        checked={checked}
+                        disabled={r === "member"}
+                        onCheckedChange={(v) => toggleRole(r, v === true)}
+                      />
+                      <Badge
+                        variant="outline"
+                        className={`border-0 ${ROLE_BADGE_COLORS[r] ?? ""}`}
+                      >
+                        {ROLE_LABELS[r]}
+                      </Badge>
+                      {r === "member" && (
+                        <span className="ml-auto text-xs text-warm-400">
+                          baseline
+                        </span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+
+              <p className="text-xs text-warm-400">
+                Admin-level roles can only be granted by a super admin.
+              </p>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setRolesOpen(false)}
+                  disabled={savingRoles}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSaveRoles}
+                  disabled={savingRoles}
+                  className="bg-purple-700 hover:bg-purple-600 text-white"
+                >
+                  {savingRoles ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    "Save Roles"
+                  )}
                 </Button>
               </DialogFooter>
             </div>

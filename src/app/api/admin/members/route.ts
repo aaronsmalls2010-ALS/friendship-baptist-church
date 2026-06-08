@@ -40,7 +40,23 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ members: profiles ?? [] });
+    // Attach each member's full set of roles (from user_roles).
+    const { data: roleRows } = await admin
+      .from("user_roles")
+      .select("user_id, role");
+    const rolesByUser = new Map<string, string[]>();
+    for (const r of roleRows ?? []) {
+      const list = rolesByUser.get(r.user_id) ?? [];
+      list.push(r.role);
+      rolesByUser.set(r.user_id, list);
+    }
+
+    const members = (profiles ?? []).map((p) => ({
+      ...p,
+      roles: rolesByUser.get(p.id) ?? [p.role],
+    }));
+
+    return NextResponse.json({ members });
   } catch (err) {
     console.error("[ADMIN] Members error:", err);
     return NextResponse.json(

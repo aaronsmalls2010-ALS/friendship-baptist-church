@@ -26,7 +26,10 @@ const MAX_FAILED_ATTEMPTS = 5;
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const [identifier, setIdentifier] = useState("");
+  // Prefill the email after a member verifies (the verify page passes it along).
+  const [identifier, setIdentifier] = useState(
+    () => searchParams.get("email") ?? ""
+  );
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMagicLinkLoading, setIsMagicLinkLoading] = useState(false);

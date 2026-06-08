@@ -14,6 +14,12 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const [state, setState] = useState<VerifyState>("loading");
   const [errorMessage, setErrorMessage] = useState("");
+  const [verifiedEmail, setVerifiedEmail] = useState("");
+
+  // Sign-in link carries the just-verified email so the login form prefills it.
+  const signInHref = verifiedEmail
+    ? `/auth/login?email=${encodeURIComponent(verifiedEmail)}`
+    : "/auth/login";
 
   useEffect(() => {
     async function verifyEmail() {
@@ -40,6 +46,8 @@ function VerifyEmailContent() {
           );
           return;
         }
+
+        if (data.email) setVerifiedEmail(data.email);
 
         if (data.alreadyVerified) {
           setState("already_verified");
@@ -101,7 +109,7 @@ function VerifyEmailContent() {
             use. You can sign in now.
           </p>
 
-          <Link href="/auth/login" className="mt-6 w-full">
+          <Link href={signInHref} className="mt-6 w-full">
             <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
               Go to Sign In
             </Button>
@@ -135,7 +143,7 @@ function VerifyEmailContent() {
           <p className="mt-2 text-center text-warm-500">
             Your email address has already been verified. You can sign in below.
           </p>
-          <Link href="/auth/login" className="mt-6 w-full">
+          <Link href={signInHref} className="mt-6 w-full">
             <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
               Go to Sign In
             </Button>

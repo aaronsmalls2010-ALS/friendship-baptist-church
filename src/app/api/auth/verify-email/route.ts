@@ -67,14 +67,19 @@ export async function GET(request: NextRequest) {
     // Check if already verified
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_email_verified")
+      .select("is_email_verified, email")
       .eq("id", matchedUser.id)
       .single();
+
+    // The real email to prefill on the sign-in screen (profile is canonical;
+    // fall back to the auth identity).
+    const verifiedEmail = profile?.email || matchedUser.email || null;
 
     if (profile?.is_email_verified) {
       return NextResponse.json({
         message: "Email already verified.",
         alreadyVerified: true,
+        email: verifiedEmail,
       });
     }
 
@@ -109,6 +114,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       message: "Email verified successfully! Your account is ready to use.",
       verified: true,
+      email: verifiedEmail,
     });
   } catch (err) {
     console.error("[AUTH] Unexpected verify-email error:", err);

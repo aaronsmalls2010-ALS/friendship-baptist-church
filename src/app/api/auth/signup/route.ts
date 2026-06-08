@@ -5,6 +5,7 @@ import { sendEmail } from "@/lib/email/send";
 import { getWelcomeEmailHtml, getWelcomeEmailText } from "@/lib/email/welcome";
 import { toE164, isValidUsPhone, syntheticEmailForPhone } from "@/lib/phone";
 import { issuePhoneOtp } from "@/lib/auth/phone-otp";
+import { getSiteUrl } from "@/lib/site-url";
 
 // ── Rate limiting for signup ──
 const signupAttempts = new Map<string, { count: number; resetTime: number }>();
@@ -260,8 +261,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Email path: send the verification link ──
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://thefriendshipbaptist.com";
+    const siteUrl = getSiteUrl();
     const verificationUrl = `${siteUrl}/auth/verify-email?token=${verificationToken}`;
 
     const emailResult = await sendEmail({

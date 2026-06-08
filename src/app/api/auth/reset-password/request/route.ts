@@ -6,6 +6,7 @@ import {
   getPasswordResetEmailHtml,
   getPasswordResetEmailText,
 } from "@/lib/email/password-reset";
+import { getSiteUrl } from "@/lib/site-url";
 
 /**
  * POST /api/auth/reset-password/request
@@ -102,8 +103,7 @@ export async function POST(request: NextRequest) {
       return GENERIC_OK;
     }
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://thefriendshipbaptist.com";
+    const siteUrl = getSiteUrl();
     const resetUrl = `${siteUrl}/auth/update-password?token=${rawToken}`;
     const firstName = (profile.first_name as string) || "Friend";
 

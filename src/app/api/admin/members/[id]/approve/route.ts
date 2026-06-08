@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
+import { getSiteUrl } from "@/lib/site-url";
 
 /**
  * POST /api/admin/members/[id]/approve
@@ -84,7 +85,7 @@ export async function POST(
     if (targetUser?.user?.email) {
       const firstName = profile.first_name || "Member";
       const siteUrl =
-        process.env.NEXT_PUBLIC_SITE_URL || "https://thefriendshipbaptist.com";
+        getSiteUrl();
 
       sendEmail({
         to: targetUser.user.email,

@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getWelcomeEmailHtml, getWelcomeEmailText } from "@/lib/email/welcome";
+import { getSiteUrl } from "@/lib/site-url";
 
 /**
  * POST /api/auth/resend-verification
@@ -106,8 +107,7 @@ export async function POST(request: NextRequest) {
       return GENERIC_OK;
     }
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL || "https://thefriendshipbaptist.com";
+    const siteUrl = getSiteUrl();
     const verificationUrl = `${siteUrl}/auth/verify-email?token=${verificationToken}`;
     const firstName = (profile.first_name as string) || "Friend";
 

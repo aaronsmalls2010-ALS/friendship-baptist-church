@@ -182,11 +182,17 @@ export default function GivingHistoryPage() {
 
       {/* Download Statement */}
       <FadeIn delay={0.3}>
-        <div className="flex justify-center">
-          <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
-            Download Giving Statement
-          </Button>
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm text-warm-500">Download your year-end contribution statement for tax purposes</p>
+          <div className="flex items-center gap-2">
+            {[new Date().getFullYear(), new Date().getFullYear() - 1, new Date().getFullYear() - 2].map((yr) => (
+              <Button key={yr} variant="outline" className="gap-2"
+                onClick={() => window.open(`/api/portal/giving/statement?year=${yr}`, "_blank")}>
+                <Download className="h-4 w-4" />
+                {yr} Statement
+              </Button>
+            ))}
+          </div>
         </div>
       </FadeIn>
     </div>

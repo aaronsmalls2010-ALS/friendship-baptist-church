@@ -11,17 +11,35 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { formatDate } from "@/lib/utils";
 import type { Event } from "@/types";
 
-// Hard-coded recent activity feed
-const recentActivity = [
-  { id: 1, icon: MessageCircle, text: "New prayer request from Sister Martha", time: "2 hours ago" },
-  { id: 2, icon: HandCoins, text: "Donation of $250 received from Brother James", time: "5 hours ago" },
-  { id: 3, icon: ClipboardList, text: "Event registration: VBS — Crystal Young", time: "Yesterday" },
-  { id: 4, icon: UserPlus, text: "New member registration: Gloria Campbell", time: "2 days ago" },
-  { id: 5, icon: Megaphone, text: "Announcement published: VBS Volunteer Sign-Up", time: "3 days ago" },
-];
+interface AuditRow { id: string; action: string; resource_type: string; created_at: string; }
+
+function auditIcon(action: string) {
+  if (action.startsWith("donation")) return HandCoins;
+  if (action.startsWith("member")) return UserPlus;
+  if (action.startsWith("memorial")) return Heart;
+  if (action.includes("export")) return ClipboardList;
+  return Megaphone;
+}
+
+function auditLabel(row: AuditRow): string {
+  const parts = row.action.split(".");
+  const resource = row.resource_type.replace(/_/g, " ");
+  const verb = parts[1] ?? parts[0];
+  return `${verb.charAt(0).toUpperCase() + verb.slice(1)}: ${resource}`;
+}
+
+function timeAgo(ts: string): string {
+  const diff = Date.now() - new Date(ts).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
+  const [auditFeed, setAuditFeed] = useState<AuditRow[]>([]);
   const [totalMembers, setTotalMembers] = useState(0);
   const [monthlyDonations, setMonthlyDonations] = useState(0);
   const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
@@ -31,11 +49,12 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [membersRes, eventsRes, donationsRes, prayerRes] = await Promise.all([
+        const [membersRes, eventsRes, donationsRes, prayerRes, auditRes] = await Promise.all([
           fetch("/api/admin/members"),
           fetch("/api/admin/events"),
           fetch("/api/admin/donations"),
           fetch("/api/admin/prayer-requests"),
+          fetch("/api/admin/audit?page=1"),
         ]);
 
         if (membersRes.ok) {
@@ -69,6 +88,11 @@ export default function AdminDashboardPage() {
           const data = await prayerRes.json();
           const requests = data.prayer_requests ?? data.prayerRequests ?? [];
           setPrayerRequestsCount(requests.length);
+        }
+
+        if (auditRes.ok) {
+          const data = await auditRes.json();
+          setAuditFeed((data.events ?? []).slice(0, 8));
         }
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
@@ -138,23 +162,19 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentActivity.map((item) => {
-                  const Icon = item.icon;
+                {auditFeed.length === 0 ? (
+                  <p className="text-sm text-warm-400 text-center py-4">No recent activity yet</p>
+                ) : auditFeed.map((row) => {
+                  const Icon = auditIcon(row.action);
                   return (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-warm-50 dark:hover:bg-warm-800"
-                    >
+                    <div key={row.id} className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-warm-50 dark:hover:bg-warm-800">
                       <div className="mt-0.5 rounded-lg bg-purple-50 p-2 dark:bg-purple-900/30">
                         <Icon className="h-4 w-4 text-purple-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-warm-800 dark:text-warm-100">
-                          {item.text}
-                        </p>
+                        <p className="text-sm font-medium text-warm-800 dark:text-warm-100">{auditLabel(row)}</p>
                         <p className="flex items-center gap-1 text-xs text-warm-400">
-                          <Clock className="h-3 w-3" />
-                          {item.time}
+                          <Clock className="h-3 w-3" />{timeAgo(row.created_at)}
                         </p>
                       </div>
                     </div>

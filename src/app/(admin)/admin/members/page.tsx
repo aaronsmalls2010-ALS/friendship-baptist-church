@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,7 @@ export default function MemberManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(0);
   const [toast, setToast] = useState<{
     type: "success" | "error";
@@ -370,6 +372,11 @@ export default function MemberManagementPage() {
 
   // ── Filter + paginate ────────────────────────────────────────────
   const filtered = members.filter((m) => {
+    // Status filter — exclude deceased by default; show all when filter = "all"
+    const status = (m as unknown as { status?: string }).status ?? "active";
+    if (statusFilter === "all" && status === "deceased") return false;
+    if (statusFilter !== "all" && status !== statusFilter) return false;
+
     if (!search) return true;
     const term = search.toLowerCase();
     return (
@@ -434,6 +441,11 @@ export default function MemberManagementPage() {
       <AdminPageHeader
         title="Members"
         description={`${members.length} registered member${members.length !== 1 ? "s" : ""}`}
+        action={
+          <Link href="/admin/members/import">
+            <Button variant="outline" size="sm">Import CSV</Button>
+          </Link>
+        }
       />
 
       {/* Toast notification */}
@@ -455,19 +467,26 @@ export default function MemberManagementPage() {
       )}
 
       {/* Search */}
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
           <Input
             placeholder="Search by name, email, or role..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
+            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
             className="pl-9"
           />
         </div>
+        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+            <SelectItem value="visitor">Visitor</SelectItem>
+            <SelectItem value="deceased">Deceased</SelectItem>
+          </SelectContent>
+        </Select>
         <Button
           variant="outline"
           size="sm"

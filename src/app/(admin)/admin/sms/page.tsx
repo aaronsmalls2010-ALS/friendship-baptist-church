@@ -26,6 +26,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Send, CheckCircle, AlertCircle, Loader2, MessageSquare, Users } from "lucide-react";
 
+interface SmsTemplate { id: string; name: string; body: string; }
+
 interface SmsLogEntry {
   id: string;
   recipient_group: string;
@@ -56,8 +58,16 @@ export default function SmsCenterPage() {
   const [optInCount, setOptInCount] = useState<{ total: number; opted_in: number } | null>(null);
   const [loadingCount, setLoadingCount] = useState(false);
 
+  // Templates
+  const [templates, setTemplates] = useState<SmsTemplate[]>([]);
+  const [newTmplName, setNewTmplName] = useState("");
+  const [tmplOpen, setTmplOpen] = useState(false);
+
   // Confirm dialog
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Segment count
+  const segments = Math.ceil(Math.max(message.length, 1) / 160);
 
   // SMS history
   const [history, setHistory] = useState<SmsLogEntry[]>([]);
@@ -68,6 +78,9 @@ export default function SmsCenterPage() {
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setHistory(d.messages ?? []); })
       .finally(() => setLoadingHistory(false));
+    fetch("/api/admin/sms-templates")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setTemplates(d.templates ?? []); });
   }, []);
 
   // Fetch opt-in count when group changes
@@ -199,6 +212,21 @@ export default function SmsCenterPage() {
               )}
             </div>
 
+            {templates.length > 0 && (
+              <div className="space-y-2">
+                <Label>Use Template</Label>
+                <Select onValueChange={(id) => {
+                  const t = templates.find((t) => t.id === id);
+                  if (t) setMessage(t.body);
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Select a template…" /></SelectTrigger>
+                  <SelectContent>
+                    {templates.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="sms-message">Message</Label>
               <Textarea
@@ -209,7 +237,10 @@ export default function SmsCenterPage() {
                 maxLength={160}
                 rows={3}
               />
-              <p className="text-xs text-warm-400 text-right">{message.length}/160 characters</p>
+              <div className="flex items-center justify-between text-xs text-warm-400">
+                <span>{segments} segment{segments !== 1 ? "s" : ""} × {optInCount?.opted_in ?? "?"} recipients</span>
+                <span>{message.length}/160 characters</span>
+              </div>
             </div>
 
             <div className="space-y-2">

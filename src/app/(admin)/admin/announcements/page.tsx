@@ -149,12 +149,30 @@ export default function AnnouncementManagementPage() {
     setDeletingAnnouncement(null);
   }
 
+  // ── Helpers ───────────────────────────────────────────────────────
+  function announcementStatus(item: Announcement): { label: string; color: string } {
+    const now = new Date();
+    const start = new Date(item.start_date);
+    const end = item.end_date ? new Date(item.end_date) : null;
+    if (start > now) return { label: "Scheduled", color: "bg-blue-100 text-blue-700" };
+    if (end && end < now) return { label: "Expired", color: "bg-warm-100 text-warm-500" };
+    return { label: "Live", color: "bg-green-100 text-green-700" };
+  }
+
   // ── Column definitions ────────────────────────────────────────────
   const columns = [
     {
       key: "title",
       label: "Title",
       sortable: true,
+    },
+    {
+      key: "status",
+      label: "Status",
+      render: (item: Announcement) => {
+        const s = announcementStatus(item);
+        return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${s.color}`}>{s.label}</span>;
+      },
     },
     {
       key: "start_date",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { MOCK_MEMORIALS, MOCK_PROFILES } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import type { Memorial, MemorialComment } from "@/types";
 import {
@@ -31,21 +30,27 @@ import {
   Plus,
 } from "lucide-react";
 
-/* ------------------------------------------------------------------ */
-/*  Helper: look up profile name by id                                 */
-/* ------------------------------------------------------------------ */
-function profileName(id: string) {
-  const p = MOCK_PROFILES.find((pr) => pr.id === id);
-  return p ? `${p.first_name} ${p.last_name}` : id;
-}
-
 /* ================================================================== */
 /*  Page Component                                                     */
 /* ================================================================== */
 export default function MemorialManagementPage() {
-  const [memorials, setMemorials] = useState<Memorial[]>(
-    () => [...MOCK_MEMORIALS]
-  );
+  const [memorials, setMemorials] = useState<Memorial[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ type: "success"|"error"; message: string }|null>(null);
+
+  function showToast(message: string, type: "success"|"error" = "success") {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  }
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/admin/memorials");
+    if (res.ok) setMemorials((await res.json()).memorials ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   /* ── form dialog state ────────────────────────────────────────── */
   const [formOpen, setFormOpen] = useState(false);
@@ -119,55 +124,33 @@ export default function MemorialManagementPage() {
     setFormOpen(true);
   }
 
-  function handleSave() {
-    const roles = formRoles
-      .split(",")
-      .map((r) => r.trim())
-      .filter(Boolean);
+  async function handleSave() {
+    const roles = formRoles.split(",").map((r) => r.trim()).filter(Boolean);
+    const payload = {
+      first_name: formFirstName, last_name: formLastName,
+      date_of_birth: formDateOfBirth || null,
+      date_of_passing: formDateOfPassing,
+      obituary: formObituary,
+      scripture: formScripture || null,
+      scripture_text: formScriptureText || null,
+      favorite_hymn: formHymn || null,
+      church_roles: roles.length > 0 ? roles : [],
+      family_message: formFamilyMessage || null,
+      is_published: formIsPublished,
+    };
 
     if (editingMemorial) {
-      setMemorials((prev) =>
-        prev.map((m) =>
-          m.id === editingMemorial.id
-            ? {
-                ...m,
-                first_name: formFirstName,
-                last_name: formLastName,
-                date_of_birth: formDateOfBirth || undefined,
-                date_of_passing: formDateOfPassing,
-                obituary: formObituary,
-                scripture: formScripture || undefined,
-                scripture_text: formScriptureText || undefined,
-                favorite_hymn: formHymn || undefined,
-                church_roles: roles.length > 0 ? roles : undefined,
-                family_message: formFamilyMessage || undefined,
-                is_published: formIsPublished,
-                updated_at: new Date().toISOString(),
-              }
-            : m
-        )
-      );
+      const res = await fetch(`/api/admin/memorials/${editingMemorial.id}`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      if (res.ok) { showToast("Memorial updated"); loadData(); }
+      else showToast("Failed to update memorial", "error");
     } else {
-      const newMemorial: Memorial = {
-        id: `mem${Date.now()}`,
-        created_by: "p14", // admin user
-        first_name: formFirstName,
-        last_name: formLastName,
-        date_of_birth: formDateOfBirth || undefined,
-        date_of_passing: formDateOfPassing,
-        obituary: formObituary,
-        scripture: formScripture || undefined,
-        scripture_text: formScriptureText || undefined,
-        favorite_hymn: formHymn || undefined,
-        church_roles: roles.length > 0 ? roles : undefined,
-        family_message: formFamilyMessage || undefined,
-        is_published: formIsPublished,
-        photos: [],
-        comments: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setMemorials((prev) => [...prev, newMemorial]);
+      const res = await fetch("/api/admin/memorials", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      if (res.ok) { showToast("Memorial created"); loadData(); }
+      else showToast("Failed to create memorial", "error");
     }
     setFormOpen(false);
     resetForm();
@@ -180,11 +163,11 @@ export default function MemorialManagementPage() {
     setDeleteOpen(true);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (deletingMemorial) {
-      setMemorials((prev) =>
-        prev.filter((m) => m.id !== deletingMemorial.id)
-      );
+      const res = await fetch(`/api/admin/memorials/${deletingMemorial.id}`, { method: "DELETE" });
+      if (res.ok) { showToast("Memorial archived"); loadData(); }
+      else showToast("Failed to delete memorial", "error");
     }
     setDeleteOpen(false);
     setDeletingMemorial(null);
@@ -192,14 +175,14 @@ export default function MemorialManagementPage() {
 
   /* ── toggle publish ────────────────────────────────────────────── */
 
-  function togglePublish(memorial: Memorial) {
-    setMemorials((prev) =>
-      prev.map((m) =>
-        m.id === memorial.id
-          ? { ...m, is_published: !m.is_published, updated_at: new Date().toISOString() }
-          : m
-      )
-    );
+  async function togglePublish(memorial: Memorial) {
+    const res = await fetch(`/api/admin/memorials/${memorial.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_published: !memorial.is_published }),
+    });
+    if (res.ok) loadData();
+    else showToast("Failed to update publish status", "error");
   }
 
   /* ── comments ──────────────────────────────────────────────────── */
@@ -269,9 +252,10 @@ export default function MemorialManagementPage() {
     {
       key: "created_by",
       label: "Created By",
-      render: (item: Memorial) => (
-        <span className="text-warm-600">{profileName(item.created_by)}</span>
-      ),
+      render: (item: Memorial) => {
+        const p = (item as unknown as { profiles?: { first_name: string; last_name: string } }).profiles;
+        return <span className="text-warm-600">{p ? `${p.first_name} ${p.last_name}` : "—"}</span>;
+      },
     },
     {
       key: "is_published",
@@ -362,9 +346,20 @@ export default function MemorialManagementPage() {
   /*  Render                                                           */
   /* ================================================================ */
 
+  if (loading) return (
+    <div className="flex justify-center py-24">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-600 border-t-transparent" />
+    </div>
+  );
+
   return (
     <FadeIn direction="up">
       <div className="space-y-6">
+        {toast && (
+          <div role="alert" className={`fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium shadow-lg border ${
+            toast.type === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"
+          }`}>{toast.message}</div>
+        )}
         <AdminPageHeader
           title="Loved Ones Gone Home"
           description="Manage memorial entries for departed church family members"

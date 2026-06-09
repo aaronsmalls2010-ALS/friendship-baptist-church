@@ -75,12 +75,18 @@ export default function DevotionalsPage() {
   useEffect(() => {
     async function fetchDevotionals() {
       try {
-        // Fetch daily picks
-        const res = await fetch("/api/portal/devotionals?mode=daily");
-        if (res.ok) {
-          const data = await res.json();
+        const [devRes, savedRes] = await Promise.all([
+          fetch("/api/portal/devotionals?mode=daily"),
+          fetch("/api/portal/devotionals/saved"),
+        ]);
+        if (devRes.ok) {
+          const data = await devRes.json();
           setDailyDevotionals(data.daily || []);
           setAllDevotionals(data.devotionals || []);
+        }
+        if (savedRes.ok) {
+          const data = await savedRes.json();
+          setSavedIds(new Set((data.saved ?? []).map((s: { devotional_id: string }) => s.devotional_id)));
         }
       } catch (error) {
         console.error("Failed to fetch devotionals:", error);
@@ -91,16 +97,23 @@ export default function DevotionalsPage() {
     fetchDevotionals();
   }, []);
 
-  function toggleSaved(id: string) {
+  async function toggleSaved(id: string) {
+    const wasSaved = savedIds.has(id);
+    // Optimistic update
     setSavedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      wasSaved ? next.delete(id) : next.add(id);
       return next;
     });
+    if (wasSaved) {
+      await fetch(`/api/portal/devotionals/saved?devotional_id=${id}`, { method: "DELETE" });
+    } else {
+      await fetch("/api/portal/devotionals/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ devotional_id: id }),
+      });
+    }
   }
 
   function toggleExpanded(id: string) {

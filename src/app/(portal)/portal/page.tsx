@@ -13,6 +13,9 @@ import {
   Pin,
   ArrowRight,
   Loader2,
+  Cake,
+  X,
+  CheckCircle,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,11 +27,11 @@ import { formatDate } from "@/lib/utils";
 
 const quickActions = [
   { label: "Directory", icon: Users, href: "/portal/directory" },
-  { label: "Prayer", icon: Heart, href: "/prayer" },
+  { label: "Prayer", icon: Heart, href: "/portal/prayer" },
   { label: "Give", icon: DollarSign, href: "/give" },
   { label: "Events", icon: Calendar, href: "/portal/events" },
   { label: "Profile", icon: User, href: "/portal/profile" },
-  { label: "Devotional", icon: BookOpen, href: "/portal/devotionals" },
+  { label: "Devotionals", icon: BookOpen, href: "/portal/devotionals" },
 ];
 
 const todayFormatted = new Intl.DateTimeFormat("en-US", {
@@ -50,6 +53,8 @@ export default function MemberDashboardPage() {
   const [yearToDateTotal, setYearToDateTotal] = useState(0);
   const [lastDonation, setLastDonation] = useState<any>(null);
   const [recentAnnouncements, setRecentAnnouncements] = useState<any[]>([]);
+  const [birthdays, setBirthdays] = useState<any[]>([]);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -84,6 +89,13 @@ export default function MemberDashboardPage() {
       }
     }
     fetchDashboard();
+    // Birthdays
+    fetch("/api/portal/birthdays")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setBirthdays(d.birthdays ?? []); });
+    // Onboarding: show if never dismissed
+    const dismissed = typeof window !== "undefined" && localStorage.getItem("onboarding_dismissed");
+    if (!dismissed) setShowOnboarding(true);
   }, []);
 
   const firstName =
@@ -230,6 +242,66 @@ export default function MemberDashboardPage() {
 
         {/* Right Column — 1/3 */}
         <div className="space-y-6">
+          {/* Onboarding Checklist */}
+          {showOnboarding && (
+            <FadeIn direction="up" delay={0.15}>
+              <Card className="p-5 border-purple-200 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-800">
+                <div className="flex items-start justify-between mb-3">
+                  <h2 className="font-heading font-bold text-warm-800 dark:text-warm-200">Get Started</h2>
+                  <button onClick={() => {
+                    setShowOnboarding(false);
+                    localStorage.setItem("onboarding_dismissed", "1");
+                  }} className="text-warm-400 hover:text-warm-600" aria-label="Dismiss">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {[
+                    { label: "Complete your profile", href: "/portal/profile" },
+                    { label: "Join a ministry", href: "/portal/growth" },
+                    { label: "Set up giving", href: "/give" },
+                    { label: "Opt in to SMS updates", href: "/portal/notifications" },
+                  ].map(({ label, href }) => (
+                    <Link key={label} href={href} className="flex items-center gap-2 text-sm text-warm-700 dark:text-warm-300 hover:text-purple-700 dark:hover:text-purple-400 group">
+                      <CheckCircle className="h-4 w-4 text-warm-300 group-hover:text-purple-500 shrink-0" />
+                      {label}
+                    </Link>
+                  ))}
+                </div>
+              </Card>
+            </FadeIn>
+          )}
+
+          {/* This Week&apos;s Birthdays */}
+          {birthdays.length > 0 && (
+            <FadeIn direction="up" delay={0.2}>
+              <Card className="p-5">
+                <h2 className="font-heading font-bold text-fluid-lg text-warm-800 dark:text-warm-200 mb-3 flex items-center gap-2">
+                  <Cake className="h-5 w-5 text-peach-500" /> Birthdays This Week
+                </h2>
+                <div className="space-y-2">
+                  {birthdays.map((b: any) => (
+                    <div key={b.id} className="flex items-center gap-2">
+                      {b.photo_url ? (
+                        <img src={b.photo_url} alt={b.first_name} className="h-8 w-8 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-peach-100 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-peach-600">{b.first_name?.[0]}</span>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-sm font-medium text-warm-800 dark:text-warm-200">{b.first_name} {b.last_name}</p>
+                        <p className="text-xs text-warm-400">
+                          {new Date(b.birthday).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </FadeIn>
+          )}
+
           {/* Giving Summary */}
           <FadeIn direction="up" delay={0.25}>
             <Card className="p-6">

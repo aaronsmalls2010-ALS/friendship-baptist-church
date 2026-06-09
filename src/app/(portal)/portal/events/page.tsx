@@ -6,7 +6,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, MapPin, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { CalendarDays, MapPin, Clock, CheckCircle, Loader2, CalendarCheck, CalendarX } from "lucide-react";
 
 export default function MyEventsPage() {
   const [loading, setLoading] = useState(true);
@@ -15,6 +15,9 @@ export default function MyEventsPage() {
   const [pastEvents, setPastEvents] = useState<any[]>([]);
   const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
   const [recommendedEvents, setRecommendedEvents] = useState<any[]>([]);
+  const [rsvpedIds, setRsvpedIds] = useState<Set<string>>(new Set());
+  const [rsvpLoading, setRsvpLoading] = useState<string | null>(null);
+  const [rsvpToast, setRsvpToast] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -59,6 +62,24 @@ export default function MyEventsPage() {
     fetchEvents();
   }, []);
 
+  async function handleRsvp(eventId: string) {
+    const isRsvped = rsvpedIds.has(eventId);
+    setRsvpLoading(eventId);
+    const res = await fetch(`/api/portal/events/${eventId}/rsvp`, {
+      method: isRsvped ? "DELETE" : "POST",
+    });
+    setRsvpLoading(null);
+    if (res.ok) {
+      setRsvpedIds((prev) => {
+        const next = new Set(prev);
+        isRsvped ? next.delete(eventId) : next.add(eventId);
+        return next;
+      });
+      setRsvpToast(isRsvped ? "RSVP cancelled" : "You're registered!");
+      setTimeout(() => setRsvpToast(null), 3000);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -69,6 +90,11 @@ export default function MyEventsPage() {
 
   return (
     <div className="space-y-8">
+      {rsvpToast && (
+        <div role="alert" className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium shadow-lg bg-green-50 text-green-800 border border-green-200">
+          <CheckCircle className="h-4 w-4 shrink-0" />{rsvpToast}
+        </div>
+      )}
       {/* Page Header */}
       <FadeIn>
         <div>
@@ -124,10 +150,18 @@ export default function MyEventsPage() {
                         </p>
                       </div>
                       <Button
-                        variant="outline"
-                        className="shrink-0 border-purple-200 text-purple-700 hover:bg-purple-50"
+                        variant={rsvpedIds.has(event.id) ? "default" : "outline"}
+                        className={rsvpedIds.has(event.id)
+                          ? "shrink-0 bg-green-600 hover:bg-red-600 text-white"
+                          : "shrink-0 border-purple-200 text-purple-700 hover:bg-purple-50"}
+                        disabled={rsvpLoading === event.id}
+                        onClick={() => handleRsvp(event.id)}
                       >
-                        View Details
+                        {rsvpLoading === event.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : rsvpedIds.has(event.id)
+                            ? <><CalendarCheck className="mr-2 h-4 w-4" />RSVPed</>
+                            : <><CalendarX className="mr-2 h-4 w-4" />RSVP</>}
                       </Button>
                     </div>
                   </div>
@@ -177,8 +211,18 @@ export default function MyEventsPage() {
                           {event.description}
                         </p>
                       </div>
-                      <Button className="shrink-0 bg-purple-700 hover:bg-purple-600 text-white">
-                        Register
+                      <Button
+                        className={rsvpedIds.has(event.id)
+                          ? "shrink-0 bg-green-600 hover:bg-red-600 text-white"
+                          : "shrink-0 bg-purple-700 hover:bg-purple-600 text-white"}
+                        disabled={rsvpLoading === event.id}
+                        onClick={() => handleRsvp(event.id)}
+                      >
+                        {rsvpLoading === event.id
+                          ? <Loader2 className="h-4 w-4 animate-spin" />
+                          : rsvpedIds.has(event.id)
+                            ? <><CalendarCheck className="mr-2 h-4 w-4" />RSVPed</>
+                            : "RSVP"}
                       </Button>
                     </div>
                   </div>

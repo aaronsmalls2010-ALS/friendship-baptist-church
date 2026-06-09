@@ -77,6 +77,8 @@ export const PORTAL_NAV: NavItem[] = [
   { label: "Events", href: "/portal/events" },
   { label: "Devotionals", href: "/portal/devotionals" },
   { label: "Spiritual Growth", href: "/portal/growth" },
+  { label: "Prayer Requests", href: "/portal/prayer" },
+  { label: "Testimonies", href: "/portal/testimonies" },
   { label: "Hall of Angels", href: "/portal/memorials" },
   { label: "Notifications", href: "/portal/notifications" },
 ];

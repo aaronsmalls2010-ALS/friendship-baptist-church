@@ -76,8 +76,13 @@ export default function ChurchDirectoryPage() {
       const matchesRole =
         roleFilter === "all" || profile.role === roleFilter;
 
-      // Ministry filter
-      const matchesMinistry = ministryFilter === "all";
+      // Ministry filter — check if profile has ministry_members for this ministry
+      const matchesMinistry =
+        ministryFilter === "all" ||
+        (Array.isArray(profile.ministries) &&
+          profile.ministries.some((m: { id?: string; ministry_id?: string }) =>
+            m.id === ministryFilter || m.ministry_id === ministryFilter
+          ));
 
       return matchesSearch && matchesRole && matchesMinistry;
     });

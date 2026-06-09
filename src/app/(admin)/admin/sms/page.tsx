@@ -15,14 +15,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import {
-  Send,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  MessageSquare,
-} from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { Send, CheckCircle, AlertCircle, Loader2, MessageSquare, Users } from "lucide-react";
 
 interface SmsLogEntry {
   id: string;
@@ -48,36 +50,38 @@ export default function SmsCenterPage() {
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [sendResult, setSendResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  // SMS history from API
+  // Opt-in counts
+  const [optInCount, setOptInCount] = useState<{ total: number; opted_in: number } | null>(null);
+  const [loadingCount, setLoadingCount] = useState(false);
+
+  // Confirm dialog
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // SMS history
   const [history, setHistory] = useState<SmsLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
-  // Fetch SMS history on mount
   useEffect(() => {
-    async function fetchHistory() {
-      try {
-        const res = await fetch("/api/admin/sms");
-        if (res.ok) {
-          const data = await res.json();
-          setHistory(data.messages || []);
-        }
-      } catch (error) {
-        console.error("Failed to fetch SMS history:", error);
-      } finally {
-        setLoadingHistory(false);
-      }
-    }
-    fetchHistory();
+    fetch("/api/admin/sms")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setHistory(d.messages ?? []); })
+      .finally(() => setLoadingHistory(false));
   }, []);
 
-  const handleSend = async () => {
-    if (!recipientGroup || !message) return;
+  // Fetch opt-in count when group changes
+  useEffect(() => {
+    if (!recipientGroup) { setOptInCount(null); return; }
+    setLoadingCount(true);
+    fetch(`/api/admin/sms?count=true&group=${recipientGroup}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d) setOptInCount(d); })
+      .finally(() => setLoadingCount(false));
+  }, [recipientGroup]);
 
+  async function doSend() {
+    setConfirmOpen(false);
     setSending(true);
     setSendResult(null);
 
@@ -85,15 +89,8 @@ export default function SmsCenterPage() {
       const res = await fetch("/api/admin/sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipientGroup,
-          message,
-          schedule,
-          scheduleDate,
-          scheduleTime,
-        }),
+        body: JSON.stringify({ recipientGroup, message, schedule, scheduleDate, scheduleTime }),
       });
-
       const data = await res.json();
 
       if (res.ok) {
@@ -106,30 +103,22 @@ export default function SmsCenterPage() {
         setSchedule("now");
         setScheduleDate("");
         setScheduleTime("");
+        setOptInCount(null);
 
-        // Refresh history
         const histRes = await fetch("/api/admin/sms");
-        if (histRes.ok) {
-          const histData = await histRes.json();
-          setHistory(histData.messages || []);
-        }
+        if (histRes.ok) setHistory((await histRes.json()).messages ?? []);
       } else {
-        setSendResult({
-          type: "error",
-          message: data.error || "Failed to send messages",
-        });
+        setSendResult({ type: "error", message: data.error ?? "Failed to send messages" });
       }
-    } catch (error) {
-      console.error("SMS send error:", error);
-      setSendResult({
-        type: "error",
-        message: "Network error. Please try again.",
-      });
+    } catch {
+      setSendResult({ type: "error", message: "Network error. Please try again." });
     } finally {
       setSending(false);
       setTimeout(() => setSendResult(null), 5000);
     }
-  };
+  }
+
+  const canSend = !!recipientGroup && !!message && !sending;
 
   return (
     <div className="space-y-8">
@@ -138,26 +127,45 @@ export default function SmsCenterPage() {
         description="Send text messages to church members via Twilio"
       />
 
-      {/* Compose Message */}
+      {/* Confirm dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Confirm Send</DialogTitle>
+            <DialogDescription>
+              This will send a message to{" "}
+              <span className="font-semibold text-warm-900 dark:text-warm-50">
+                {optInCount?.opted_in ?? "?"} {GROUP_LABELS[recipientGroup] ?? recipientGroup}
+              </span>{" "}
+              who have opted in to SMS. Continue?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg bg-warm-50 dark:bg-warm-800 border border-warm-100 dark:border-warm-700 px-4 py-3 text-sm text-warm-700 dark:text-warm-300 italic">
+            &ldquo;{message}&rdquo;
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button className="bg-purple-700 hover:bg-purple-600 text-white" onClick={doSend}>
+              <Send className="mr-2 h-4 w-4" /> Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Compose */}
       <div className="space-y-6">
-        <h2 className="font-heading text-xl font-semibold text-warm-900 dark:text-warm-50">
-          Compose Message
-        </h2>
+        <h2 className="font-heading text-xl font-semibold text-warm-900 dark:text-warm-50">Compose Message</h2>
         <Card>
           <CardContent className="p-6 space-y-4">
             {sendResult && (
-              <div
-                className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
-                  sendResult.type === "success"
-                    ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
-                    : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
-                }`}
-              >
-                {sendResult.type === "success" ? (
-                  <CheckCircle className="h-4 w-4 shrink-0" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                )}
+              <div role="alert" className={`flex items-center gap-2 rounded-lg p-3 text-sm ${
+                sendResult.type === "success"
+                  ? "bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300"
+                  : "bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300"
+              }`}>
+                {sendResult.type === "success"
+                  ? <CheckCircle className="h-4 w-4 shrink-0" />
+                  : <AlertCircle className="h-4 w-4 shrink-0" />}
                 {sendResult.message}
               </div>
             )}
@@ -174,6 +182,21 @@ export default function SmsCenterPage() {
                   <SelectItem value="leaders">Ministry Leaders</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Opt-in count badge */}
+              {recipientGroup && (
+                <div className="flex items-center gap-2 text-sm text-warm-500">
+                  <Users className="h-4 w-4 shrink-0" />
+                  {loadingCount ? (
+                    <span>Counting…</span>
+                  ) : optInCount ? (
+                    <span>
+                      <span className="font-semibold text-warm-900 dark:text-warm-100">{optInCount.opted_in}</span> of{" "}
+                      <span className="font-semibold text-warm-900 dark:text-warm-100">{optInCount.total}</span> members have opted in to SMS
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -186,9 +209,7 @@ export default function SmsCenterPage() {
                 maxLength={160}
                 rows={3}
               />
-              <p className="text-xs text-warm-400 text-right">
-                {message.length}/160 characters
-              </p>
+              <p className="text-xs text-warm-400 text-right">{message.length}/160 characters</p>
             </div>
 
             <div className="space-y-2">
@@ -208,40 +229,24 @@ export default function SmsCenterPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sms-date">Date</Label>
-                  <Input
-                    id="sms-date"
-                    type="date"
-                    value={scheduleDate}
-                    onChange={(e) => setScheduleDate(e.target.value)}
-                  />
+                  <Input id="sms-date" type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sms-time">Time</Label>
-                  <Input
-                    id="sms-time"
-                    type="time"
-                    value={scheduleTime}
-                    onChange={(e) => setScheduleTime(e.target.value)}
-                  />
+                  <Input id="sms-time" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} />
                 </div>
               </div>
             )}
 
             <Button
               className="bg-purple-700 hover:bg-purple-600 text-white"
-              onClick={handleSend}
-              disabled={!recipientGroup || !message || sending}
+              onClick={() => setConfirmOpen(true)}
+              disabled={!canSend}
             >
               {sending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending...
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>
               ) : (
-                <>
-                  <Send className="mr-2 h-4 w-4" />
-                  Send Message
-                </>
+                <><Send className="mr-2 h-4 w-4" /> Send Message</>
               )}
             </Button>
           </CardContent>
@@ -250,12 +255,9 @@ export default function SmsCenterPage() {
 
       <Separator />
 
-      {/* Recent Messages */}
+      {/* History */}
       <div className="space-y-6">
-        <h2 className="font-heading text-xl font-semibold text-warm-900 dark:text-warm-50">
-          Recent Messages
-        </h2>
-
+        <h2 className="font-heading text-xl font-semibold text-warm-900 dark:text-warm-50">Recent Messages</h2>
         {loadingHistory ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-purple-600" />
@@ -268,35 +270,21 @@ export default function SmsCenterPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Badge
-                          variant="secondary"
-                          className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-                        >
-                          {GROUP_LABELS[msg.recipient_group] ||
-                            msg.recipient_group}
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                          {GROUP_LABELS[msg.recipient_group] ?? msg.recipient_group}
                         </Badge>
-                        <Badge
-                          variant="outline"
-                          className={
-                            msg.failed_count === 0
-                              ? "border-green-300 text-green-700 dark:border-green-700 dark:text-green-400"
-                              : "border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
-                          }
-                        >
+                        <Badge variant="outline" className={
+                          msg.failed_count === 0
+                            ? "border-green-300 text-green-700 dark:border-green-700 dark:text-green-400"
+                            : "border-orange-300 text-orange-700 dark:border-orange-700 dark:text-orange-400"
+                        }>
                           {msg.sent_count}/{msg.recipients_count} Delivered
                         </Badge>
                       </div>
-                      <p className="text-sm text-warm-700 dark:text-warm-300">
-                        {msg.message}
-                      </p>
+                      <p className="text-sm text-warm-700 dark:text-warm-300">{msg.message}</p>
                       <p className="text-xs text-warm-400">
-                        Sent{" "}
-                        {new Date(msg.created_at).toLocaleDateString("en-US", {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                          hour: "numeric",
-                          minute: "2-digit",
+                        Sent {new Date(msg.created_at).toLocaleDateString("en-US", {
+                          month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
                         })}
                       </p>
                     </div>
@@ -308,9 +296,7 @@ export default function SmsCenterPage() {
         ) : (
           <div className="text-center py-12 bg-white dark:bg-warm-900 rounded-xl border border-warm-100 dark:border-warm-800">
             <MessageSquare className="h-12 w-12 text-warm-300 mx-auto mb-3" />
-            <p className="text-warm-500">
-              No messages sent yet. Compose your first message above.
-            </p>
+            <p className="text-warm-500">No messages sent yet. Compose your first message above.</p>
           </div>
         )}
       </div>

@@ -1,208 +1,121 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toE164 } from "@/lib/phone";
 
-/**
- * POST /api/admin/sms
- *
- * Sends SMS messages via Twilio.
- * Body: { recipientGroup, message, schedule?, scheduleDate?, scheduleTime? }
- *
- * recipientGroup: "all" | "deacons" | "leaders" | "custom"
- * For "custom", also pass `customNumbers: string[]`
- */
-export async function POST(request: NextRequest) {
-  try {
-    // Auth check — must be admin
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+async function getRecipientPhones(
+  admin: ReturnType<typeof createAdminClient>,
+  recipientGroup: string,
+  customNumbers?: string[]
+): Promise<string[]> {
+  if (recipientGroup === "custom" && customNumbers) return customNumbers;
 
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+  let query = admin.from("profiles").select("phone, sms_opt_in");
+  if (recipientGroup === "deacons") query = query.in("role", ["deacon"]);
+  else if (recipientGroup === "leaders") query = query.in("role", ["admin", "super_admin", "minister", "deacon", "pastor"]);
 
-    // Check admin role
-    const admin = createAdminClient();
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  const { data: profiles, error } = await query;
+  if (error || !profiles) return [];
 
-    if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
-    }
-
-    // Validate Twilio configuration
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
-
-    if (!accountSid || !authToken || !fromNumber) {
-      return NextResponse.json(
-        {
-          error:
-            "Twilio is not configured. Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables.",
-        },
-        { status: 503 }
-      );
-    }
-
-    const body = await request.json();
-    const { recipientGroup, message, customNumbers } = body;
-
-    if (!recipientGroup || !message) {
-      return NextResponse.json(
-        { error: "recipientGroup and message are required" },
-        { status: 400 }
-      );
-    }
-
-    if (message.length > 160) {
-      return NextResponse.json(
-        { error: "Message must be 160 characters or less" },
-        { status: 400 }
-      );
-    }
-
-    // Get recipient phone numbers based on group
-    let phoneNumbers: string[] = [];
-
-    if (recipientGroup === "custom" && customNumbers) {
-      phoneNumbers = customNumbers;
-    } else {
-      let query = admin.from("profiles").select("phone, sms_opt_in");
-
-      if (recipientGroup === "deacons") {
-        query = query.in("role", ["deacon"]);
-      } else if (recipientGroup === "leaders") {
-        query = query.in("role", ["admin", "super_admin", "minister", "deacon"]);
-      }
-      // "all" = no filter, gets everyone
-
-      const { data: profiles, error: profilesError } = await query;
-
-      if (profilesError) {
-        console.error("[ADMIN] Fetch SMS recipients error:", profilesError);
-        return NextResponse.json(
-          { error: "Failed to fetch recipients" },
-          { status: 500 }
-        );
-      }
-
-      // Only send to members who have opted in to SMS and have a valid phone number
-      phoneNumbers = (profiles || [])
-        .filter((p: Record<string, unknown>) => p.sms_opt_in === true)
-        .map((p: Record<string, unknown>) => p.phone as string)
-        .filter((phone: string | null): phone is string => !!phone && phone.length >= 10);
-    }
-
-    if (phoneNumbers.length === 0) {
-      return NextResponse.json(
-        { error: "No recipients with valid phone numbers found" },
-        { status: 400 }
-      );
-    }
-
-    // Initialize Twilio client
-    const twilio = await import("twilio");
-    const client = twilio.default(accountSid, authToken);
-
-    // Send messages
-    const results = await Promise.allSettled(
-      phoneNumbers.map((to) =>
-        client.messages.create({
-          body: message,
-          from: fromNumber,
-          to: toE164(to) ?? to,
-        })
-      )
-    );
-
-    const sent = results.filter((r) => r.status === "fulfilled").length;
-    const failed = results.filter((r) => r.status === "rejected").length;
-
-    // Log the SMS send to the database (optional — create sms_log table if desired)
-    try {
-      await admin.from("sms_log").insert({
-        sent_by: user.id,
-        recipient_group: recipientGroup,
-        message,
-        recipients_count: phoneNumbers.length,
-        sent_count: sent,
-        failed_count: failed,
-      });
-    } catch {
-      // sms_log table may not exist yet — that's OK
-      console.log("[ADMIN] sms_log table not available, skipping log");
-    }
-
-    return NextResponse.json({
-      success: true,
-      sent,
-      failed,
-      total: phoneNumbers.length,
-    });
-  } catch (err) {
-    console.error("[ADMIN] SMS POST error:", err);
-    return NextResponse.json(
-      { error: "Failed to send messages" },
-      { status: 500 }
-    );
-  }
+  return profiles
+    .filter((p: Record<string, unknown>) => p.sms_opt_in === true)
+    .map((p: Record<string, unknown>) => p.phone as string)
+    .filter((phone: string | null): phone is string => !!phone && phone.length >= 10);
 }
 
-/**
- * GET /api/admin/sms
- *
- * Returns SMS send history from sms_log table.
- */
-export async function GET() {
-  try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+async function getTotalCount(
+  admin: ReturnType<typeof createAdminClient>,
+  recipientGroup: string
+): Promise<{ total: number; opted_in: number }> {
+  let query = admin.from("profiles").select("sms_opt_in");
+  if (recipientGroup === "deacons") query = query.in("role", ["deacon"]);
+  else if (recipientGroup === "leaders") query = query.in("role", ["admin", "super_admin", "minister", "deacon", "pastor"]);
 
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
+  const { data } = await query;
+  if (!data) return { total: 0, opted_in: 0 };
+  return {
+    total: data.length,
+    opted_in: data.filter((p: Record<string, unknown>) => p.sms_opt_in === true).length,
+  };
+}
 
-    const admin = createAdminClient();
+export async function GET(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    // Check admin role
-    const { data: profile } = await admin
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+  const admin = createAdminClient();
+  const { searchParams } = new URL(request.url);
 
-    if (!profile || !["admin", "super_admin"].includes(profile.role)) {
-      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
-    }
+  // ?count=true&group=X — return opt-in count for the given group
+  if (searchParams.get("count") === "true") {
+    const group = searchParams.get("group") ?? "all";
+    const counts = await getTotalCount(admin, group);
+    return NextResponse.json(counts);
+  }
 
-    // Fetch SMS history
-    const { data: messages, error } = await admin
-      .from("sms_log")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
+  const { data: messages, error } = await admin
+    .from("sms_log")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(50);
 
-    if (error) {
-      // Table might not exist yet
-      console.error("[ADMIN] Fetch SMS history error:", error);
-      return NextResponse.json({ messages: [] });
-    }
+  if (error) return NextResponse.json({ messages: [] });
+  return NextResponse.json({ messages: messages ?? [] });
+}
 
-    return NextResponse.json({ messages: messages || [] });
-  } catch (err) {
-    console.error("[ADMIN] SMS GET error:", err);
+export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+
+  const accountSid  = process.env.TWILIO_ACCOUNT_SID;
+  const authToken   = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber  = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!accountSid || !authToken || !fromNumber) {
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: "Twilio is not configured. Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER." },
+      { status: 503 }
     );
   }
+
+  const body = await request.json();
+  const { recipientGroup, message, customNumbers } = body;
+
+  if (!recipientGroup || !message)
+    return NextResponse.json({ error: "recipientGroup and message are required" }, { status: 400 });
+  if (message.length > 160)
+    return NextResponse.json({ error: "Message must be 160 characters or less" }, { status: 400 });
+
+  const admin = createAdminClient();
+  const phoneNumbers = await getRecipientPhones(admin, recipientGroup, customNumbers);
+
+  if (phoneNumbers.length === 0)
+    return NextResponse.json({ error: "No recipients with valid opted-in phone numbers found" }, { status: 400 });
+
+  const twilio = await import("twilio");
+  const client = twilio.default(accountSid, authToken);
+
+  const results = await Promise.allSettled(
+    phoneNumbers.map((to) =>
+      client.messages.create({ body: message, from: fromNumber, to: toE164(to) ?? to })
+    )
+  );
+
+  const sent   = results.filter((r) => r.status === "fulfilled").length;
+  const failed = results.filter((r) => r.status === "rejected").length;
+
+  try {
+    await admin.from("sms_log").insert({
+      sent_by: auth.user.id,
+      recipient_group: recipientGroup,
+      message,
+      recipients_count: phoneNumbers.length,
+      sent_count: sent,
+      failed_count: failed,
+    });
+  } catch {
+    // sms_log table may not exist — non-fatal
+  }
+
+  return NextResponse.json({ success: true, sent, failed, total: phoneNumbers.length });
 }

@@ -67,6 +67,9 @@ export default function AdminFamiliesPage() {
   const [nameInput, setNameInput] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Delete confirmation dialog
+  const [confirmDeleteFamily, setConfirmDeleteFamily] = useState<Family | null>(null);
+
   // Manage members dialog
   const [membersOpen, setMembersOpen] = useState(false);
   const [activeFamily, setActiveFamily] = useState<Family | null>(null);
@@ -153,7 +156,11 @@ export default function AdminFamiliesPage() {
   }
 
   async function handleDelete(family: Family) {
-    if (!confirm(`Delete the "${family.name}" family? Members will be unlinked.`)) return;
+    setConfirmDeleteFamily(family);
+  }
+
+  async function doDeleteFamily(family: Family) {
+    setConfirmDeleteFamily(null);
     try {
       const res = await fetch(`/api/admin/families/${family.id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -494,6 +501,31 @@ export default function AdminFamiliesPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete family confirmation */}
+      <Dialog open={!!confirmDeleteFamily} onOpenChange={(o) => { if (!o) setConfirmDeleteFamily(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Family</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-warm-600 dark:text-warm-400">
+            Delete the{" "}
+            <span className="font-semibold text-warm-900 dark:text-warm-100">
+              &ldquo;{confirmDeleteFamily?.name}&rdquo;
+            </span>{" "}
+            family? Members will be unlinked but not deleted.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteFamily(null)}>Cancel</Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => confirmDeleteFamily && doDeleteFamily(confirmDeleteFamily)}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

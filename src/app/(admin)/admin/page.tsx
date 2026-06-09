@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Users, DollarSign, Calendar, Heart, CalendarPlus, Megaphone, UserPlus, MessageCircle, HandCoins, ClipboardList, Clock, MapPin, Loader2 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { StatCard } from "@/components/admin/stat-card";
@@ -174,33 +175,24 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3 border-warm-200 py-6 text-left hover:border-purple-300 hover:bg-purple-50 dark:border-warm-700 dark:hover:border-purple-700 dark:hover:bg-purple-900/20"
-                >
-                  <div className="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/40">
-                    <CalendarPlus className="h-4 w-4 text-purple-700" />
-                  </div>
-                  <span className="font-medium text-warm-800 dark:text-warm-100">Create Event</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3 border-warm-200 py-6 text-left hover:border-purple-300 hover:bg-purple-50 dark:border-warm-700 dark:hover:border-purple-700 dark:hover:bg-purple-900/20"
-                >
-                  <div className="rounded-lg bg-amber-100 p-2 dark:bg-amber-900/40">
-                    <Megaphone className="h-4 w-4 text-amber-700" />
-                  </div>
-                  <span className="font-medium text-warm-800 dark:text-warm-100">Send Announcement</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3 border-warm-200 py-6 text-left hover:border-purple-300 hover:bg-purple-50 dark:border-warm-700 dark:hover:border-purple-700 dark:hover:bg-purple-900/20"
-                >
-                  <div className="rounded-lg bg-green-100 p-2 dark:bg-green-900/40">
-                    <UserPlus className="h-4 w-4 text-green-700" />
-                  </div>
-                  <span className="font-medium text-warm-800 dark:text-warm-100">Add Member</span>
-                </Button>
+                {[
+                  { href: "/admin/events", icon: CalendarPlus, label: "Create Event", color: "purple" },
+                  { href: "/admin/announcements", icon: Megaphone, label: "Send Announcement", color: "amber" },
+                  { href: "/admin/members", icon: UserPlus, label: "Add Member", color: "green" },
+                  { href: "/admin/sms", icon: MessageCircle, label: "Send SMS", color: "blue" },
+                ].map(({ href, icon: Icon, label, color }) => (
+                  <Link key={href} href={href}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start gap-3 border-warm-200 py-6 text-left hover:border-purple-300 hover:bg-purple-50 dark:border-warm-700 dark:hover:border-purple-700 dark:hover:bg-purple-900/20"
+                    >
+                      <div className={`rounded-lg bg-${color}-100 p-2 dark:bg-${color}-900/40`}>
+                        <Icon className={`h-4 w-4 text-${color}-700`} />
+                      </div>
+                      <span className="font-medium text-warm-800 dark:text-warm-100">{label}</span>
+                    </Button>
+                  </Link>
+                ))}
               </div>
             </CardContent>
           </Card>

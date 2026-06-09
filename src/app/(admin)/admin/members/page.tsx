@@ -42,6 +42,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { UserRole, Ward, Deacon } from "@/types";
 
 // ── Types ────────────────────────────────────────────────────────────
@@ -74,18 +75,15 @@ const ROLE_LABELS: Record<UserRole, string> = {
   super_admin: "Super Admin",
 };
 
-const ROLE_BADGE_COLORS: Record<UserRole, string> = {
-  member:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
-  deacon:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
-  minister:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
-  musician:
-    "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
-  admin: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
-  super_admin:
-    "bg-red-200 text-red-900 dark:bg-red-900/60 dark:text-red-200",
+const ROLE_BADGE_COLORS: Record<string, string> = {
+  member:      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  deacon:      "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  minister:    "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  musician:    "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
+  finance:     "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300",
+  pastor:      "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300",
+  admin:       "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
+  super_admin: "bg-red-200 text-red-900 dark:bg-red-900/60 dark:text-red-200",
 };
 
 const ALL_ROLES: UserRole[] = [
@@ -93,9 +91,11 @@ const ALL_ROLES: UserRole[] = [
   "deacon",
   "minister",
   "musician",
+  "finance",
+  "pastor",
   "admin",
   "super_admin",
-];
+] as UserRole[];
 
 const PAGE_SIZE = 10;
 
@@ -120,6 +120,9 @@ export default function MemberManagementPage() {
     type: "success" | "error";
     message: string;
   } | null>(null);
+
+  // Delete confirmation dialog
+  const [confirmDeleteMember, setConfirmDeleteMember] = useState<Member | null>(null);
 
   // Edit member dialog state
   const [editOpen, setEditOpen] = useState(false);
@@ -338,10 +341,11 @@ export default function MemberManagementPage() {
 
   // ── Delete member ────────────────────────────────────────────────
   async function handleDeleteMember(member: Member) {
-    if (!confirm(`Are you sure you want to remove ${member.first_name} ${member.last_name}? This action cannot be undone.`)) {
-      return;
-    }
+    setConfirmDeleteMember(member);
+  }
 
+  async function doDeleteMember(member: Member) {
+    setConfirmDeleteMember(null);
     try {
       const res = await fetch("/api/admin/members", {
         method: "DELETE",
@@ -512,9 +516,17 @@ export default function MemberManagementPage() {
                     <TableRow key={member.id}>
                       {/* Name */}
                       <TableCell>
-                        <span className="font-medium text-warm-900 dark:text-warm-50">
-                          {member.first_name} {member.last_name}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarImage src={member.photo_url} alt={`${member.first_name} ${member.last_name}`} />
+                            <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
+                              {member.first_name?.[0]}{member.last_name?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium text-warm-900 dark:text-warm-50">
+                            {member.first_name} {member.last_name}
+                          </span>
+                        </div>
                         {member.families && member.families.length > 0 && (
                           <div className="mt-1 flex flex-wrap gap-1">
                             {member.families.map((f) => (
@@ -861,6 +873,31 @@ export default function MemberManagementPage() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!confirmDeleteMember} onOpenChange={(o) => { if (!o) setConfirmDeleteMember(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Remove Member</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-warm-600 dark:text-warm-400">
+            Are you sure you want to remove{" "}
+            <span className="font-semibold text-warm-900 dark:text-warm-100">
+              {confirmDeleteMember?.first_name} {confirmDeleteMember?.last_name}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteMember(null)}>Cancel</Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => confirmDeleteMember && doDeleteMember(confirmDeleteMember)}
+            >
+              Remove
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

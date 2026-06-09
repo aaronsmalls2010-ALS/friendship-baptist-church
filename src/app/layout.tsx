@@ -8,6 +8,7 @@ import { SiteSettingsProvider } from "@/contexts/site-settings-context";
 import { MusicPlayer } from "@/components/media/music-player";
 import { CMSWrapper } from "@/components/cms/cms-wrapper";
 import { JsonLd, churchSchema, websiteSchema } from "@/components/seo/json-ld";
+import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import "./globals.css";
 
 const inter = Inter({
@@ -105,6 +106,7 @@ export default function RootLayout({
         className={`${inter.variable} ${playfair.variable} ${cormorant.variable} font-body antialiased`}
       >
         <JsonLd data={[churchSchema, websiteSchema]} />
+        <ServiceWorkerRegister />
         <ThemeProvider>
           <AuthProvider>
             <SiteSettingsProvider>

@@ -3,23 +3,33 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "The Friendship Baptist Church",
-    short_name: "FBC",
+    short_name: "Friendship Baptist",
     description:
-      "The Friendship Baptist Church — The Church That Christ Built. Beaufort, SC.",
+      "A faith-filled community in Beaufort, SC. Worship, fellowship, and spiritual growth.",
     start_url: "/",
     display: "standalone",
-    background_color: "#FAF9FB",
-    theme_color: "#4A1A8A",
+    background_color: "#13111A",
+    theme_color: "#13111A",
+    orientation: "portrait-primary",
+    categories: ["religion", "lifestyle"],
     icons: [
       {
         src: "/images/logos/fbc-icon.png",
         sizes: "192x192",
         type: "image/png",
+        purpose: "any",
       },
       {
         src: "/images/logos/fbc-icon.png",
         sizes: "512x512",
         type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/images/logos/fbc-icon.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
       },
     ],
   };

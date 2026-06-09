@@ -16,6 +16,7 @@ const cspDirectives = [
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
+  "worker-src 'self'",
   "upgrade-insecure-requests",
 ].join("; ");
 

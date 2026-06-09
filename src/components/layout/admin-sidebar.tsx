@@ -13,7 +13,6 @@ import {
   Image,
   MessageSquare,
   DollarSign,
-  FileText,
   BarChart3,
   ClipboardList,
   Settings,
@@ -22,34 +21,58 @@ import {
   ChevronRight,
   Globe,
   Home,
+  ScrollText,
+  Tags,
+  UserCog,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Logo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+import { canViewFinancials, isSuperAdmin } from "@/lib/auth/roles";
+import type { User } from "@supabase/supabase-js";
 
+// roles: undefined = visible to all admins; "finance" = finance/pastor/super_admin only; "super_admin" = super_admin only
 const navItems = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Members", href: "/admin/members", icon: Users },
-  { label: "Families", href: "/admin/families", icon: Home },
-  { label: "Ministries", href: "/admin/ministries", icon: Church },
-  { label: "Deacons", href: "/admin/deacons", icon: Shield },
-  { label: "Wards", href: "/admin/wards", icon: MapPin },
-  { label: "Events", href: "/admin/events", icon: CalendarDays },
-  { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
-  { label: "Media", href: "/admin/media", icon: Image },
-  { label: "SMS Center", href: "/admin/sms", icon: MessageSquare },
-  { label: "Donations", href: "/admin/donations", icon: DollarSign },
-  { label: "Content", href: "/admin/content", icon: FileText },
-  { label: "Reports", href: "/admin/reports", icon: ClipboardList },
-  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
-];
+  { label: "Dashboard",       href: "/admin",                 icon: LayoutDashboard },
+  { label: "Members",         href: "/admin/members",         icon: Users },
+  { label: "Families",        href: "/admin/families",        icon: Home },
+  { label: "Ministries",      href: "/admin/ministries",      icon: Church },
+  { label: "Deacons",         href: "/admin/deacons",         icon: Shield },
+  { label: "Wards",           href: "/admin/wards",           icon: MapPin },
+  { label: "Events",          href: "/admin/events",          icon: CalendarDays },
+  { label: "Announcements",   href: "/admin/announcements",   icon: Megaphone },
+  { label: "Media",           href: "/admin/media",           icon: Image },
+  { label: "SMS Center",      href: "/admin/sms",             icon: MessageSquare },
+  { label: "Donations",       href: "/admin/donations",       icon: DollarSign,   roles: "finance" as const },
+  { label: "Donation Types",  href: "/admin/donation-types",  icon: Tags,         roles: "finance" as const },
+  { label: "Reports",         href: "/admin/reports",         icon: ClipboardList },
+  { label: "Analytics",       href: "/admin/analytics",       icon: BarChart3 },
+  { label: "Users",           href: "/admin/users",           icon: UserCog,      roles: "super_admin" as const },
+  { label: "Audit Log",       href: "/admin/audit",           icon: ScrollText,   roles: "super_admin" as const },
+  { label: "Settings",        href: "/admin/settings",        icon: Settings },
+] as const;
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
+
+  const isFinance = user ? canViewFinancials(user) : false;
+  const isSA = user ? isSuperAdmin(user) : false;
+
+  const visibleItems = navItems.filter((item) => {
+    if (!("roles" in item)) return true;
+    if (item.roles === "finance") return isFinance;
+    if (item.roles === "super_admin") return isSA;
+    return true;
+  });
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -86,7 +109,7 @@ export function AdminSidebar() {
       )}
 
       <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto" aria-label="Admin navigation">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link

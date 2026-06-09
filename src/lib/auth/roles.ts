@@ -14,19 +14,27 @@ export const ALL_ROLES = [
   "deacon",
   "minister",
   "musician",
+  "finance",
+  "pastor",
   "admin",
   "super_admin",
 ] as const;
 
 export type Role = (typeof ALL_ROLES)[number];
 
-export const ADMIN_ROLES: readonly Role[] = ["admin", "super_admin"];
-export const ADMIN_LEVEL_ROLES: readonly Role[] = ["admin", "super_admin"];
+// pastor is admin-level: can reach /admin and has full admin access + financial access
+export const ADMIN_ROLES: readonly Role[] = ["admin", "super_admin", "pastor"];
+export const ADMIN_LEVEL_ROLES: readonly Role[] = ["admin", "super_admin", "pastor"];
+
+// Roles that can view / manage financial data
+export const FINANCE_ROLES: readonly Role[] = ["finance", "pastor", "super_admin"];
 
 // Higher number = higher precedence. Mirrors the Postgres `user_role` enum order.
 const PRECEDENCE: Record<Role, number> = {
-  super_admin: 6,
-  admin: 5,
+  super_admin: 8,
+  pastor: 7,
+  admin: 6,
+  finance: 5,
   musician: 4,
   minister: 3,
   deacon: 2,
@@ -80,4 +88,8 @@ export function isAdmin(user: MetaUser): boolean {
 
 export function isSuperAdmin(user: MetaUser): boolean {
   return rolesFromUser(user).includes("super_admin");
+}
+
+export function canViewFinancials(user: MetaUser): boolean {
+  return hasAnyRole(rolesFromUser(user), FINANCE_ROLES);
 }

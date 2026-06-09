@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { isAdmin, isSuperAdmin } from "@/lib/auth/roles";
+import { isAdmin, isSuperAdmin, canViewFinancials } from "@/lib/auth/roles";
 
 type Ok = { ok: true; user: User };
 type Fail = { ok: false; status: number; error: string };
@@ -13,6 +13,18 @@ export async function requireAdmin(): Promise<Ok | Fail> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, status: 401, error: "Not authenticated" };
   if (!isAdmin(user)) return { ok: false, status: 403, error: "Unauthorized" };
+  return { ok: true, user };
+}
+
+/** Require finance-capable role (finance, pastor, super_admin). */
+export async function requireFinance(): Promise<Ok | Fail> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, status: 401, error: "Not authenticated" };
+  if (!canViewFinancials(user))
+    return { ok: false, status: 403, error: "Finance role required" };
   return { ok: true, user };
 }
 

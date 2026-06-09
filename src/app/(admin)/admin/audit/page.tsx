@@ -1,0 +1,176 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { DataTable } from "@/components/admin/data-table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Search, RefreshCw } from "lucide-react";
+
+interface AuditEvent {
+  id: string;
+  user_id: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  metadata: Record<string, unknown>;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+function actionColor(action: string) {
+  if (action.includes("delete") || action.includes("void") || action.includes("archive")) return "destructive";
+  if (action.includes("create")) return "default";
+  if (action.includes("update") || action.includes("restore")) return "secondary";
+  return "outline";
+}
+
+export default function AuditLogPage() {
+  const [events, setEvents] = useState<AuditEvent[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [filterAction, setFilterAction] = useState("");
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams({ page: String(page) });
+    if (filterAction) params.set("action", filterAction);
+    if (filterFrom) params.set("from", filterFrom);
+    if (filterTo) params.set("to", filterTo);
+
+    const res = await fetch(`/api/admin/audit?${params}`);
+    if (res.ok) {
+      const json = await res.json();
+      setEvents(json.events);
+      setTotal(json.total);
+    }
+    setLoading(false);
+  }, [page, filterAction, filterFrom, filterTo]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const columns = [
+    {
+      key: "created_at",
+      label: "Time",
+      render: (e: AuditEvent) => (
+        <span className="text-xs text-warm-500">
+          {new Date(e.created_at).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      key: "action",
+      label: "Action",
+      render: (e: AuditEvent) => (
+        <Badge variant={actionColor(e.action)} className="font-mono text-xs">
+          {e.action}
+        </Badge>
+      ),
+    },
+    {
+      key: "resource_type",
+      label: "Resource",
+      render: (e: AuditEvent) => (
+        <span className="text-sm">
+          {e.resource_type}
+          {e.resource_id ? <span className="ml-1 text-xs text-warm-400">#{e.resource_id.slice(0, 8)}</span> : null}
+        </span>
+      ),
+    },
+    {
+      key: "user_id",
+      label: "User",
+      render: (e: AuditEvent) => (
+        <span className="font-mono text-xs text-warm-500">
+          {e.user_id ? e.user_id.slice(0, 8) + "…" : "system"}
+        </span>
+      ),
+    },
+    {
+      key: "ip_address",
+      label: "IP",
+      render: (e: AuditEvent) => (
+        <span className="text-xs text-warm-400">{e.ip_address ?? "—"}</span>
+      ),
+    },
+  ];
+
+  const totalPages = Math.ceil(total / 50);
+
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader
+        title="Audit Log"
+        description="Read-only record of all admin actions"
+      />
+
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="space-y-1">
+              <Label htmlFor="filterAction">Action contains</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-warm-400" />
+                <Input
+                  id="filterAction"
+                  className="pl-8 w-48"
+                  placeholder="e.g. donation"
+                  value={filterAction}
+                  onChange={(e) => { setFilterAction(e.target.value); setPage(1); }}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filterFrom">From</Label>
+              <Input id="filterFrom" type="date" className="w-36"
+                value={filterFrom} onChange={(e) => { setFilterFrom(e.target.value); setPage(1); }} />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filterTo">To</Label>
+              <Input id="filterTo" type="date" className="w-36"
+                value={filterTo} onChange={(e) => { setFilterTo(e.target.value); setPage(1); }} />
+            </div>
+            <Button variant="outline" size="sm" onClick={load} aria-label="Refresh">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <RefreshCw className="h-6 w-6 animate-spin text-purple-600" />
+        </div>
+      ) : (
+        <>
+          <DataTable
+            data={events as unknown as Record<string, unknown>[]}
+            columns={columns as unknown as Parameters<typeof DataTable>[0]["columns"]}
+            searchable={false}
+            pageSize={50}
+          />
+          <div className="flex items-center justify-between text-sm text-warm-500">
+            <span>{total} total events</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                Previous
+              </Button>
+              <span className="px-2 py-1">Page {page} of {totalPages || 1}</span>
+              <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

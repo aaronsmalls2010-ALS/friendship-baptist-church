@@ -108,10 +108,37 @@ export default function WelcomePage() {
     );
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !email.trim()) return;
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/public/connect-cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+          hearAbout: hearAbout || undefined,
+          interests,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to submit connect card");
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleReset() {
@@ -395,8 +422,11 @@ export default function WelcomePage() {
                   </div>
 
                   {/* Submit */}
-                  <Button type="submit" className="w-full" size="lg">
-                    Send Connect Card
+                  {submitError && (
+                    <p className="text-sm text-red-600" role="alert">{submitError}</p>
+                  )}
+                  <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                    {submitting ? "Sending..." : "Send Connect Card"}
                   </Button>
                 </div>
               </form>

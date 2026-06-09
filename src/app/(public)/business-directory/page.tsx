@@ -85,10 +85,38 @@ export default function BusinessDirectoryPage() {
     });
   }, [searchTerm, activeCategory, businesses]);
 
-  function handleFormSubmit(e: React.FormEvent) {
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  async function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!formName.trim() || !formOwner.trim() || !formDescription.trim()) return;
-    setFormSubmitted(true);
+    setFormSubmitting(true);
+    setFormError("");
+    try {
+      const res = await fetch("/api/public/businesses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formName.trim(),
+          ownerName: formOwner.trim(),
+          description: formDescription.trim(),
+          category: formCategory || undefined,
+          phone: formPhone.trim() || undefined,
+          email: formEmail.trim() || undefined,
+          website: formWebsite.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to submit business");
+      }
+      setFormSubmitted(true);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setFormSubmitting(false);
+    }
   }
 
   function handleFormReset() {
@@ -385,8 +413,11 @@ export default function BusinessDirectoryPage() {
                       </div>
 
                       {/* Submit */}
-                      <Button type="submit" className="w-full" size="lg">
-                        Submit Business
+                      {formError && (
+                        <p className="text-sm text-red-600" role="alert">{formError}</p>
+                      )}
+                      <Button type="submit" className="w-full" size="lg" disabled={formSubmitting}>
+                        {formSubmitting ? "Submitting..." : "Submit Business"}
                       </Button>
                     </form>
                   )}

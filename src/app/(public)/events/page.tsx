@@ -200,9 +200,11 @@ export default function EventsPage() {
 
                   {featuredEvent.rsvp_enabled && (
                     <div className="mt-8">
-                      <Button className="bg-purple-700 hover:bg-purple-600 text-white px-8 py-3 text-base rounded-xl">
-                        RSVP Now
-                      </Button>
+                      <a href={`/contact?subject=${encodeURIComponent(`RSVP: ${featuredEvent.title}`)}`}>
+                        <Button className="bg-purple-700 hover:bg-purple-600 text-white px-8 py-3 text-base rounded-xl">
+                          RSVP Now
+                        </Button>
+                      </a>
                     </div>
                   )}
                 </div>
@@ -282,13 +284,15 @@ export default function EventsPage() {
                         </div>
 
                         {event.rsvp_enabled && (
-                          <Button
-                            variant="ghost"
-                            className="self-start -ml-2 text-purple-700 hover:text-purple-800 hover:bg-purple-50 gap-1.5 text-sm font-medium p-2 h-auto"
-                          >
-                            RSVP
-                            <ArrowRight className="h-4 w-4" />
-                          </Button>
+                          <a href={`/contact?subject=${encodeURIComponent(`RSVP: ${event.title}`)}`}>
+                            <Button
+                              variant="ghost"
+                              className="self-start -ml-2 text-purple-700 hover:text-purple-800 hover:bg-purple-50 gap-1.5 text-sm font-medium p-2 h-auto"
+                            >
+                              RSVP
+                              <ArrowRight className="h-4 w-4" />
+                            </Button>
+                          </a>
                         )}
                       </div>
                     </div>

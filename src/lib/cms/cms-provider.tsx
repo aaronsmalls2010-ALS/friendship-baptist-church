@@ -8,7 +8,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useAuth } from "@/hooks/use-auth";
 import type { CMSContextType, SiteContent } from "@/lib/cms/types";
 
 const CMSContext = createContext<CMSContextType>({
@@ -21,13 +20,8 @@ const CMSContext = createContext<CMSContextType>({
 });
 
 export function CMSProvider({ children }: { children: React.ReactNode }) {
-  const { role } = useAuth();
-  const isSuperAdmin = role === "super_admin";
-
   const [content, setContent] = useState<Map<string, string>>(new Map());
-  const [isEditMode, setIsEditMode] = useState(false);
 
-  // Fetch all site content on mount
   useEffect(() => {
     async function fetchContent() {
       try {
@@ -47,39 +41,6 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     fetchContent();
   }, []);
 
-  const toggleEditMode = useCallback(() => {
-    if (!isSuperAdmin) return;
-    setIsEditMode((prev) => !prev);
-  }, [isSuperAdmin]);
-
-  const updateContent = useCallback(
-    async (id: string, value: string) => {
-      if (!isSuperAdmin) return;
-
-      try {
-        const response = await fetch("/api/cms", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, content: value }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to update content");
-        }
-
-        setContent((prev) => {
-          const next = new Map(prev);
-          next.set(id, value);
-          return next;
-        });
-      } catch (err) {
-        console.error("Failed to update CMS content:", err);
-        throw err;
-      }
-    },
-    [isSuperAdmin]
-  );
-
   const getContent = useCallback(
     (id: string, fallback: string) => {
       return content.get(id) ?? fallback;
@@ -90,13 +51,13 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<CMSContextType>(
     () => ({
       content,
-      isEditMode,
-      isSuperAdmin,
-      toggleEditMode,
-      updateContent,
+      isEditMode: false,
+      isSuperAdmin: false,
+      toggleEditMode: () => {},
+      updateContent: async () => {},
       getContent,
     }),
-    [content, isEditMode, isSuperAdmin, toggleEditMode, updateContent, getContent]
+    [content, getContent]
   );
 
   return <CMSContext.Provider value={value}>{children}</CMSContext.Provider>;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
@@ -10,36 +11,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { MOCK_MINISTRIES, MOCK_MINISTRY_MEMBERS } from "@/lib/mock-data";
 import { FadeIn } from "@/components/motion/fade-in";
-import { Eye } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 
-// Map ministries to plain objects for DataTable compatibility
-const ministriesData = MOCK_MINISTRIES.map((m) => {
-  const ministryMembers = MOCK_MINISTRY_MEMBERS.filter(
-    (mm) => mm.ministry_id === m.id
-  );
-  const approvedCount = ministryMembers.filter(
-    (mm) => mm.status === "approved"
-  ).length;
-  const pendingCount = ministryMembers.filter(
-    (mm) => mm.status === "pending"
-  ).length;
-  const manager = ministryMembers.find((mm) => mm.role === "manager");
+interface Ministry {
+  id: string;
+  name: string;
+  description: string | null;
+  schedule: string | null;
+  is_active: boolean;
+}
 
-  return {
-    id: m.id,
-    name: m.name,
-    description: m.description,
-    schedule: m.schedule ?? "",
-    is_active: m.is_active,
-    member_count: approvedCount,
-    pending_count: pendingCount,
-    manager_name: manager?.profile_name ?? "—",
-  };
-});
-
-type MinistryRow = (typeof ministriesData)[number];
+type MinistryRow = {
+  id: string;
+  name: string;
+  description: string;
+  schedule: string;
+  is_active: boolean;
+};
 
 const columns = [
   {
@@ -91,39 +80,6 @@ const columns = [
       ),
   },
   {
-    key: "member_count",
-    label: "Members",
-    render: (item: MinistryRow) => (
-      <span className="text-sm text-warm-600 dark:text-warm-300">
-        {item.member_count}
-      </span>
-    ),
-  },
-  {
-    key: "manager_name",
-    label: "Manager",
-    render: (item: MinistryRow) => (
-      <span className="text-sm font-medium text-warm-700 dark:text-warm-200">
-        {item.manager_name}
-      </span>
-    ),
-  },
-  {
-    key: "pending_count",
-    label: "Pending",
-    render: (item: MinistryRow) =>
-      item.pending_count > 0 ? (
-        <Badge
-          variant="outline"
-          className="border-0 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300"
-        >
-          {item.pending_count} pending
-        </Badge>
-      ) : (
-        <span className="text-sm text-warm-400">0</span>
-      ),
-  },
-  {
     key: "actions",
     label: "View",
     render: (item: MinistryRow) => (
@@ -138,17 +94,97 @@ const columns = [
 ];
 
 export default function MinistryManagementPage() {
+  const [ministries, setMinistries] = useState<MinistryRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [formName, setFormName] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formSchedule, setFormSchedule] = useState("");
+  const [formActive, setFormActive] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const loadMinistries = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/ministries");
+      const data = await res.json();
+      const rows: MinistryRow[] = (data.ministries ?? []).map((m: Ministry) => ({
+        id: m.id,
+        name: m.name,
+        description: m.description ?? "",
+        schedule: m.schedule ?? "",
+        is_active: m.is_active,
+      }));
+      setMinistries(rows);
+    } catch (err) {
+      console.error("Failed to load ministries:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadMinistries(); }, [loadMinistries]);
+
+  async function handleSaveMinistry(e: React.FormEvent) {
+    e.preventDefault();
+    if (!formName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/ministries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formName.trim(),
+          description: formDescription.trim() || undefined,
+          schedule: formSchedule.trim() || undefined,
+          is_active: formActive,
+        }),
+      });
+      if (res.ok) {
+        setFormName("");
+        setFormDescription("");
+        setFormSchedule("");
+        setFormActive(true);
+        setDialogOpen(false);
+        await loadMinistries();
+      }
+    } catch (err) {
+      console.error("Failed to save ministry:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <AdminPageHeader
         title="Ministries"
         description="Manage church ministries"
         action={
-          <FormDialog title="Add Ministry" triggerLabel="Add Ministry">
-            <form className="space-y-4">
+          <FormDialog
+            title="Add Ministry"
+            triggerLabel="Add Ministry"
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+          >
+            <form className="space-y-4" onSubmit={handleSaveMinistry}>
               <div className="space-y-2">
                 <Label htmlFor="ministry_name">Name</Label>
-                <Input id="ministry_name" placeholder="Ministry name" />
+                <Input
+                  id="ministry_name"
+                  placeholder="Ministry name"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="ministry_description">Description</Label>
@@ -156,6 +192,8 @@ export default function MinistryManagementPage() {
                   id="ministry_description"
                   placeholder="Describe this ministry..."
                   rows={3}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -163,6 +201,8 @@ export default function MinistryManagementPage() {
                 <Input
                   id="ministry_schedule"
                   placeholder="e.g. Meets every Thursday at 7:00 PM"
+                  value={formSchedule}
+                  onChange={(e) => setFormSchedule(e.target.value)}
                 />
               </div>
               <div className="flex items-center justify-between rounded-lg border border-warm-200 p-3 dark:border-warm-700">
@@ -174,13 +214,18 @@ export default function MinistryManagementPage() {
                     Ministry is visible to members
                   </p>
                 </div>
-                <Switch id="ministry_active" defaultChecked />
+                <Switch
+                  id="ministry_active"
+                  checked={formActive}
+                  onCheckedChange={setFormActive}
+                />
               </div>
               <Button
                 type="submit"
                 className="w-full bg-purple-700 hover:bg-purple-600 text-white"
+                disabled={saving}
               >
-                Save Ministry
+                {saving ? "Saving..." : "Save Ministry"}
               </Button>
             </form>
           </FormDialog>
@@ -189,7 +234,7 @@ export default function MinistryManagementPage() {
 
       <FadeIn>
         <DataTable
-          data={ministriesData as unknown as Record<string, unknown>[]}
+          data={ministries as unknown as Record<string, unknown>[]}
           columns={columns as Parameters<typeof DataTable>[0]["columns"]}
           searchable
           searchKeys={["name"]}

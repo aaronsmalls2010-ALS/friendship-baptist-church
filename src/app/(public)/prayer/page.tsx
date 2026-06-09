@@ -336,7 +336,7 @@ export default function PrayerPage() {
                     {/* Praying indicator */}
                     <div className="mt-4 flex items-center gap-1.5 text-sm text-purple-600 dark:text-purple-400">
                       <Heart className="h-4 w-4 fill-current" />
-                      <span>12 praying</span>
+                      <span>Praying for you</span>
                     </div>
                   </div>
                 </SlideUpItem>

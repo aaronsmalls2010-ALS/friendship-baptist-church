@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHero } from "@/components/shared/page-hero";
 import { FadeIn } from "@/components/motion/fade-in";
 import { FormSuccess } from "@/components/shared/form-success";
@@ -52,7 +53,20 @@ const inquiryTypes = [
 ];
 
 export default function ContactPage() {
-  const [form, setForm] = useState<ContactForm>(initialFormState);
+  return (
+    <Suspense>
+      <ContactPageInner />
+    </Suspense>
+  );
+}
+
+function ContactPageInner() {
+  const searchParams = useSearchParams();
+  const prefillSubject = searchParams.get("subject") || "";
+  const [form, setForm] = useState<ContactForm>({
+    ...initialFormState,
+    subject: prefillSubject,
+  });
   const [submitted, setSubmitted] = useState(false);
 
   const handleChange = (
@@ -61,14 +75,42 @@ export default function ContactPage() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          subject: form.subject.trim() || undefined,
+          type: form.type || undefined,
+          message: form.message.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to send message");
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     setForm(initialFormState);
     setSubmitted(false);
+    setSubmitError("");
   };
 
   const fullAddress = `${CHURCH_INFO.address.street}, ${CHURCH_INFO.address.city}, ${CHURCH_INFO.address.state} ${CHURCH_INFO.address.zip}`;
@@ -204,13 +246,17 @@ export default function ContactPage() {
                       </div>
 
                       {/* Submit */}
+                      {submitError && (
+                        <p className="text-sm text-red-600" role="alert">{submitError}</p>
+                      )}
                       <Button
                         type="submit"
                         className="w-full bg-purple-700 text-white hover:bg-purple-600"
                         size="lg"
+                        disabled={submitting}
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        Send Message
+                        {submitting ? "Sending..." : "Send Message"}
                       </Button>
                     </form>
                   )}

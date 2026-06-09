@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PageHero } from "@/components/shared/page-hero";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -18,6 +18,12 @@ import { formatDuration, formatDate } from "@/lib/utils";
 import {
   Search,
   Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  List,
   BookOpen,
   Camera,
   Quote,
@@ -283,94 +289,449 @@ function ServicesTab({ services }: { services: WorshipService[] }) {
 
 // ─── Music Tab ───────────────────────────────────────────────────────
 function MusicTab({ tracks }: { tracks: MusicTrack[] }) {
-  const { play, addToQueue, setQueue } = useMusicPlayer();
+  const {
+    currentTrack,
+    isPlaying,
+    currentTime,
+    duration,
+    volume,
+    play,
+    pause,
+    togglePlay,
+    next,
+    previous,
+    seek,
+    setVolume,
+    addToQueue,
+    setQueue,
+  } = useMusicPlayer();
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [showQueue, setShowQueue] = useState(false);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   const playableTracks = tracks.filter((t) => t.audio_url);
+  const trackTypes = ["all", ...Array.from(new Set(tracks.map((t) => t.track_type))).sort()];
+
+  const filteredTracks = activeFilter === "all"
+    ? tracks
+    : tracks.filter((t) => t.track_type === activeFilter);
+
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const currentIndex = currentTrack
+    ? playableTracks.findIndex((t) => t.id === currentTrack.id)
+    : -1;
 
   const handlePlayAll = () => {
-    if (playableTracks.length > 0) {
-      setQueue(playableTracks);
-      play(playableTracks[0]);
+    const toPlay = activeFilter === "all" ? playableTracks : playableTracks.filter((t) => t.track_type === activeFilter);
+    if (toPlay.length > 0) {
+      setQueue(toPlay);
+      play(toPlay[0]);
     }
   };
 
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    seek(pct * duration);
+  };
+
+  const totalDuration = filteredTracks.reduce((sum, t) => sum + t.duration, 0);
+  const totalHours = Math.floor(totalDuration / 3600);
+  const totalMins = Math.floor((totalDuration % 3600) / 60);
+
   return (
     <div className="space-y-6">
-      {/* Info Banner */}
+      {/* ── Hero Player ─────────────────────────────────────────────── */}
       <FadeIn>
-        <div className="flex flex-col gap-4 rounded-xl bg-purple-50 border border-purple-100 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="font-heading font-bold text-purple-900">Worship Music Collection</h3>
-            <p className="mt-1 text-sm text-purple-700">
-              {tracks.length} gospel and worship tracks from our church music library.
-              {playableTracks.length > 0 ? ` ${playableTracks.length} tracks available for streaming.` : " Tracks will be available for streaming once uploaded."}
-            </p>
-          </div>
-          {playableTracks.length > 0 && (
-            <button
-              onClick={handlePlayAll}
-              className="inline-flex items-center gap-2 rounded-xl bg-purple-700 px-6 py-3 font-medium text-white shadow-lg shadow-purple-900/20 transition-all hover:bg-purple-600 flex-shrink-0"
-            >
-              <Play className="h-4 w-4 fill-current" />
-              Play All
-            </button>
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950 p-6 sm:p-8 shadow-2xl">
+          {/* Ambient glow effects */}
+          <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-purple-500/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-gold-500/10 blur-3xl" />
+          {currentTrack && isPlaying && (
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-purple-500/5 via-transparent to-transparent animate-pulse" style={{ animationDuration: "3s" }} />
           )}
-        </div>
-      </FadeIn>
 
-      {/* Track List */}
-      <SlideUpContainer className="space-y-3">
-        {tracks.map((track) => (
-          <SlideUpItem key={track.id}>
-            <div className="group flex flex-col gap-4 rounded-xl border border-warm-200 bg-white p-4 transition-all duration-300 hover:shadow-card-hover sm:flex-row sm:items-center">
-              {/* Play Button */}
-              <button
-                onClick={() => track.audio_url ? play(track) : undefined}
-                aria-label={`Play ${track.title}`}
-                className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition-colors ${
-                  track.audio_url
-                    ? "bg-purple-100 text-purple-700 hover:bg-purple-700 hover:text-white"
-                    : "bg-warm-100 text-warm-300 cursor-default"
-                }`}
-              >
-                <Play className="h-4 w-4 fill-current" />
-              </button>
-
-              {/* Track Info */}
-              <div className="min-w-0 flex-1">
-                <h3 className="truncate font-heading font-bold text-warm-900">
-                  {track.title}
+          <div className="relative z-10">
+            {/* Top bar: collection info + play all */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-heading font-bold text-white tracking-wide">
+                  Worship Music
                 </h3>
-                <p className="mt-0.5 truncate text-sm text-warm-500">
-                  {track.artist}
+                <p className="text-sm text-purple-300/80 mt-0.5">
+                  {filteredTracks.length} tracks
+                  {totalHours > 0 ? ` · ${totalHours}h ${totalMins}m` : ` · ${totalMins} min`}
                 </p>
               </div>
-
-              {/* Meta & Actions */}
-              <div className="flex items-center gap-3 sm:flex-shrink-0">
-                <Badge
-                  variant="secondary"
-                  className="bg-warm-100 text-warm-600 capitalize text-xs"
+              {playableTracks.length > 0 && (
+                <button
+                  onClick={handlePlayAll}
+                  className="group flex items-center gap-2 rounded-full bg-gold-400 px-5 py-2.5 text-sm font-semibold text-purple-950 shadow-lg shadow-gold-500/25 transition-all hover:bg-gold-300 hover:shadow-gold-400/40 hover:scale-[1.02] active:scale-[0.98]"
                 >
-                  {track.track_type}
-                </Badge>
-                <span className="text-sm text-warm-400">
-                  {formatDuration(track.duration)}
-                </span>
-                {track.audio_url && (
-                  <button
-                    onClick={() => addToQueue(track)}
-                    aria-label={`Add ${track.title} to queue`}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-warm-200 px-3 py-1.5 text-xs font-medium text-warm-600 transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700"
-                  >
-                    <ListPlus className="h-3.5 w-3.5" />
-                    Queue
-                  </button>
+                  <Play className="h-4 w-4 fill-current transition-transform group-hover:scale-110" />
+                  Play All
+                </button>
+              )}
+            </div>
+
+            {/* Now Playing display */}
+            <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
+              {/* Album art / visualizer */}
+              <div className="relative flex-shrink-0">
+                <div className={`relative h-28 w-28 sm:h-36 sm:w-36 rounded-2xl bg-gradient-to-br from-purple-700 to-purple-800 flex items-center justify-center shadow-2xl shadow-purple-950/50 border border-purple-600/30 ${currentTrack && isPlaying ? "" : ""}`}>
+                  {currentTrack && isPlaying ? (
+                    <div className="flex items-end gap-1 h-12">
+                      {[0.6, 1, 0.4, 0.8, 0.5, 0.9, 0.3].map((h, i) => (
+                        <div
+                          key={i}
+                          className="w-1.5 rounded-full bg-gradient-to-t from-gold-400 to-gold-300"
+                          style={{
+                            height: `${h * 100}%`,
+                            animation: `musicBar 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <Music className="h-12 w-12 text-purple-400/60" />
+                  )}
+                  {/* Track number badge */}
+                  {currentTrack && (
+                    <div className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-gold-400 text-purple-950 flex items-center justify-center text-xs font-bold shadow-lg">
+                      {currentIndex + 1}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Track info */}
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                {currentTrack ? (
+                  <>
+                    <p className="text-xs font-medium uppercase tracking-widest text-gold-400/80 mb-1">
+                      Now Playing
+                    </p>
+                    <h4 className="text-xl sm:text-2xl font-heading font-bold text-white leading-tight truncate">
+                      {currentTrack.title}
+                    </h4>
+                    <p className="text-base text-purple-200/80 mt-1 truncate">
+                      {currentTrack.artist}
+                    </p>
+                    <div className="flex items-center gap-3 mt-2 justify-center sm:justify-start">
+                      {currentTrack.album && (
+                        <span className="text-xs text-purple-400/70">{currentTrack.album}</span>
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-purple-800/60 px-2.5 py-0.5 text-xs font-medium text-purple-200 capitalize border border-purple-700/40">
+                        {currentTrack.track_type}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-medium uppercase tracking-widest text-purple-400/60 mb-1">
+                      Ready to Play
+                    </p>
+                    <h4 className="text-xl font-heading font-bold text-purple-300">
+                      Select a Track
+                    </h4>
+                    <p className="text-sm text-purple-400/60 mt-1">
+                      Choose from {playableTracks.length} worship and gospel tracks
+                    </p>
+                  </>
                 )}
               </div>
             </div>
-          </SlideUpItem>
+
+            {/* Progress bar */}
+            <div className="mb-5">
+              <div
+                ref={progressRef}
+                className="group relative h-2 bg-purple-800/60 rounded-full cursor-pointer overflow-hidden"
+                onClick={handleSeek}
+              >
+                {/* Buffer/glow track */}
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-gold-400 via-gold-300 to-gold-400 transition-all duration-150"
+                  style={{ width: `${progress}%` }}
+                />
+                {/* Glow on the leading edge */}
+                {currentTrack && (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-gold-300 shadow-lg shadow-gold-400/50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ left: `calc(${progress}% - 8px)` }}
+                  />
+                )}
+              </div>
+              <div className="flex justify-between mt-1.5 text-xs font-mono text-purple-400/70 tabular-nums">
+                <span>{formatDuration(currentTime)}</span>
+                <span>{currentTrack ? `-${formatDuration(Math.max(0, duration - currentTime))}` : formatDuration(0)}</span>
+              </div>
+            </div>
+
+            {/* Transport controls */}
+            <div className="flex items-center justify-center gap-4 sm:gap-6">
+              {/* Shuffle placeholder - visual only for now */}
+              <button
+                className="p-2 text-purple-400/50 hover:text-purple-200 transition-colors"
+                aria-label="Shuffle"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+                </svg>
+              </button>
+
+              <button
+                onClick={previous}
+                className="p-2.5 text-purple-200 hover:text-white transition-all hover:scale-110 active:scale-95"
+                aria-label="Previous track"
+              >
+                <SkipBack className="h-5 w-5 fill-current" />
+              </button>
+
+              <button
+                onClick={togglePlay}
+                className="relative p-4 rounded-full bg-gradient-to-br from-gold-400 to-gold-500 text-purple-950 shadow-xl shadow-gold-500/30 transition-all hover:shadow-gold-400/50 hover:scale-105 active:scale-95"
+                aria-label={isPlaying ? "Pause" : "Play"}
+              >
+                {isPlaying ? (
+                  <Pause className="h-7 w-7" />
+                ) : (
+                  <Play className="h-7 w-7 ml-0.5" />
+                )}
+                {/* Pulse ring when playing */}
+                {isPlaying && (
+                  <span className="absolute inset-0 rounded-full border-2 border-gold-400/40 animate-ping" style={{ animationDuration: "2s" }} />
+                )}
+              </button>
+
+              <button
+                onClick={next}
+                className="p-2.5 text-purple-200 hover:text-white transition-all hover:scale-110 active:scale-95"
+                aria-label="Next track"
+              >
+                <SkipForward className="h-5 w-5 fill-current" />
+              </button>
+
+              {/* Repeat placeholder */}
+              <button
+                className="p-2 text-purple-400/50 hover:text-purple-200 transition-colors"
+                aria-label="Repeat"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m17 2 4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v2a4 4 0 0 1-4 4H3" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Volume + Queue toggle row */}
+            <div className="flex items-center justify-between mt-5 pt-4 border-t border-purple-800/40">
+              {/* Volume control */}
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setVolume(volume > 0 ? 0 : 0.8)}
+                  className="p-1 text-purple-300/70 hover:text-white transition-colors"
+                  aria-label={volume > 0 ? "Mute" : "Unmute"}
+                >
+                  {volume > 0 ? (
+                    <Volume2 className="h-4 w-4" />
+                  ) : (
+                    <VolumeX className="h-4 w-4" />
+                  )}
+                </button>
+                <div className="relative w-24 group">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={volume}
+                    onChange={(e) => setVolume(parseFloat(e.target.value))}
+                    className="w-full h-1.5 appearance-none bg-purple-800/60 rounded-full outline-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gold-400 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:shadow-gold-500/30 [&::-webkit-slider-thumb]:transition-transform [&::-webkit-slider-thumb]:hover:scale-125"
+                    aria-label="Volume"
+                  />
+                </div>
+                <span className="text-xs font-mono text-purple-400/60 w-8 tabular-nums">
+                  {Math.round(volume * 100)}%
+                </span>
+              </div>
+
+              {/* Queue toggle */}
+              <button
+                onClick={() => setShowQueue(!showQueue)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                  showQueue
+                    ? "bg-gold-400/20 text-gold-300 border border-gold-400/30"
+                    : "text-purple-300/60 hover:text-purple-100 border border-purple-700/30 hover:border-purple-600/50"
+                }`}
+              >
+                <List className="h-3.5 w-3.5" />
+                Queue
+              </button>
+            </div>
+          </div>
+        </div>
+      </FadeIn>
+
+      {/* CSS for music bars animation */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes musicBar {
+          0% { height: 20%; }
+          100% { height: 100%; }
+        }
+      `}} />
+
+      {/* ── Queue Panel (collapsible) ───────────────────────────────── */}
+      {showQueue && playableTracks.length > 0 && (
+        <FadeIn>
+          <div className="rounded-xl bg-purple-950/90 border border-purple-800/40 p-4 shadow-lg backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-purple-200 flex items-center gap-2">
+                <List className="h-4 w-4 text-gold-400" />
+                Up Next
+              </h4>
+              <span className="text-xs text-purple-400">{playableTracks.length} tracks</span>
+            </div>
+            <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-thin">
+              {playableTracks.map((track, idx) => {
+                const isCurrent = track.id === currentTrack?.id;
+                return (
+                  <button
+                    key={track.id}
+                    onClick={() => play(track)}
+                    className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-all ${
+                      isCurrent
+                        ? "bg-purple-800/60 border border-purple-600/30"
+                        : "hover:bg-purple-800/30"
+                    }`}
+                  >
+                    <span className={`w-6 text-center text-xs font-mono ${isCurrent ? "text-gold-400" : "text-purple-500"}`}>
+                      {isCurrent && isPlaying ? "▶" : idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium truncate ${isCurrent ? "text-gold-300" : "text-purple-100"}`}>
+                        {track.title}
+                      </p>
+                      <p className="text-xs text-purple-400 truncate">{track.artist}</p>
+                    </div>
+                    <span className="text-xs font-mono text-purple-500 tabular-nums flex-shrink-0">
+                      {formatDuration(track.duration)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </FadeIn>
+      )}
+
+      {/* ── Genre Filters ───────────────────────────────────────────── */}
+      <div className="flex flex-wrap gap-2">
+        {trackTypes.map((type) => (
+          <button
+            key={type}
+            onClick={() => setActiveFilter(type)}
+            className={`rounded-full px-4 py-2 text-sm font-medium capitalize transition-all ${
+              activeFilter === type
+                ? "bg-purple-700 text-white shadow-md"
+                : "bg-warm-100 text-warm-700 hover:bg-warm-200 dark:bg-warm-800 dark:text-warm-300"
+            }`}
+          >
+            {type}
+          </button>
         ))}
+      </div>
+
+      {/* ── Track Listing ───────────────────────────────────────────── */}
+      <SlideUpContainer className="space-y-2">
+        {filteredTracks.map((track, idx) => {
+          const isCurrent = track.id === currentTrack?.id;
+          const isCurrentPlaying = isCurrent && isPlaying;
+
+          return (
+            <SlideUpItem key={track.id}>
+              <div
+                className={`group flex items-center gap-4 rounded-xl p-4 transition-all duration-200 cursor-pointer ${
+                  isCurrent
+                    ? "bg-purple-50 border-2 border-purple-200 shadow-sm dark:bg-purple-950/30 dark:border-purple-800"
+                    : "bg-white border border-warm-100 hover:border-purple-200 hover:shadow-card-hover dark:bg-warm-900 dark:border-warm-800"
+                }`}
+                onClick={() => {
+                  if (track.audio_url) {
+                    if (isCurrent) {
+                      togglePlay();
+                    } else {
+                      play(track);
+                    }
+                  }
+                }}
+              >
+                {/* Track number / play indicator */}
+                <div className="w-8 flex-shrink-0 text-center">
+                  {isCurrentPlaying ? (
+                    <div className="flex items-end justify-center gap-0.5 h-4 mx-auto">
+                      {[0.5, 1, 0.6].map((h, i) => (
+                        <div
+                          key={i}
+                          className="w-1 rounded-full bg-purple-600"
+                          style={{
+                            height: `${h * 100}%`,
+                            animation: `musicBar 0.6s ease-in-out ${i * 0.15}s infinite alternate`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  ) : isCurrent ? (
+                    <Pause className="h-4 w-4 mx-auto text-purple-600" />
+                  ) : (
+                    <span className="text-sm font-mono text-warm-400 group-hover:hidden">{idx + 1}</span>
+                  )}
+                  {!isCurrent && track.audio_url && (
+                    <Play className="h-4 w-4 mx-auto text-purple-600 hidden group-hover:block fill-current" />
+                  )}
+                </div>
+
+                {/* Track info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className={`text-sm font-semibold truncate ${isCurrent ? "text-purple-700 dark:text-purple-300" : "text-warm-900 dark:text-warm-50"}`}>
+                    {track.title}
+                  </h3>
+                  <p className="text-xs text-warm-500 truncate mt-0.5">{track.artist}</p>
+                </div>
+
+                {/* Type badge */}
+                <Badge
+                  variant="secondary"
+                  className={`hidden sm:inline-flex text-xs capitalize ${
+                    isCurrent
+                      ? "bg-purple-100 text-purple-700 dark:bg-purple-800 dark:text-purple-200"
+                      : "bg-warm-100 text-warm-500"
+                  }`}
+                >
+                  {track.track_type}
+                </Badge>
+
+                {/* Duration */}
+                <span className={`text-xs font-mono tabular-nums flex-shrink-0 ${isCurrent ? "text-purple-600 dark:text-purple-300" : "text-warm-400"}`}>
+                  {formatDuration(track.duration)}
+                </span>
+
+                {/* Queue action */}
+                {track.audio_url && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      addToQueue(track);
+                    }}
+                    aria-label={`Add ${track.title} to queue`}
+                    className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 opacity-0 group-hover:opacity-100 hover:bg-purple-100 hover:text-purple-600 transition-all dark:hover:bg-purple-900/30"
+                  >
+                    <ListPlus className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </SlideUpItem>
+          );
+        })}
       </SlideUpContainer>
     </div>
   );

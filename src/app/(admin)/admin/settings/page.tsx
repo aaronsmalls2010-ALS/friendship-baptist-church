@@ -329,7 +329,36 @@ export default function SettingsPage() {
                     <div className="flex h-20 w-20 items-center justify-center rounded-lg border-2 border-dashed border-warm-200 bg-warm-50 dark:border-warm-700 dark:bg-warm-800">
                       <Upload className="h-6 w-6 text-warm-400" />
                     </div>
-                    <Button type="button" variant="outline" className="text-purple-700 border-purple-200 hover:bg-purple-50">
+                    <input
+                      type="file"
+                      id="logo-upload"
+                      accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        formData.append("path", "branding/logo");
+                        try {
+                          const res = await fetch("/api/cms/upload", { method: "POST", body: formData });
+                          if (res.ok) {
+                            showToast("Logo uploaded successfully");
+                          } else {
+                            showToast("Failed to upload logo", "error");
+                          }
+                        } catch {
+                          showToast("Failed to upload logo", "error");
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="text-purple-700 border-purple-200 hover:bg-purple-50"
+                      onClick={() => document.getElementById("logo-upload")?.click()}
+                    >
                       Upload Logo
                     </Button>
                   </div>

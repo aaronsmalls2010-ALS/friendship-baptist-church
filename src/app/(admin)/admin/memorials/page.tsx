@@ -197,8 +197,26 @@ export default function MemorialManagementPage() {
     setDeleteCommentOpen(true);
   }
 
-  function handleDeleteComment() {
+  async function handleDeleteComment() {
     if (deletingComment && commentsMemorial) {
+      try {
+        const res = await fetch(`/api/admin/memorials/${commentsMemorial.id}/comments`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ commentId: deletingComment.id }),
+        });
+        if (!res.ok) {
+          console.error("Failed to delete comment");
+          setDeleteCommentOpen(false);
+          setDeletingComment(null);
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to delete comment:", err);
+        setDeleteCommentOpen(false);
+        setDeletingComment(null);
+        return;
+      }
       setMemorials((prev) =>
         prev.map((m) =>
           m.id === commentsMemorial.id
@@ -211,7 +229,6 @@ export default function MemorialManagementPage() {
             : m
         )
       );
-      // Update local reference for the comments panel
       setCommentsMemorial((prev) =>
         prev
           ? {

@@ -106,10 +106,42 @@ export default function GivePage() {
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!currentAmount || !name.trim()) return;
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const res = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim() || "no-email@placeholder.local",
+          subject: `Giving Intent: $${currentAmount} - ${givingType}`,
+          type: "Giving",
+          message: [
+            `Amount: $${currentAmount}`,
+            `Type: ${givingType}`,
+            isRecurring ? `Recurring: ${frequency}` : "One-time gift",
+            `Donor: ${name.trim()}`,
+            email.trim() ? `Email: ${email.trim()}` : "",
+          ].filter(Boolean).join("\n"),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to submit");
+      }
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleReset() {
@@ -121,6 +153,7 @@ export default function GivePage() {
     setName("");
     setEmail("");
     setSubmitted(false);
+    setSubmitError("");
   }
 
   return (
@@ -146,7 +179,7 @@ export default function GivePage() {
           <FadeIn delay={0.2}>
             {submitted ? (
               <FormSuccess
-                message={`Thank you for your generous gift of $${currentAmount}. Your giving helps sustain the work of God's kingdom.`}
+                message={`Thank you for your generous intent to give $${currentAmount}. The church office will follow up with you to arrange payment. God bless your generosity!`}
                 onReset={handleReset}
               />
             ) : (
@@ -259,14 +292,21 @@ export default function GivePage() {
                   </div>
 
                   {/* Submit */}
+                  {submitError && (
+                    <p className="text-sm text-red-600" role="alert">{submitError}</p>
+                  )}
                   <Button
                     type="submit"
                     size="lg"
                     className="w-full bg-gold-500 text-warm-900 hover:bg-gold-400 font-semibold"
+                    disabled={submitting}
                   >
                     <Heart className="mr-2 h-5 w-5" />
-                    Give Now
+                    {submitting ? "Processing..." : "Give Now"}
                   </Button>
+                  <p className="text-xs text-center text-warm-500">
+                    This records your giving intent. The church office will follow up to arrange payment.
+                  </p>
                 </div>
               </form>
             )}

@@ -19,7 +19,7 @@ const footerLinks = {
     { label: "Business Directory", href: "/business-directory" },
   ],
   resources: [
-    { label: "Sermons", href: "/media?tab=sermons" },
+    { label: "Sermons", href: "/media?tab=services" },
     { label: "Prayer Requests", href: "/prayer" },
     { label: "Give", href: "/give" },
     { label: "Contact Us", href: "/contact" },

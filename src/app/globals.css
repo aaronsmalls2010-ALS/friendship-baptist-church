@@ -122,6 +122,23 @@
 }
 
 @layer utilities {
+  /* Neat, justified body copy on public pages.
+     Mobile stays left-aligned (narrow columns justify badly); justify kicks
+     in at tablet+ where columns are wide enough. Hyphenation keeps gaps tight.
+     Scoped to <p> so headings, buttons, labels, and captions are untouched. */
+  .public-prose p {
+    @apply text-left;
+  }
+
+  @media (min-width: 768px) {
+    .public-prose p {
+      text-align: justify;
+      text-justify: inter-word;
+      hyphens: auto;
+      -webkit-hyphens: auto;
+    }
+  }
+
   .animation-delay-200 {
     animation-delay: 200ms;
   }

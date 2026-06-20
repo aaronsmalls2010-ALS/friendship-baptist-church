@@ -30,7 +30,7 @@ export async function GET(request: Request) {
           } = await supabase.auth.getUser();
           const role =
             user?.user_metadata?.role || user?.app_metadata?.role;
-          if (role === "admin" || role === "super_admin") {
+          if (role === "admin" || role === "super_admin" || role === "pastor") {
             redirectTo = "/admin";
           }
         }

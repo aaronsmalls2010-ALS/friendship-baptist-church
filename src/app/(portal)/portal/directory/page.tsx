@@ -21,6 +21,8 @@ const roleBadgeStyles: Record<UserRole, string> = {
   deacon: "bg-purple-600 text-white",
   minister: "bg-peach-500 text-white",
   musician: "bg-teal-500 text-white",
+  finance: "bg-emerald-500 text-white",
+  pastor: "bg-indigo-500 text-white",
   member: "bg-warm-200 text-warm-700",
   super_admin: "bg-gold-500 text-white",
 };
@@ -80,8 +82,8 @@ export default function ChurchDirectoryPage() {
       const matchesMinistry =
         ministryFilter === "all" ||
         (Array.isArray(profile.ministries) &&
-          profile.ministries.some((m: { id?: string; ministry_id?: string }) =>
-            m.id === ministryFilter || m.ministry_id === ministryFilter
+          profile.ministries.some((m: { ministry_id?: string; name?: string }) =>
+            m.ministry_id === ministryFilter
           ));
 
       return matchesSearch && matchesRole && matchesMinistry;
@@ -168,7 +170,19 @@ export default function ChurchDirectoryPage() {
             <SlideUpItem key={profile.id}>
               <Card className="p-5 hover:shadow-card-hover transition-shadow">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-700 text-white font-bold text-sm">
+                  {profile.photo_url ? (
+                    <img
+                      src={profile.photo_url}
+                      alt={`${profile.first_name} ${profile.last_name}`}
+                      className="h-12 w-12 shrink-0 rounded-full object-cover"
+                      onError={(e) => {
+                        const el = e.target as HTMLImageElement;
+                        el.style.display = "none";
+                        if (el.nextElementSibling instanceof HTMLElement) el.nextElementSibling.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div className={`h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-700 text-white font-bold text-sm${profile.photo_url ? " hidden" : ""}`} style={{ display: profile.photo_url ? "none" : "flex" }}>
                     {memberInitials}
                   </div>
                   <div className="min-w-0 flex-1">

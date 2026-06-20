@@ -66,12 +66,19 @@ interface FamilyOption {
   name: string;
 }
 
+interface MinistryOption {
+  id: string;
+  name: string;
+}
+
 // ── Constants ────────────────────────────────────────────────────────
 const ROLE_LABELS: Record<UserRole, string> = {
   member: "Member",
   deacon: "Deacon",
   minister: "Minister",
   musician: "Musician",
+  finance: "Finance",
+  pastor: "Pastor",
   admin: "Admin",
   super_admin: "Super Admin",
 };
@@ -113,6 +120,7 @@ export default function MemberManagementPage() {
   const [wards, setWards] = useState<Ward[]>([]);
   const [deacons, setDeacons] = useState<Deacon[]>([]);
   const [allFamilies, setAllFamilies] = useState<FamilyOption[]>([]);
+  const [allMinistries, setAllMinistries] = useState<MinistryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -132,6 +140,8 @@ export default function MemberManagementPage() {
   const [editWardId, setEditWardId] = useState("");
   const [editDeaconId, setEditDeaconId] = useState("");
   const [editFamilyIds, setEditFamilyIds] = useState<string[]>([]);
+  const [editMinistryIds, setEditMinistryIds] = useState<string[]>([]);
+  const [memberMinistryMap, setMemberMinistryMap] = useState<Map<string, string[]>>(new Map());
 
   // Roles dialog state
   const [rolesOpen, setRolesOpen] = useState(false);
@@ -143,11 +153,12 @@ export default function MemberManagementPage() {
   const fetchData = useCallback(async () => {
     try {
       setError("");
-      const [membersRes, wardsRes, deaconsRes, familiesRes] = await Promise.all([
+      const [membersRes, wardsRes, deaconsRes, familiesRes, ministriesRes] = await Promise.all([
         fetch("/api/admin/members"),
         fetch("/api/admin/wards"),
         fetch("/api/admin/deacons"),
         fetch("/api/admin/families"),
+        fetch("/api/admin/ministries"),
       ]);
 
       if (!membersRes.ok) {
@@ -175,6 +186,38 @@ export default function MemberManagementPage() {
             name: f.name,
           }))
         );
+      }
+
+      if (ministriesRes.ok) {
+        const ministriesData = await ministriesRes.json();
+        setAllMinistries(
+          (ministriesData.ministries ?? []).map((m: MinistryOption) => ({
+            id: m.id,
+            name: m.name,
+          }))
+        );
+
+        // Build a map of member -> ministry IDs by fetching each ministry's members
+        const mMap = new Map<string, string[]>();
+        const ministryList = ministriesData.ministries ?? [];
+        await Promise.all(
+          ministryList.map(async (ministry: MinistryOption) => {
+            try {
+              const mRes = await fetch(`/api/admin/ministries/${ministry.id}/members`);
+              if (mRes.ok) {
+                const mData = await mRes.json();
+                for (const mm of mData.members ?? []) {
+                  if (mm.status === "approved") {
+                    const existing = mMap.get(mm.profile_id) ?? [];
+                    existing.push(ministry.id);
+                    mMap.set(mm.profile_id, existing);
+                  }
+                }
+              }
+            } catch { /* non-fatal */ }
+          })
+        );
+        setMemberMinistryMap(mMap);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
@@ -278,7 +321,7 @@ export default function MemberManagementPage() {
     setEditingMember(member);
     setEditWardId(member.ward_id ?? "");
     setEditFamilyIds((member.families ?? []).map((f) => f.id));
-    // Find deacon for current ward
+    setEditMinistryIds(memberMinistryMap.get(member.id) ?? []);
     const ward = member.ward_id
       ? wards.find((w) => w.id === member.ward_id)
       : undefined;
@@ -292,10 +335,10 @@ export default function MemberManagementPage() {
   async function handleSaveEdit() {
     if (!editingMember) return;
 
-    // Normalize sentinel value to empty for "unassigned"
     const wardValue = editWardId === "__none__" ? "" : editWardId;
+    const currentMinistryIds = memberMinistryMap.get(editingMember.id) ?? [];
 
-    // Update ward + families in parallel.
+    // Update ward + families in parallel
     const [wardRes, famRes] = await Promise.all([
       fetch("/api/admin/members", {
         method: "PUT",
@@ -308,6 +351,48 @@ export default function MemberManagementPage() {
         body: JSON.stringify({ family_ids: editFamilyIds }),
       }),
     ]);
+
+    // Handle ministry changes — add new, remove old
+    const toAdd = editMinistryIds.filter((id) => !currentMinistryIds.includes(id));
+    const toRemove = currentMinistryIds.filter((id) => !editMinistryIds.includes(id));
+
+    // Add member to new ministries
+    await Promise.all(
+      toAdd.map((ministryId) =>
+        fetch(`/api/admin/ministries/${ministryId}/members`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile_id: editingMember.id }),
+        })
+      )
+    );
+
+    // Remove member from old ministries
+    for (const ministryId of toRemove) {
+      try {
+        const mRes = await fetch(`/api/admin/ministries/${ministryId}/members`);
+        if (mRes.ok) {
+          const mData = await mRes.json();
+          const record = (mData.members ?? []).find(
+            (m: { profile_id: string }) => m.profile_id === editingMember.id
+          );
+          if (record) {
+            await fetch(`/api/admin/ministries/${ministryId}/members`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ member_id: record.id, action: "remove" }),
+            });
+          }
+        }
+      } catch { /* non-fatal */ }
+    }
+
+    // Update local ministry map
+    setMemberMinistryMap((prev) => {
+      const next = new Map(prev);
+      next.set(editingMember.id, editMinistryIds);
+      return next;
+    });
 
     if (wardRes.ok && famRes.ok) {
       const newFamilies = allFamilies.filter((f) => editFamilyIds.includes(f.id));
@@ -703,7 +788,7 @@ export default function MemberManagementPage() {
           {editingMember && (
             <div className="space-y-4">
               <p className="text-sm text-warm-600">
-                Update ward, deacon, and family assignments for{" "}
+                Update ward, deacon, family, and ministry assignments for{" "}
                 <span className="font-medium">{editingMember.first_name} {editingMember.last_name}</span>.
               </p>
 
@@ -788,6 +873,44 @@ export default function MemberManagementPage() {
                 )}
               </div>
 
+              {/* Ministries */}
+              <div className="space-y-2">
+                <Label>Ministries</Label>
+                {allMinistries.length === 0 ? (
+                  <p className="text-xs text-warm-400">
+                    No ministries yet. Create them on the Ministries page.
+                  </p>
+                ) : (
+                  <div className="max-h-40 space-y-1.5 overflow-y-auto rounded-lg border border-warm-200 dark:border-warm-800 p-2">
+                    {allMinistries.map((m) => {
+                      const checked = editMinistryIds.includes(m.id);
+                      return (
+                        <label
+                          key={m.id}
+                          htmlFor={`min-${m.id}`}
+                          className="flex items-center gap-3 rounded-md px-2 py-1.5 cursor-pointer hover:bg-warm-50 dark:hover:bg-warm-800"
+                        >
+                          <Checkbox
+                            id={`min-${m.id}`}
+                            checked={checked}
+                            onCheckedChange={(v) =>
+                              setEditMinistryIds((prev) =>
+                                v === true
+                                  ? [...new Set([...prev, m.id])]
+                                  : prev.filter((x) => x !== m.id)
+                              )
+                            }
+                          />
+                          <span className="text-sm text-warm-700 dark:text-warm-200">
+                            {m.name}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
               <DialogFooter>
                 <Button variant="outline" onClick={() => setEditOpen(false)}>
                   Cancel
@@ -864,7 +987,7 @@ export default function MemberManagementPage() {
               </div>
 
               <p className="text-xs text-warm-400">
-                Admin-level roles can only be granted by a super admin.
+                Admin-level roles can be granted by Pastor, Admin, or Super Admin.
               </p>
 
               <DialogFooter>

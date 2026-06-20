@@ -20,7 +20,7 @@ export async function GET() {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -66,7 +66,7 @@ export async function PUT(request: Request) {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -136,7 +136,7 @@ export async function DELETE(request: Request) {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

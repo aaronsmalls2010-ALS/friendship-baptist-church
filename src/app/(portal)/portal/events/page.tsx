@@ -6,7 +6,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, MapPin, Clock, CheckCircle, Loader2, CalendarCheck, CalendarX } from "lucide-react";
+import { CalendarDays, MapPin, Clock, CheckCircle, Loader2, CalendarCheck, CalendarX, Cake } from "lucide-react";
 
 export default function MyEventsPage() {
   const [loading, setLoading] = useState(true);
@@ -22,37 +22,60 @@ export default function MyEventsPage() {
   useEffect(() => {
     async function fetchEvents() {
       try {
-        const res = await fetch("/api/portal/events");
-        if (res.ok) {
-          const data = await res.json();
-          const events = data.events || [];
-          const now = new Date();
+        const [eventsRes, birthdaysRes] = await Promise.all([
+          fetch("/api/portal/events"),
+          fetch("/api/portal/birthdays"),
+        ]);
 
-          // Split into upcoming vs past
-          const upcoming = events.filter(
-            (e: any) => new Date(e.start_date) >= now
-          );
-          const past = events.filter(
-            (e: any) => new Date(e.start_date) < now
-          );
+        const eventsData = eventsRes.ok ? await eventsRes.json() : { events: [] };
+        const birthdaysData = birthdaysRes.ok ? await birthdaysRes.json() : { birthdays: [] };
 
-          setUpcomingEvents(upcoming);
-          setPastEvents(past);
+        const currentYear = new Date().getFullYear();
+        const bdayEvents: any[] = (birthdaysData.birthdays ?? []).map(
+          (p: { id: string; first_name: string; last_name: string; date_of_birth: string }) => {
+            const dob = new Date(p.date_of_birth + "T12:00:00");
+            const birthdayThisYear = new Date(currentYear, dob.getMonth(), dob.getDate(), 12, 0, 0);
+            return {
+              id: `bday-${p.id}`,
+              title: `${p.first_name} ${p.last_name}'s Birthday`,
+              description: `Happy Birthday to ${p.first_name} ${p.last_name}! Wishing you many blessings.`,
+              start_date: birthdayThisYear.toISOString(),
+              location: "",
+              rsvp_enabled: false,
+              is_published: true,
+              is_birthday: true,
+              created_at: new Date().toISOString(),
+            };
+          }
+        );
 
-          // Registered events: pick first 3 upcoming
-          setRegisteredEvents(upcoming.slice(0, 3));
+        const allEvents = [...(eventsData.events || []), ...bdayEvents];
+        const now = new Date();
 
-          // Recommended events: events with ministry_id that aren't in registered
-          const registered = upcoming.slice(0, 3);
-          const recommended = upcoming
-            .filter(
-              (e: any) =>
-                e.ministry_id &&
-                !registered.some((r: any) => r.id === e.id)
-            )
-            .slice(0, 3);
-          setRecommendedEvents(recommended);
-        }
+        const upcoming = allEvents
+          .filter((e: any) => new Date(e.start_date) >= now)
+          .sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
+        const past = allEvents
+          .filter((e: any) => new Date(e.start_date) < now)
+          .sort((a: any, b: any) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
+
+        setUpcomingEvents(upcoming);
+        setPastEvents(past);
+
+        // Registered events: first 3 upcoming non-birthday events
+        const registeredNonBday = upcoming.filter((e: any) => !e.id.startsWith("bday-")).slice(0, 3);
+        setRegisteredEvents(registeredNonBday);
+
+        // Recommended events: ministry events not in registered
+        const recommended = upcoming
+          .filter(
+            (e: any) =>
+              e.ministry_id &&
+              !e.id.startsWith("bday-") &&
+              !registeredNonBday.some((r: any) => r.id === e.id)
+          )
+          .slice(0, 3);
+        setRecommendedEvents(recommended);
       } catch (error) {
         console.error("Failed to fetch events:", error);
       } finally {
@@ -113,6 +136,7 @@ export default function MyEventsPage() {
           <TabsList className="bg-warm-100">
             <TabsTrigger value="registered">Registered</TabsTrigger>
             <TabsTrigger value="recommended">Recommended</TabsTrigger>
+            <TabsTrigger value="birthdays">Birthdays</TabsTrigger>
             <TabsTrigger value="past">Past</TabsTrigger>
           </TabsList>
 
@@ -236,10 +260,46 @@ export default function MyEventsPage() {
             </div>
           </TabsContent>
 
+          {/* Birthdays Tab */}
+          <TabsContent value="birthdays" className="mt-6">
+            <p className="text-sm text-warm-500 mb-6">
+              Upcoming member birthdays
+            </p>
+            <div className="grid grid-cols-1 gap-4">
+              {upcomingEvents
+                .filter((e) => e.id.startsWith("bday-"))
+                .map((event, index) => (
+                  <FadeIn key={event.id} delay={index * 0.05}>
+                    <div className="bg-white rounded-xl px-6 py-4 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 border-l-4 border-amber-400">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                          <Cake className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="font-heading font-semibold text-warm-900">
+                            {event.title}
+                          </h3>
+                          <span className="inline-flex items-center gap-1.5 text-sm text-warm-500">
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            {formatDate(event.start_date)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </FadeIn>
+                ))}
+              {upcomingEvents.filter((e) => e.id.startsWith("bday-")).length === 0 && (
+                <p className="text-center text-warm-500 py-12">
+                  No upcoming birthdays this week.
+                </p>
+              )}
+            </div>
+          </TabsContent>
+
           {/* Past Tab */}
           <TabsContent value="past" className="mt-6">
             <div className="space-y-3">
-              {pastEvents.map((event, index) => (
+              {pastEvents.filter((e) => !e.id.startsWith("bday-")).map((event, index) => (
                 <FadeIn key={event.id} delay={index * 0.05}>
                   <div className="bg-white rounded-xl px-6 py-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="space-y-1">

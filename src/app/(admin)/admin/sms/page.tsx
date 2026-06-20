@@ -42,11 +42,17 @@ const GROUP_LABELS: Record<string, string> = {
   all: "All Members",
   deacons: "Deacons",
   leaders: "Ministry Leaders",
+  ward: "Ward",
+  family: "Family",
+  ministry: "Ministry",
   custom: "Custom",
 };
 
+interface SubGroupOption { id: string; name: string; }
+
 export default function SmsCenterPage() {
   const [recipientGroup, setRecipientGroup] = useState("");
+  const [groupId, setGroupId] = useState("");
   const [message, setMessage] = useState("");
   const [schedule, setSchedule] = useState("now");
   const [scheduleDate, setScheduleDate] = useState("");
@@ -66,8 +72,15 @@ export default function SmsCenterPage() {
   // Confirm dialog
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // Sub-group lists (wards, families, ministries)
+  const [wards, setWards] = useState<SubGroupOption[]>([]);
+  const [families, setFamilies] = useState<SubGroupOption[]>([]);
+  const [ministries, setMinistries] = useState<SubGroupOption[]>([]);
+
   // Segment count
   const segments = Math.ceil(Math.max(message.length, 1) / 160);
+
+  const needsSubGroup = recipientGroup === "ward" || recipientGroup === "family" || recipientGroup === "ministry";
 
   // SMS history
   const [history, setHistory] = useState<SmsLogEntry[]>([]);
@@ -81,17 +94,29 @@ export default function SmsCenterPage() {
     fetch("/api/admin/sms-templates")
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setTemplates(d.templates ?? []); });
+    fetch("/api/admin/sms?lists=true")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d) {
+          setWards((d.wards ?? []).map((w: Record<string, string>) => ({ id: w.id, name: w.name })));
+          setFamilies((d.families ?? []).map((f: Record<string, string>) => ({ id: f.id, name: f.name })));
+          setMinistries((d.ministries ?? []).map((m: Record<string, string>) => ({ id: m.id, name: m.name })));
+        }
+      });
   }, []);
 
-  // Fetch opt-in count when group changes
+  // Fetch opt-in count when group or sub-group changes
   useEffect(() => {
     if (!recipientGroup) { setOptInCount(null); return; }
+    if (needsSubGroup && !groupId) { setOptInCount(null); return; }
     setLoadingCount(true);
-    fetch(`/api/admin/sms?count=true&group=${recipientGroup}`)
+    const params = new URLSearchParams({ count: "true", group: recipientGroup });
+    if (groupId) params.set("groupId", groupId);
+    fetch(`/api/admin/sms?${params}`)
       .then((r) => r.ok ? r.json() : null)
       .then((d) => { if (d) setOptInCount(d); })
       .finally(() => setLoadingCount(false));
-  }, [recipientGroup]);
+  }, [recipientGroup, groupId, needsSubGroup]);
 
   async function doSend() {
     setConfirmOpen(false);
@@ -102,7 +127,7 @@ export default function SmsCenterPage() {
       const res = await fetch("/api/admin/sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipientGroup, message, schedule, scheduleDate, scheduleTime }),
+        body: JSON.stringify({ recipientGroup, message, schedule, scheduleDate, scheduleTime, groupId: groupId || undefined }),
       });
       const data = await res.json();
 
@@ -113,6 +138,7 @@ export default function SmsCenterPage() {
         });
         setMessage("");
         setRecipientGroup("");
+        setGroupId("");
         setSchedule("now");
         setScheduleDate("");
         setScheduleTime("");
@@ -131,7 +157,7 @@ export default function SmsCenterPage() {
     }
   }
 
-  const canSend = !!recipientGroup && !!message && !sending;
+  const canSend = !!recipientGroup && !!message && !sending && (!needsSubGroup || !!groupId);
 
   return (
     <div className="space-y-8">
@@ -185,7 +211,7 @@ export default function SmsCenterPage() {
 
             <div className="space-y-2">
               <Label htmlFor="sms-recipient">Recipient Group</Label>
-              <Select value={recipientGroup} onValueChange={setRecipientGroup}>
+              <Select value={recipientGroup} onValueChange={(v) => { setRecipientGroup(v); setGroupId(""); }}>
                 <SelectTrigger id="sms-recipient">
                   <SelectValue placeholder="Select recipients" />
                 </SelectTrigger>
@@ -193,11 +219,39 @@ export default function SmsCenterPage() {
                   <SelectItem value="all">All Members</SelectItem>
                   <SelectItem value="deacons">Deacons</SelectItem>
                   <SelectItem value="leaders">Ministry Leaders</SelectItem>
+                  <SelectItem value="ward">Ward</SelectItem>
+                  <SelectItem value="family">Family</SelectItem>
+                  <SelectItem value="ministry">Ministry</SelectItem>
                 </SelectContent>
               </Select>
 
+              {recipientGroup === "ward" && (
+                <Select value={groupId} onValueChange={setGroupId}>
+                  <SelectTrigger><SelectValue placeholder="Select a ward..." /></SelectTrigger>
+                  <SelectContent>
+                    {wards.map((w) => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              {recipientGroup === "family" && (
+                <Select value={groupId} onValueChange={setGroupId}>
+                  <SelectTrigger><SelectValue placeholder="Select a family..." /></SelectTrigger>
+                  <SelectContent>
+                    {families.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+              {recipientGroup === "ministry" && (
+                <Select value={groupId} onValueChange={setGroupId}>
+                  <SelectTrigger><SelectValue placeholder="Select a ministry..." /></SelectTrigger>
+                  <SelectContent>
+                    {ministries.map((m) => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+
               {/* Opt-in count badge */}
-              {recipientGroup && (
+              {recipientGroup && (!needsSubGroup || groupId) && (
                 <div className="flex items-center gap-2 text-sm text-warm-500">
                   <Users className="h-4 w-4 shrink-0" />
                   {loadingCount ? (

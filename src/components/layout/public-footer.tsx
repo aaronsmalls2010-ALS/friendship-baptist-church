@@ -156,17 +156,19 @@ export function PublicFooter() {
             glory of God
           </p>
         </div>
-        <p className="text-xs text-muted-foreground/40 mt-2">
-          Website by{" "}
-          <a
-            href="https://www.integritywebcreations.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-primary/60 transition-colors"
-          >
-            Integrity Web Creations
-          </a>
-        </p>
+        <div className="container-wide pb-4 text-center">
+          <p className="text-xs text-white/40">
+            Website by{" "}
+            <a
+              href="https://www.integritywebcreations.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/50 hover:text-white/70 transition-colors"
+            >
+              Integrity Web Creations
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );

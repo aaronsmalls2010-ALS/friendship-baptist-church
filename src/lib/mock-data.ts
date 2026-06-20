@@ -20,7 +20,6 @@ import type {
   MinistryMember,
   MinistryMessage,
   WorshipService,
-  Memorial,
 } from "@/types";
 
 // ─── Wards ──────────────────────────────────────────────────────────
@@ -729,13 +728,13 @@ export const MOCK_NOTIFICATIONS: Notification[] = [
 // ─── Families ──────────────────────────────────────────────────────
 export const MOCK_FAMILIES: Family[] = [
   {
-    id: "f1", family_name: "The Washington Family", created_at: "2022-03-15", updated_at: "2024-01-01",
+    id: "f1", name: "The Washington Family", created_at: "2022-03-15", updated_at: "2024-01-01",
   },
   {
-    id: "f2", family_name: "The Smalls Family", created_at: "2019-06-01", updated_at: "2024-01-01",
+    id: "f2", name: "The Smalls Family", created_at: "2019-06-01", updated_at: "2024-01-01",
   },
   {
-    id: "f3", family_name: "The Robinson Family", created_at: "2018-11-15", updated_at: "2024-01-01",
+    id: "f3", name: "The Robinson Family", created_at: "2018-11-15", updated_at: "2024-01-01",
   },
 ];
 
@@ -782,107 +781,3 @@ export const MOCK_MINISTRY_MESSAGES: MinistryMessage[] = [
   { id: "msg3", ministry_id: "m3", sent_by: "p9", subject: "VBS Planning Update", body: "Youth Ministry team, VBS planning is in full swing! We need volunteers for crafts, snacks, and Bible study stations. Please let me know your availability.", sent_at: "2026-05-18T10:00:00", sender_name: "Crystal Young", ministry_name: "Youth Ministry" },
 ];
 
-// ─── Memorials (Loved Ones Gone Home) ─────────────────────────────
-export const MOCK_MEMORIALS: Memorial[] = [
-  {
-    id: "mem1",
-    created_by: "p7",
-    first_name: "Reverend James",
-    last_name: "Washington Sr.",
-    photo_url: undefined,
-    date_of_birth: "1938-03-15",
-    date_of_passing: "2019-11-22",
-    obituary: "Reverend James Washington Sr. was a beloved pillar of Friendship Baptist Church for over fifty years. Born and raised in the Lowcountry, he dedicated his life to serving God and his community. He served as a deacon for twenty years before answering his call to preach, leading Bible study every Wednesday evening and mentoring countless young men in the faith. Known for his booming laugh and his tender heart, Rev. Washington touched the lives of everyone he met. He leaves behind a legacy of love, service, and unwavering devotion to the Lord.",
-    scripture: "Psalm 116:15",
-    scripture_text: "Precious in the sight of the Lord is the death of his faithful servants.",
-    favorite_hymn: "Amazing Grace",
-    church_roles: ["Deacon", "Bible Study Leader", "Trustee Board"],
-    family_message: "Daddy, your love and wisdom guide us still. Until we meet again at the feet of Jesus.",
-    is_published: true,
-    photos: [
-      { id: "mp1", memorial_id: "mem1", image_url: "/images/placeholder-memorial.jpg", caption: "Rev. Washington at the 2015 Church Anniversary", uploaded_by: "p7", created_at: "2019-12-01" },
-      { id: "mp2", memorial_id: "mem1", image_url: "/images/placeholder-memorial.jpg", caption: "Leading Bible Study, 2018", uploaded_by: "p7", created_at: "2019-12-01" },
-    ],
-    comments: [
-      { id: "mc1", memorial_id: "mem1", profile_id: "p10", author_name: "Mae Robinson", body: "Rev. Washington was like a father to so many of us. His prayers could move mountains. We miss you dearly.", created_at: "2019-12-05" },
-      { id: "mc2", memorial_id: "mem1", profile_id: "p8", author_name: "James Singleton", body: "He always had a word of encouragement. The church feels different without his presence, but his spirit lives on.", created_at: "2019-12-08" },
-    ],
-    created_at: "2019-11-28",
-    updated_at: "2019-12-08",
-  },
-  {
-    id: "mem2",
-    created_by: "p10",
-    first_name: "Mother Eloise",
-    last_name: "Robinson",
-    photo_url: undefined,
-    date_of_birth: "1932-07-04",
-    date_of_passing: "2023-02-14",
-    obituary: "Mother Eloise Robinson was the heartbeat of Friendship Baptist Church. For over sixty years, she graced the pews with her radiant smile and spirit-filled praise. As the oldest member of the Missionary Society, she organized countless outreach programs that fed the hungry and clothed the needy throughout Beaufort County. Her kitchen was always open, her prayers were always fervent, and her love was always unconditional. Mother Robinson raised seven children, all of whom credit her faith as the foundation of their lives.",
-    scripture: "Proverbs 31:28-29",
-    scripture_text: "Her children arise and call her blessed; her husband also, and he praises her: Many women do noble things, but you surpass them all.",
-    favorite_hymn: "His Eye Is on the Sparrow",
-    church_roles: ["Missionary Society", "Kitchen Ministry", "Mother Board"],
-    family_message: "Mama, you showed us what it means to live for Christ. Your hands fed thousands and your prayers covered us all. Rest well, Queen.",
-    is_published: true,
-    photos: [
-      { id: "mp3", memorial_id: "mem2", image_url: "/images/placeholder-memorial.jpg", caption: "Mother Robinson at the Annual Fish Fry, 2021", uploaded_by: "p10", created_at: "2023-03-01" },
-    ],
-    comments: [
-      { id: "mc3", memorial_id: "mem2", profile_id: "p7", author_name: "Martha Washington", body: "Mother Robinson taught me how to pray. She would grab your hands and you could feel the Holy Spirit moving. What a woman of God.", created_at: "2023-02-20" },
-      { id: "mc4", memorial_id: "mem2", profile_id: "p9", author_name: "Crystal Young", body: "She always made sure every child had a plate. The love she showed our youth will never be forgotten.", created_at: "2023-02-22" },
-      { id: "mc5", memorial_id: "mem2", profile_id: "p12", author_name: "Henry Baker", body: "A true servant of the Lord. Her legacy of faith and service will inspire generations to come.", created_at: "2023-03-01" },
-    ],
-    created_at: "2023-02-18",
-    updated_at: "2023-03-01",
-  },
-  {
-    id: "mem3",
-    created_by: "p9",
-    first_name: "Deacon Willie",
-    last_name: "Grant",
-    photo_url: undefined,
-    date_of_birth: "1945-09-30",
-    date_of_passing: "2021-08-17",
-    obituary: "Deacon Willie Grant served Friendship Baptist Church with quiet strength and deep faithfulness. Ordained as a deacon in 1985, he spent nearly four decades visiting the sick, comforting the bereaved, and being a steady hand of support for every pastor who led the congregation. A retired Marine and proud veteran, Deacon Grant brought the same discipline and dedication to his church service that he brought to his country. He was a man of few words but mighty actions.",
-    scripture: "2 Timothy 4:7",
-    scripture_text: "I have fought the good fight, I have finished the race, I have kept the faith.",
-    favorite_hymn: "Blessed Assurance",
-    church_roles: ["Deacon Board", "Usher Board", "Men's Ministry"],
-    family_message: "Dad served his Lord, his country, and his family with everything he had. We are proud to be his children.",
-    is_published: true,
-    photos: [],
-    comments: [
-      { id: "mc6", memorial_id: "mem3", profile_id: "p7", author_name: "Martha Washington", body: "Deacon Grant was always the first to arrive and the last to leave. His dedication was unmatched.", created_at: "2021-08-25" },
-    ],
-    created_at: "2021-08-20",
-    updated_at: "2021-08-25",
-  },
-  {
-    id: "mem4",
-    created_by: "p8",
-    first_name: "Sister Carolyn",
-    last_name: "Singleton",
-    photo_url: undefined,
-    date_of_birth: "1950-12-25",
-    date_of_passing: "2024-06-03",
-    obituary: "Sister Carolyn Singleton blessed Friendship Baptist Church with her golden voice for over thirty years. As a founding member of the Gospel Choir, her soprano could lift the entire congregation to their feet. Born on Christmas Day, she was a gift to everyone who knew her. Beyond her musical talents, Sister Singleton served faithfully in the Deaconess Board and was known throughout the community for her ministry of encouragement — never letting a birthday, anniversary, or achievement pass without a handwritten card and a phone call.",
-    scripture: "Psalm 95:1",
-    scripture_text: "Come, let us sing for joy to the Lord; let us shout aloud to the Rock of our salvation.",
-    favorite_hymn: "Total Praise",
-    church_roles: ["Gospel Choir", "Deaconess Board", "Hospitality Ministry"],
-    family_message: "Mom sang her way into heaven. We know she’s leading the angel choir now. We love you forever.",
-    is_published: true,
-    photos: [
-      { id: "mp4", memorial_id: "mem4", image_url: "/images/placeholder-memorial.jpg", caption: "Sister Singleton leading the choir, Easter 2022", uploaded_by: "p8", created_at: "2024-06-10" },
-      { id: "mp5", memorial_id: "mem4", image_url: "/images/placeholder-memorial.jpg", caption: "Christmas Cantata, 2019", uploaded_by: "p8", created_at: "2024-06-10" },
-      { id: "mp6", memorial_id: "mem4", image_url: "/images/placeholder-memorial.jpg", caption: "With the Deaconess Board, Church Anniversary 2023", uploaded_by: "p8", created_at: "2024-06-10" },
-    ],
-    comments: [
-      { id: "mc7", memorial_id: "mem4", profile_id: "p10", author_name: "Mae Robinson", body: "When Carolyn sang, you could feel heaven open up. The choir will never sound the same without her.", created_at: "2024-06-08" },
-      { id: "mc8", memorial_id: "mem4", profile_id: "p13", author_name: "Gloria Campbell", body: "She sent me a card for every single birthday since I was born. That kind of love is rare. Rest in peace, Sister Singleton.", created_at: "2024-06-12" },
-    ],
-    created_at: "2024-06-07",
-    updated_at: "2024-06-12",
-  },
-];

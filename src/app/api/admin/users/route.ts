@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth/require-admin";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAuditEvent, getClientInfo } from "@/lib/security/audit";
 import { ALL_ROLES } from "@/lib/auth/roles";
 
 export async function GET() {
-  const auth = await requireSuperAdmin();
+  const auth = await requireAdmin();
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   const admin = createAdminClient();
-  // Get all profiles that hold at least one admin-capable role
+  // Get all member profiles so admins can manage anyone's roles
   const { data, error } = await admin
     .from("profiles")
     .select("id, first_name, last_name, email, role, created_at, user_roles(role)")
-    .in("role", ["admin", "super_admin", "pastor", "finance"])
     .order("last_name");
 
   if (error) return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
@@ -21,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireSuperAdmin();
+  const auth = await requireAdmin();
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   let body: Record<string, unknown>;

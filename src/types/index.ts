@@ -3,6 +3,8 @@ export type UserRole =
   | "deacon"
   | "minister"
   | "musician"
+  | "finance"
+  | "pastor"
   | "admin"
   | "super_admin";
 
@@ -25,6 +27,7 @@ export interface Profile {
   birthday?: string;
   anniversary?: string;
   ward_id?: string;
+  ward_name?: string;
   family_id?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
@@ -275,7 +278,7 @@ export type FamilyRelationship = "head" | "spouse" | "child" | "parent" | "sibli
 
 export interface Family {
   id: string;
-  family_name: string;
+  name: string;
   created_at: string;
   updated_at: string;
   members?: FamilyMember[];

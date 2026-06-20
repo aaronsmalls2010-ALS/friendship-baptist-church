@@ -25,7 +25,7 @@ export async function GET() {
     const { data: ministries, error: ministriesError } = await admin
       .from("ministries")
       .select("*")
-      .eq("active", true)
+      .eq("is_active", true)
       .order("name", { ascending: true });
 
     if (ministriesError) {
@@ -76,6 +76,87 @@ export async function GET() {
 }
 
 /**
+ * DELETE /api/portal/ministries
+ *
+ * Leave a ministry the user is currently a member of.
+ * Body: { ministry_id: string }
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { ministry_id } = body;
+
+    if (!ministry_id || typeof ministry_id !== "string") {
+      return NextResponse.json(
+        { error: "ministry_id is required" },
+        { status: 400 }
+      );
+    }
+
+    const admin = createAdminClient();
+
+    const { data: membership, error: fetchError } = await admin
+      .from("ministry_members")
+      .select("id, status")
+      .eq("ministry_id", ministry_id)
+      .eq("profile_id", user.id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("[PORTAL] Check membership error:", fetchError);
+      return NextResponse.json(
+        { error: "Failed to check membership" },
+        { status: 500 }
+      );
+    }
+
+    if (!membership) {
+      return NextResponse.json(
+        { error: "You are not a member of this ministry" },
+        { status: 404 }
+      );
+    }
+
+    const { error: deleteError } = await admin
+      .from("ministry_members")
+      .delete()
+      .eq("id", membership.id);
+
+    if (deleteError) {
+      console.error("[PORTAL] Leave ministry error:", deleteError);
+      return NextResponse.json(
+        { error: "Failed to leave ministry" },
+        { status: 500 }
+      );
+    }
+
+    console.log("[AUDIT] ministry.leave", {
+      ministryId: ministry_id,
+      profileId: user.id,
+      previousStatus: membership.status,
+      timestamp: new Date().toISOString(),
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("[PORTAL] Ministries DELETE error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * POST /api/portal/ministries
  *
  * Request to join a ministry.
@@ -110,7 +191,7 @@ export async function POST(request: NextRequest) {
       .from("ministries")
       .select("id, name")
       .eq("id", ministry_id)
-      .eq("active", true)
+      .eq("is_active", true)
       .single();
 
     if (ministryError || !ministry) {

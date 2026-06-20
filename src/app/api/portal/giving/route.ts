@@ -22,7 +22,7 @@ export async function GET() {
       .from("donations")
       .select("*")
       .eq("profile_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("date", { ascending: false });
 
     if (error) {
       console.error("[PORTAL] Fetch donations error:", error);

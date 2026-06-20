@@ -43,7 +43,7 @@ export async function GET() {
       .select("*")
       .eq("is_published", true)
       .lte("start_date", now)
-      .gte("end_date", now)
+      .or(`end_date.is.null,end_date.gte.${now}`)
       .order("created_at", { ascending: false })
       .limit(3);
 
@@ -56,10 +56,10 @@ export async function GET() {
 
     const { data: yearDonations, error: donationsError } = await supabase
       .from("donations")
-      .select("amount, created_at")
+      .select("amount, date")
       .eq("profile_id", user.id)
-      .gte("created_at", startOfYear)
-      .order("created_at", { ascending: false });
+      .gte("date", startOfYear)
+      .order("date", { ascending: false });
 
     if (donationsError) {
       console.error("[PORTAL] Dashboard fetch donations error:", donationsError);

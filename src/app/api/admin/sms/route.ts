@@ -3,12 +3,38 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { toE164 } from "@/lib/phone";
 
+function extractPhones(profiles: Record<string, unknown>[]): string[] {
+  return profiles
+    .filter((p) => p.sms_opt_in === true)
+    .map((p) => p.phone as string)
+    .filter((phone: string | null): phone is string => !!phone && phone.length >= 10);
+}
+
 async function getRecipientPhones(
   admin: ReturnType<typeof createAdminClient>,
   recipientGroup: string,
-  customNumbers?: string[]
+  customNumbers?: string[],
+  groupId?: string
 ): Promise<string[]> {
   if (recipientGroup === "custom" && customNumbers) return customNumbers;
+
+  if (recipientGroup === "ward" && groupId) {
+    const { data } = await admin.from("profiles").select("phone, sms_opt_in").eq("ward_id", groupId);
+    return data ? extractPhones(data) : [];
+  }
+
+  if (recipientGroup === "family" && groupId) {
+    const { data } = await admin.from("profiles").select("phone, sms_opt_in").eq("family_id", groupId);
+    return data ? extractPhones(data) : [];
+  }
+
+  if (recipientGroup === "ministry" && groupId) {
+    const { data: members } = await admin.from("ministry_members").select("profile_id").eq("ministry_id", groupId);
+    if (!members || members.length === 0) return [];
+    const ids = members.map((m: Record<string, unknown>) => m.profile_id as string);
+    const { data } = await admin.from("profiles").select("phone, sms_opt_in").in("id", ids);
+    return data ? extractPhones(data) : [];
+  }
 
   let query = admin.from("profiles").select("phone, sms_opt_in");
   if (recipientGroup === "deacons") query = query.in("role", ["deacon"]);
@@ -16,26 +42,40 @@ async function getRecipientPhones(
 
   const { data: profiles, error } = await query;
   if (error || !profiles) return [];
-
-  return profiles
-    .filter((p: Record<string, unknown>) => p.sms_opt_in === true)
-    .map((p: Record<string, unknown>) => p.phone as string)
-    .filter((phone: string | null): phone is string => !!phone && phone.length >= 10);
+  return extractPhones(profiles);
 }
 
 async function getTotalCount(
   admin: ReturnType<typeof createAdminClient>,
-  recipientGroup: string
+  recipientGroup: string,
+  groupId?: string
 ): Promise<{ total: number; opted_in: number }> {
-  let query = admin.from("profiles").select("sms_opt_in");
-  if (recipientGroup === "deacons") query = query.in("role", ["deacon"]);
-  else if (recipientGroup === "leaders") query = query.in("role", ["admin", "super_admin", "minister", "deacon", "pastor"]);
+  let profiles: Record<string, unknown>[] | null = null;
 
-  const { data } = await query;
-  if (!data) return { total: 0, opted_in: 0 };
+  if (recipientGroup === "ward" && groupId) {
+    const { data } = await admin.from("profiles").select("sms_opt_in").eq("ward_id", groupId);
+    profiles = data;
+  } else if (recipientGroup === "family" && groupId) {
+    const { data } = await admin.from("profiles").select("sms_opt_in").eq("family_id", groupId);
+    profiles = data;
+  } else if (recipientGroup === "ministry" && groupId) {
+    const { data: members } = await admin.from("ministry_members").select("profile_id").eq("ministry_id", groupId);
+    if (!members || members.length === 0) return { total: 0, opted_in: 0 };
+    const ids = members.map((m: Record<string, unknown>) => m.profile_id as string);
+    const { data } = await admin.from("profiles").select("sms_opt_in").in("id", ids);
+    profiles = data;
+  } else {
+    let query = admin.from("profiles").select("sms_opt_in");
+    if (recipientGroup === "deacons") query = query.in("role", ["deacon"]);
+    else if (recipientGroup === "leaders") query = query.in("role", ["admin", "super_admin", "minister", "deacon", "pastor"]);
+    const { data } = await query;
+    profiles = data;
+  }
+
+  if (!profiles) return { total: 0, opted_in: 0 };
   return {
-    total: data.length,
-    opted_in: data.filter((p: Record<string, unknown>) => p.sms_opt_in === true).length,
+    total: profiles.length,
+    opted_in: profiles.filter((p: Record<string, unknown>) => p.sms_opt_in === true).length,
   };
 }
 
@@ -46,11 +86,26 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient();
   const { searchParams } = new URL(request.url);
 
-  // ?count=true&group=X — return opt-in count for the given group
+  // ?count=true&group=X&groupId=Y — return opt-in count for the given group
   if (searchParams.get("count") === "true") {
     const group = searchParams.get("group") ?? "all";
-    const counts = await getTotalCount(admin, group);
+    const groupId = searchParams.get("groupId") ?? undefined;
+    const counts = await getTotalCount(admin, group, groupId);
     return NextResponse.json(counts);
+  }
+
+  // ?lists=true — return wards, families, ministries for the SMS recipient picker
+  if (searchParams.get("lists") === "true") {
+    const [wardsRes, familiesRes, ministriesRes] = await Promise.all([
+      admin.from("wards").select("id, name").order("name"),
+      admin.from("families").select("id, name").order("name"),
+      admin.from("ministries").select("id, name").eq("is_active", true).order("name"),
+    ]);
+    return NextResponse.json({
+      wards: wardsRes.data ?? [],
+      families: familiesRes.data ?? [],
+      ministries: ministriesRes.data ?? [],
+    });
   }
 
   const { data: messages, error } = await admin
@@ -79,7 +134,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { recipientGroup, message, customNumbers } = body;
+  const { recipientGroup, message, customNumbers, groupId } = body;
 
   if (!recipientGroup || !message)
     return NextResponse.json({ error: "recipientGroup and message are required" }, { status: 400 });
@@ -87,7 +142,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Message must be 160 characters or less" }, { status: 400 });
 
   const admin = createAdminClient();
-  const phoneNumbers = await getRecipientPhones(admin, recipientGroup, customNumbers);
+  const phoneNumbers = await getRecipientPhones(admin, recipientGroup, customNumbers, groupId);
 
   if (phoneNumbers.length === 0)
     return NextResponse.json({ error: "No recipients with valid opted-in phone numbers found" }, { status: 400 });

@@ -20,7 +20,7 @@ export async function GET() {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -123,12 +123,12 @@ export async function PUT(request: Request) {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const body = await request.json();
-    const { id, ...fields } = body;
+    const { id, ...raw } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -136,6 +136,10 @@ export async function PUT(request: Request) {
         { status: 400 }
       );
     }
+
+    const allowed = ["name", "description", "deacon_id"];
+    const fields: Record<string, unknown> = {};
+    for (const k of allowed) { if (k in raw) fields[k] = raw[k]; }
 
     const admin = createAdminClient();
 
@@ -193,7 +197,7 @@ export async function DELETE(request: Request) {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

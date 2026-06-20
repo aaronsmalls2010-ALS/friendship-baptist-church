@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatDate } from "@/lib/utils";
+import { formatDate, toEasternInputValue, fromEasternInputValue } from "@/lib/utils";
 import type { Event } from "@/types";
 import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
 
@@ -80,8 +80,8 @@ export default function EventManagementPage() {
     setEditingEvent(event);
     setFormTitle(event.title);
     setFormDescription(event.description);
-    setFormStartDate(event.start_date ? event.start_date.slice(0, 16) : "");
-    setFormEndDate(event.end_date ? event.end_date.slice(0, 16) : "");
+    setFormStartDate(event.start_date ? toEasternInputValue(event.start_date) : "");
+    setFormEndDate(event.end_date ? toEasternInputValue(event.end_date) : "");
     setFormLocation(event.location ?? "");
     setFormRsvpEnabled(event.rsvp_enabled);
     setFormIsPublished(event.is_published);
@@ -92,8 +92,8 @@ export default function EventManagementPage() {
     const payload = {
       title: formTitle,
       description: formDescription,
-      start_date: formStartDate,
-      end_date: formEndDate || undefined,
+      start_date: fromEasternInputValue(formStartDate),
+      end_date: formEndDate ? fromEasternInputValue(formEndDate) : undefined,
       location: formLocation || undefined,
       rsvp_enabled: formRsvpEnabled,
       is_published: formIsPublished,

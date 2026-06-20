@@ -61,15 +61,17 @@ export async function POST(request: NextRequest) {
 
     const admin = createAdminClient();
 
-    // Ensure the avatars bucket exists (idempotent)
+    // Ensure the avatars bucket exists and is public (idempotent)
     const { data: buckets } = await admin.storage.listBuckets();
-    const bucketExists = buckets?.some((b) => b.name === BUCKET_NAME);
-    if (!bucketExists) {
+    const bucket = buckets?.find((b) => b.name === BUCKET_NAME);
+    if (!bucket) {
       await admin.storage.createBucket(BUCKET_NAME, {
         public: true,
         fileSizeLimit: MAX_SIZE_BYTES,
         allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
       });
+    } else if (!bucket.public) {
+      await admin.storage.updateBucket(BUCKET_NAME, { public: true });
     }
 
     // Upload (upsert) the file

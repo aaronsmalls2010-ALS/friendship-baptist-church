@@ -29,7 +29,7 @@ export async function POST(
     }
 
     const callerRole = user.user_metadata?.role || user.app_metadata?.role;
-    if (callerRole !== "admin" && callerRole !== "super_admin") {
+    if (callerRole !== "admin" && callerRole !== "super_admin" && callerRole !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

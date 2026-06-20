@@ -26,13 +26,18 @@ export async function GET() {
 
     // Normalize: use date_of_birth or birthday field, whichever exists
     const birthdays = (profiles || [])
-      .map((p: Record<string, string | null>) => ({
-        id: p.id,
-        first_name: p.first_name || "",
-        last_name: p.last_name || "",
-        date_of_birth: p.date_of_birth || p.birthday || null,
-      }))
-      .filter((p: { date_of_birth: string | null }) => p.date_of_birth !== null);
+      .map((p: Record<string, string | null>) => {
+        const dob = p.date_of_birth || p.birthday || null;
+        if (!dob) return null;
+        const [, month, day] = dob.split("-");
+        return {
+          id: p.id,
+          first_name: p.first_name || "",
+          last_name: (p.last_name || "").charAt(0) + ".",
+          date_of_birth: `2000-${month}-${day}`,
+        };
+      })
+      .filter(Boolean);
 
     return NextResponse.json({ birthdays });
   } catch (err) {

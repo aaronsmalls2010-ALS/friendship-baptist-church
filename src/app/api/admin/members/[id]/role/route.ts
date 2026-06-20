@@ -39,7 +39,7 @@ export async function PATCH(
 
     const callerRoles = rolesFromUser(user);
     const callerIsAdmin = callerRoles.some(
-      (r) => r === "admin" || r === "super_admin"
+      (r) => r === "admin" || r === "super_admin" || r === "pastor"
     );
     const callerIsSuperAdmin = callerRoles.includes("super_admin");
     if (!callerIsAdmin) {
@@ -96,13 +96,13 @@ export async function PATCH(
       return NextResponse.json({ roles: desired, primaryRole: primaryRole(desired) });
     }
 
-    // Only super_admin may grant/revoke admin-level roles.
+    // Only admins (admin / pastor / super_admin) may grant/revoke admin-level roles.
     const touchesAdminLevel = [...toAdd, ...toRemove].some((r) =>
       ADMIN_LEVEL_ROLES.includes(r)
     );
-    if (touchesAdminLevel && !callerIsSuperAdmin) {
+    if (touchesAdminLevel && !callerIsAdmin) {
       return NextResponse.json(
-        { error: "Only super admins can grant or revoke admin-level roles." },
+        { error: "Only admins can grant or revoke admin-level roles." },
         { status: 403 }
       );
     }

@@ -39,13 +39,13 @@ export async function GET() {
 
     let memberships: Array<{
       profile_id: string;
-      ministries: { name: string } | { name: string }[] | null;
+      ministries: { id: string; name: string } | { id: string; name: string }[] | null;
     }> = [];
 
     if (profileIds.length > 0) {
       const { data: membershipData, error: membershipsError } = await admin
         .from("ministry_members")
-        .select("profile_id, ministries(name)")
+        .select("profile_id, ministries(id, name)")
         .in("profile_id", profileIds)
         .eq("status", "approved");
 
@@ -57,29 +57,34 @@ export async function GET() {
       }
     }
 
-    // Build a map of profile_id -> ministry names
-    const ministryMap = new Map<string, string[]>();
+    // Build a map of profile_id -> ministry objects {id, name}
+    const ministryMap = new Map<string, { ministry_id: string; name: string }[]>();
+    const allMinistries = new Map<string, string>();
+
     for (const m of memberships) {
-      const names = ministryMap.get(m.profile_id) ?? [];
+      const list = ministryMap.get(m.profile_id) ?? [];
       if (m.ministries) {
-        if (Array.isArray(m.ministries)) {
-          for (const min of m.ministries) {
-            if (min.name) names.push(min.name);
+        const items = Array.isArray(m.ministries) ? m.ministries : [m.ministries];
+        for (const min of items) {
+          if (min.name) {
+            list.push({ ministry_id: min.id ?? "", name: min.name });
+            if (min.id) allMinistries.set(min.id, min.name);
           }
-        } else if (m.ministries.name) {
-          names.push(m.ministries.name);
         }
       }
-      ministryMap.set(m.profile_id, names);
+      ministryMap.set(m.profile_id, list);
     }
 
-    // Merge ministry names into profiles
+    // Merge ministry objects into profiles
     const directory = (profiles ?? []).map((profile) => ({
       ...profile,
       ministries: ministryMap.get(profile.id) ?? [],
     }));
 
-    return NextResponse.json({ directory });
+    // Return distinct ministries list for filter dropdown
+    const ministriesList = Array.from(allMinistries.entries()).map(([id, name]) => ({ id, name }));
+
+    return NextResponse.json({ directory, ministries: ministriesList });
   } catch (err) {
     console.error("[PORTAL] Directory GET error:", err);
     return NextResponse.json(

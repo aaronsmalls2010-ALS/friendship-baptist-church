@@ -27,7 +27,7 @@ export const ADMIN_ROLES: readonly Role[] = ["admin", "super_admin", "pastor"];
 export const ADMIN_LEVEL_ROLES: readonly Role[] = ["admin", "super_admin", "pastor"];
 
 // Roles that can view / manage financial data
-export const FINANCE_ROLES: readonly Role[] = ["finance", "pastor", "super_admin"];
+export const FINANCE_ROLES: readonly Role[] = ["finance", "admin", "pastor", "super_admin"];
 
 // Higher number = higher precedence. Mirrors the Postgres `user_role` enum order.
 const PRECEDENCE: Record<Role, number> = {

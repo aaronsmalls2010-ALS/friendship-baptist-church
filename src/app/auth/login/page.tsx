@@ -117,7 +117,7 @@ function LoginForm() {
       // Success — the server set the session cookies. Use a full-page
       // navigation so middleware and the session re-read cleanly from cookies.
       const role = data.user?.role;
-      if (role === "admin" || role === "super_admin") {
+      if (role === "admin" || role === "super_admin" || role === "pastor") {
         window.location.href = "/admin";
       } else {
         window.location.href = "/portal/profile";

@@ -13,7 +13,7 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { Database, CreditCard, MessageSquare, Check, Upload, Video, Building, CheckCircle, XCircle } from "lucide-react";
 import { useSiteSettings } from "@/contexts/site-settings-context";
 import { createClient } from "@/lib/supabase/client";
-import { isSuperAdmin } from "@/lib/auth/roles";
+import { isAdmin } from "@/lib/auth/roles";
 
 type Toast = { message: string; type: "success" | "error" } | null;
 
@@ -21,7 +21,7 @@ export default function SettingsPage() {
   const { watchLiveEnabled, toggleWatchLive } = useSiteSettings();
   const [watchLiveLoading, setWatchLiveLoading] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
-  const [isSA, setIsSA] = useState(false);
+  const [isAdminUser, setIsAdminUser] = useState(false);
   const [orgLoading, setOrgLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -54,7 +54,7 @@ export default function SettingsPage() {
     async function load() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setIsSA(isSuperAdmin(user));
+      if (user) setIsAdminUser(isAdmin(user));
 
       const res = await fetch("/api/admin/settings/organization");
       if (res.ok) {
@@ -166,7 +166,7 @@ export default function SettingsPage() {
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            {isSA && <TabsTrigger value="organization">Organization</TabsTrigger>}
+            {isAdminUser && <TabsTrigger value="organization">Organization</TabsTrigger>}
           </TabsList>
 
           {/* General */}
@@ -368,7 +368,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           {/* Organization — super_admin only */}
-          {isSA && (
+          {isAdminUser && (
             <TabsContent value="organization">
               <Card>
                 <CardHeader>

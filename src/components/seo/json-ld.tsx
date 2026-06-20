@@ -1,21 +1,16 @@
-import Script from "next/script";
-
 interface JsonLdProps {
   data: Record<string, unknown> | Record<string, unknown>[];
 }
 
 export function JsonLd({ data }: JsonLdProps) {
   return (
-    <Script
-      id="json-ld"
+    <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-      strategy="beforeInteractive"
     />
   );
 }
 
-// Pre-built schemas for common use
 export const churchSchema = {
   "@context": "https://schema.org",
   "@type": "Church",
@@ -29,7 +24,6 @@ export const churchSchema = {
     "addressRegion": "SC",
     "addressCountry": "US",
   },
-  "telephone": "",
   "founder": {
     "@type": "Person",
     "name": "Pastor Isiah Smalls",

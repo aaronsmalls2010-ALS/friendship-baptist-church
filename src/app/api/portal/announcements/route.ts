@@ -26,7 +26,7 @@ export async function GET() {
       .select("*")
       .eq("is_published", true)
       .lte("start_date", now)
-      .gte("end_date", now)
+      .or(`end_date.is.null,end_date.gte.${now}`)
       .order("created_at", { ascending: false });
 
     if (error) {

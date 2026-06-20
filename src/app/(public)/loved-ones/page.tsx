@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { PageHero } from "@/components/shared/page-hero";
@@ -8,8 +8,7 @@ import { ScriptureDivider } from "@/components/shared/scripture-divider";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_MEMORIALS } from "@/lib/mock-data";
-import { formatDate } from "@/lib/utils";
+import type { Memorial } from "@/types";
 import {
   Search,
   Heart,
@@ -18,9 +17,9 @@ import {
   Users,
   ChevronRight,
   Flower2,
+  Loader2,
 } from "lucide-react";
 
-// Slow, reverent animation variants
 const cardVariants = {
   hidden: { opacity: 0, y: 40, scale: 0.97 },
   visible: (i: number) => ({
@@ -57,26 +56,30 @@ function formatLifespan(birth?: string, passing?: string) {
 
 export default function LovedOnesPage() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [memorials, setMemorials] = useState<Memorial[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const published = useMemo(
-    () => MOCK_MEMORIALS.filter((m) => m.is_published),
-    []
-  );
+  useEffect(() => {
+    fetch("/api/public/memorials")
+      .then((r) => r.json())
+      .then((data) => setMemorials(data.memorials ?? []))
+      .catch(() => setMemorials([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
-    if (!searchTerm) return published;
+    if (!searchTerm) return memorials;
     const term = searchTerm.toLowerCase();
-    return published.filter(
+    return memorials.filter(
       (m) =>
         m.first_name.toLowerCase().includes(term) ||
         m.last_name.toLowerCase().includes(term) ||
         m.church_roles?.some((r) => r.toLowerCase().includes(term))
     );
-  }, [searchTerm, published]);
+  }, [searchTerm, memorials]);
 
   return (
     <>
-      {/* Hero — warm, reverent tone */}
       <PageHero
         title="Loved Ones Gone Home"
         subtitle="Hall of Angels"
@@ -86,7 +89,6 @@ export default function LovedOnesPage() {
         ]}
       />
 
-      {/* Intro */}
       <section className="section-padding bg-white">
         <div className="container-wide max-w-3xl text-center">
           <motion.div
@@ -109,7 +111,6 @@ export default function LovedOnesPage() {
         </div>
       </section>
 
-      {/* Search */}
       <section className="bg-warm-50 py-6">
         <div className="container-wide max-w-md">
           <FadeIn>
@@ -127,14 +128,22 @@ export default function LovedOnesPage() {
         </div>
       </section>
 
-      {/* Memorial Cards — Obituary-Style Directory */}
       <section className="section-padding bg-gradient-to-b from-warm-50 to-white">
         <div className="container-wide">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="mx-auto max-w-md rounded-xl border border-warm-200 bg-white p-12 text-center">
+              <Loader2 className="mx-auto mb-3 h-10 w-10 text-purple-400 animate-spin" />
+              <p className="text-warm-500">Loading memorials...</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <FadeIn>
               <div className="mx-auto max-w-md rounded-xl border border-warm-200 bg-white p-12 text-center">
                 <Heart className="mx-auto mb-3 h-10 w-10 text-warm-300" />
-                <p className="text-warm-500">No memorials match your search.</p>
+                <p className="text-warm-500">
+                  {searchTerm
+                    ? "No memorials match your search."
+                    : "No memorials have been added yet."}
+                </p>
               </div>
             </FadeIn>
           ) : (
@@ -156,11 +165,9 @@ export default function LovedOnesPage() {
                       className="group block"
                     >
                       <div className="relative overflow-hidden rounded-2xl border border-warm-200 bg-white shadow-sm transition-all duration-500 hover:shadow-xl hover:border-purple-200">
-                        {/* Top decorative accent */}
                         <div className="h-2 bg-gradient-to-r from-purple-600 via-purple-400 to-gold-400" />
 
                         <div className="p-6 sm:p-8">
-                          {/* Portrait Area */}
                           <div className="mb-6 flex justify-center">
                             <div className="relative">
                               <div className="flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-peach-100 ring-4 ring-white shadow-lg">
@@ -177,14 +184,12 @@ export default function LovedOnesPage() {
                                   </span>
                                 )}
                               </div>
-                              {/* Decorative cross */}
                               <div className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full bg-gold-100 text-gold-600 shadow-sm ring-2 ring-white">
                                 <span className="text-sm">&#10013;</span>
                               </div>
                             </div>
                           </div>
 
-                          {/* Name — obituary front style */}
                           <div className="text-center">
                             <h3 className="font-heading text-xl font-bold text-warm-900 group-hover:text-purple-800 transition-colors duration-500">
                               {memorial.first_name} {memorial.last_name}
@@ -194,14 +199,12 @@ export default function LovedOnesPage() {
                             </p>
                           </div>
 
-                          {/* Divider */}
                           <div className="my-4 flex items-center gap-3">
                             <div className="h-px flex-1 bg-warm-200" />
                             <Flower2 className="h-3.5 w-3.5 text-warm-300" />
                             <div className="h-px flex-1 bg-warm-200" />
                           </div>
 
-                          {/* Roles */}
                           {memorial.church_roles && memorial.church_roles.length > 0 && (
                             <div className="mb-4 flex flex-wrap justify-center gap-1.5">
                               {memorial.church_roles.map((role, idx) => (
@@ -216,7 +219,6 @@ export default function LovedOnesPage() {
                             </div>
                           )}
 
-                          {/* Scripture */}
                           {memorial.scripture && (
                             <div className="mb-4 flex items-center justify-center gap-1.5 text-xs text-warm-400">
                               <BookOpen className="h-3 w-3" />
@@ -224,7 +226,6 @@ export default function LovedOnesPage() {
                             </div>
                           )}
 
-                          {/* Favorite Hymn */}
                           {memorial.favorite_hymn && (
                             <div className="mb-4 flex items-center justify-center gap-1.5 text-xs text-warm-400">
                               <Music className="h-3 w-3" />
@@ -232,16 +233,14 @@ export default function LovedOnesPage() {
                             </div>
                           )}
 
-                          {/* Preview of obituary */}
                           <p className="text-center text-sm text-warm-500 leading-relaxed line-clamp-3">
                             {memorial.obituary}
                           </p>
 
-                          {/* Footer Stats */}
                           <div className="mt-5 flex items-center justify-between border-t border-warm-100 pt-4 text-xs text-warm-400">
                             <div className="flex items-center gap-1">
                               <Heart className="h-3 w-3" />
-                              <span>{memorial.comments.length} tribute{memorial.comments.length !== 1 ? "s" : ""}</span>
+                              <span>{memorial.comments?.length ?? 0} tribute{(memorial.comments?.length ?? 0) !== 1 ? "s" : ""}</span>
                             </div>
                             <div className="flex items-center gap-1 text-purple-500 group-hover:text-purple-700 transition-colors duration-500">
                               <span className="font-medium">View Memorial</span>
@@ -259,13 +258,11 @@ export default function LovedOnesPage() {
         </div>
       </section>
 
-      {/* Scripture Divider */}
       <ScriptureDivider
         reference="Revelation 21:4"
         text="He will wipe every tear from their eyes. There will be no more death or mourning or crying or pain, for the old order of things has passed away."
       />
 
-      {/* CTA for members */}
       <section className="section-padding bg-white">
         <div className="container-wide max-w-2xl text-center">
           <FadeIn>

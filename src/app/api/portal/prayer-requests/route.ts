@@ -34,13 +34,19 @@ export async function POST(request: NextRequest) {
   if (!prayerRequest || !name)
     return NextResponse.json({ error: "name and request are required" }, { status: 400 });
 
+  const safeName = String(name).trim().slice(0, 200);
+  const safeRequest = String(prayerRequest).trim().slice(0, 5000);
+  const safeCategory = category ? String(category).trim().slice(0, 100) : null;
+  if (!safeName || !safeRequest)
+    return NextResponse.json({ error: "name and request are required" }, { status: 400 });
+
   const admin = createAdminClient();
   const { error } = await admin.from("prayer_requests").insert({
     profile_id: user.id,
-    name: String(name).trim(),
-    request: String(prayerRequest).trim(),
+    name: safeName,
+    request: safeRequest,
     is_public: Boolean(is_public),
-    category: category ?? null,
+    category: safeCategory,
     status: "pending",
   });
 

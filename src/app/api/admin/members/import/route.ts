@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth/require-admin";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAuditEvent, getClientInfo } from "@/lib/security/audit";
 
@@ -25,7 +25,7 @@ function parseCsv(text: string): CsvRow[] {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireSuperAdmin();
+  const auth = await requireAdmin();
   if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
   let body: { csv: string; preview?: boolean };
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       last_name: r.last_name,
       email: r.email || null,
       phone: r.phone || null,
-      role: (r.role as string) || "member",
+      role: "member",
     }));
 
   if (toInsert.length === 0) return NextResponse.json({ ok: true, imported: 0, skipped: rows.length });

@@ -25,7 +25,7 @@ export async function GET() {
   const { data: memberRows } = await admin
     .from("family_members")
     .select(
-      "family_id, profile_id, relationship, profiles(first_name, last_name, email)"
+      "family_id, profile_id, relationship, profiles(first_name, last_name, email, photo_url)"
     );
 
   const membersByFamily = new Map<string, unknown[]>();

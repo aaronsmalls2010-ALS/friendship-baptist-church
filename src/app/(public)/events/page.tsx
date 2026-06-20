@@ -47,7 +47,7 @@ export default function EventsPage() {
         setEvents(eventsData.events ?? []);
         setMinistries(ministriesData.ministries ?? []);
 
-        // Convert birthday data into Event objects
+        // Convert birthday data into Event objects for current year
         const currentYear = new Date().getFullYear();
         const bdays: Event[] = (birthdaysData.birthdays ?? [])
           .map(
@@ -77,8 +77,7 @@ export default function EventsPage() {
                 created_at: new Date().toISOString(),
               } as Event;
             }
-          )
-          .filter(Boolean);
+          );
         setBirthdayEvents(bdays);
       } catch (err) {
         console.error("Failed to load events:", err);

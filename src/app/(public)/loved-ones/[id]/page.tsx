@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PageHero } from "@/components/shared/page-hero";
 import { FadeIn } from "@/components/motion/fade-in";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_MEMORIALS } from "@/lib/mock-data";
+import type { Memorial } from "@/types";
 import { formatDate } from "@/lib/utils";
 import {
   Heart,
@@ -20,11 +20,9 @@ import {
   Quote,
   Camera,
   MessageCircle,
-  Calendar,
-  Users,
+  Loader2,
 } from "lucide-react";
 
-/* ── Slow, reverent animation presets ──────────────────────────────── */
 const sectionFade = {
   hidden: { opacity: 0, y: 30 },
   visible: {
@@ -77,12 +75,40 @@ export default function MemorialProfilePage() {
   const params = useParams();
   const id = params.id as string;
 
-  const memorial = useMemo(
-    () => MOCK_MEMORIALS.find((m) => m.id === id && m.is_published),
-    [id]
-  );
-
+  const [memorial, setMemorial] = useState<Memorial | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentPhoto, setCurrentPhoto] = useState(0);
+
+  useEffect(() => {
+    fetch("/api/public/memorials")
+      .then((r) => r.json())
+      .then((data) => {
+        const found = (data.memorials ?? []).find(
+          (m: Memorial) => m.id === id && m.is_published
+        );
+        setMemorial(found ?? null);
+      })
+      .catch(() => setMemorial(null))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <>
+        <PageHero
+          title="Loading..."
+          overlay="warm"
+          breadcrumbs={[{ label: "Loved Ones", href: "/loved-ones" }]}
+        />
+        <section className="section-padding bg-white">
+          <div className="container-wide text-center">
+            <Loader2 className="mx-auto mb-4 h-12 w-12 text-purple-400 animate-spin" />
+            <p className="text-warm-500">Loading memorial...</p>
+          </div>
+        </section>
+      </>
+    );
+  }
 
   if (!memorial) {
     return (
@@ -91,7 +117,7 @@ export default function MemorialProfilePage() {
           title="Memorial Not Found"
           overlay="warm"
           breadcrumbs={[
-                        { label: "Loved Ones", href: "/loved-ones" },
+            { label: "Loved Ones", href: "/loved-ones" },
           ]}
         />
         <section className="section-padding bg-white">
@@ -114,7 +140,8 @@ export default function MemorialProfilePage() {
   const fullName = `${memorial.first_name} ${memorial.last_name}`;
   const dates = formatLifespan(memorial.date_of_birth, memorial.date_of_passing);
   const age = yearsLived(memorial.date_of_birth, memorial.date_of_passing);
-  const photos = memorial.photos;
+  const photos = memorial.photos ?? [];
+  const comments = memorial.comments ?? [];
   const hasPhotos = photos.length > 0;
 
   const nextPhoto = () =>
@@ -124,20 +151,17 @@ export default function MemorialProfilePage() {
 
   return (
     <>
-      {/* Hero */}
       <PageHero
         title={fullName}
         subtitle={`${dates.birth} — ${dates.passing}`}
         overlay="warm"
         breadcrumbs={[
-                    { label: "Loved Ones", href: "/loved-ones" },
+          { label: "Loved Ones", href: "/loved-ones" },
           { label: fullName },
         ]}
       />
 
-      {/* ── Main Content ─────────────────────────────────────────────── */}
       <article className="bg-white">
-        {/* Portrait & Vitals */}
         <section className="section-padding">
           <div className="container-wide max-w-4xl">
             <motion.div
@@ -147,7 +171,6 @@ export default function MemorialProfilePage() {
               viewport={{ once: true }}
               className="text-center"
             >
-              {/* Portrait */}
               <div className="mb-8 flex justify-center">
                 <div className="relative">
                   <div className="flex h-40 w-40 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-peach-100 ring-4 ring-purple-200 shadow-xl sm:h-48 sm:w-48">
@@ -175,12 +198,10 @@ export default function MemorialProfilePage() {
                 </div>
               </div>
 
-              {/* Name */}
               <h1 className="font-heading text-fluid-3xl font-bold text-warm-900">
                 {fullName}
               </h1>
 
-              {/* Lifespan */}
               <p className="mt-2 text-warm-500 tracking-wider">
                 {dates.birth} &mdash; {dates.passing}
                 {age && (
@@ -188,14 +209,12 @@ export default function MemorialProfilePage() {
                 )}
               </p>
 
-              {/* Divider */}
               <div className="mx-auto my-6 flex max-w-xs items-center gap-3">
                 <div className="h-px flex-1 bg-warm-200" />
                 <Flower2 className="h-4 w-4 text-purple-300" />
                 <div className="h-px flex-1 bg-warm-200" />
               </div>
 
-              {/* Church roles */}
               {memorial.church_roles && memorial.church_roles.length > 0 && (
                 <div className="mb-6 flex flex-wrap justify-center gap-2">
                   {memorial.church_roles.map((role, idx) => (
@@ -210,7 +229,6 @@ export default function MemorialProfilePage() {
                 </div>
               )}
 
-              {/* Quick stats — mobile-friendly contact-page style */}
               <div className="mx-auto grid max-w-md gap-3 sm:grid-cols-2">
                 {memorial.scripture && (
                   <div className="flex items-center gap-3 rounded-xl border border-warm-200 bg-warm-50 p-4">
@@ -235,7 +253,6 @@ export default function MemorialProfilePage() {
           </div>
         </section>
 
-        {/* Scripture Quote Band */}
         {memorial.scripture_text && (
           <motion.section
             variants={sectionFade}
@@ -258,7 +275,6 @@ export default function MemorialProfilePage() {
           </motion.section>
         )}
 
-        {/* Obituary */}
         <section className="section-padding bg-white">
           <div className="container-wide max-w-3xl">
             <motion.div
@@ -279,7 +295,6 @@ export default function MemorialProfilePage() {
           </div>
         </section>
 
-        {/* Family Message */}
         {memorial.family_message && (
           <section className="bg-warm-50 py-12">
             <div className="container-wide max-w-2xl">
@@ -302,7 +317,6 @@ export default function MemorialProfilePage() {
           </section>
         )}
 
-        {/* Photo Gallery — slideshow-style */}
         {hasPhotos && (
           <section className="section-padding bg-white">
             <div className="container-wide max-w-3xl">
@@ -319,7 +333,6 @@ export default function MemorialProfilePage() {
                   </h2>
                 </div>
 
-                {/* Slideshow */}
                 <div className="relative overflow-hidden rounded-2xl bg-warm-100">
                   <div className="aspect-[4/3] sm:aspect-video">
                     <AnimatePresence mode="wait">
@@ -340,7 +353,6 @@ export default function MemorialProfilePage() {
                     </AnimatePresence>
                   </div>
 
-                  {/* Nav arrows */}
                   {photos.length > 1 && (
                     <>
                       <button
@@ -360,7 +372,6 @@ export default function MemorialProfilePage() {
                     </>
                   )}
 
-                  {/* Dots indicator */}
                   {photos.length > 1 && (
                     <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
                       {photos.map((_, idx) => (
@@ -379,7 +390,6 @@ export default function MemorialProfilePage() {
                   )}
                 </div>
 
-                {/* Caption */}
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={currentPhoto}
@@ -397,8 +407,7 @@ export default function MemorialProfilePage() {
           </section>
         )}
 
-        {/* Tributes / Comments */}
-        {memorial.comments.length > 0 && (
+        {comments.length > 0 && (
           <section className="section-padding bg-warm-50">
             <div className="container-wide max-w-3xl">
               <motion.div
@@ -415,7 +424,7 @@ export default function MemorialProfilePage() {
                 </div>
 
                 <div className="space-y-5">
-                  {memorial.comments.map((comment, idx) => (
+                  {comments.map((comment, idx) => (
                     <motion.div
                       key={comment.id}
                       initial={{ opacity: 0, y: 20 }}
@@ -457,7 +466,6 @@ export default function MemorialProfilePage() {
           </section>
         )}
 
-        {/* Back Navigation */}
         <section className="bg-white py-8">
           <div className="container-wide text-center">
             <FadeIn>

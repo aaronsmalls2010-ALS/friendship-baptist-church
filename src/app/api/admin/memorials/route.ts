@@ -27,17 +27,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { first_name, last_name, date_of_passing, obituary, ...rest } = body;
+  const { first_name, last_name, date_of_passing, obituary, photo_url, date_of_birth, is_published } = body;
   if (!first_name || !last_name || !date_of_passing)
     return NextResponse.json({ error: "first_name, last_name, and date_of_passing are required" }, { status: 400 });
 
   const admin = createAdminClient();
-  const { data, error } = await admin.from("memorials").insert({
+  const insertData: Record<string, unknown> = {
     created_by: auth.user.id,
     first_name, last_name, date_of_passing,
     obituary: obituary ?? "",
-    ...rest,
-  }).select("id").single();
+  };
+  if (photo_url !== undefined) insertData.photo_url = photo_url;
+  if (date_of_birth !== undefined) insertData.date_of_birth = date_of_birth;
+  if (is_published !== undefined) insertData.is_published = is_published;
+
+  const { data, error } = await admin.from("memorials").insert(insertData).select("id").single();
 
   if (error) return NextResponse.json({ error: "Failed to create memorial" }, { status: 500 });
 

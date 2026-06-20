@@ -17,6 +17,9 @@ import {
   RefreshCw,
   User,
   CheckCircle,
+  Shield,
+  Phone,
+  Mail,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +45,6 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { ProfilePictureUpload } from "@/components/portal/profile-picture-upload";
 import { AlertDialog } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/utils";
-import { MOCK_DONATIONS } from "@/lib/mock-data";
 import type {
   Profile,
   Ministry,
@@ -202,6 +204,11 @@ export default function MyProfilePage() {
   const [myFamilies, setMyFamilies] = useState<PortalFamily[]>([]);
   const [directory, setDirectory] = useState<DirectoryFamily[]>([]);
   const [ministries, setMinistries] = useState<MinistryWithStatus[]>([]);
+  const [wardInfo, setWardInfo] = useState<{
+    ward: { id: string; name: string; description: string } | null;
+    deacon: { id: string; first_name: string; last_name: string; phone: string; email: string; photo_url: string | null } | null;
+    members: { id: string; first_name: string; last_name: string; phone: string; email: string; photo_url: string | null }[];
+  }>({ ward: null, deacon: null, members: [] });
 
   // ── Loading / error ─────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
@@ -250,6 +257,8 @@ export default function MyProfilePage() {
 
   // ── Ministry actions ────────────────────────────────────────────
   const [joiningMinistryId, setJoiningMinistryId] = useState<string | null>(null);
+  const [leavingMinistryId, setLeavingMinistryId] = useState<string | null>(null);
+  const [donations, setDonations] = useState<Donation[]>([]);
 
   // ── Auto-dismiss toast ──────────────────────────────────────────
   useEffect(() => {
@@ -416,11 +425,13 @@ export default function MyProfilePage() {
   const fetchData = useCallback(async () => {
     try {
       setError("");
-      const [profileRes, familyRes, dirRes, ministriesRes] = await Promise.all([
+      const [profileRes, familyRes, dirRes, ministriesRes, wardRes, givingRes] = await Promise.all([
         fetch("/api/portal/profile"),
         fetch("/api/portal/family"),
         fetch("/api/portal/family/directory"),
         fetch("/api/portal/ministries"),
+        fetch("/api/portal/ward"),
+        fetch("/api/portal/giving"),
       ]);
 
       if (!profileRes.ok) {
@@ -445,6 +456,16 @@ export default function MyProfilePage() {
       if (ministriesRes.ok) {
         const ministriesData = await ministriesRes.json();
         setMinistries(ministriesData.ministries || []);
+      }
+
+      if (wardRes.ok) {
+        const wardData = await wardRes.json();
+        setWardInfo(wardData);
+      }
+
+      if (givingRes.ok) {
+        const givingData = await givingRes.json();
+        setDonations(givingData.donations || []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load profile");
@@ -647,8 +668,36 @@ export default function MyProfilePage() {
     }
   }
 
-  // ── Giving data (mock) ──────────────────────────────────────────
-  const donations: Donation[] = MOCK_DONATIONS;
+  // ── Leave ministry ──────────────────────────────────────────────
+  async function handleLeaveMinistry(ministryId: string) {
+    setLeavingMinistryId(ministryId);
+    try {
+      const res = await fetch("/api/portal/ministries", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ministry_id: ministryId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to leave ministry");
+      setMinistries((prev) =>
+        prev.map((m) =>
+          m.id === ministryId
+            ? { ...m, user_status: null, user_role: null }
+            : m
+        )
+      );
+      setToast({ type: "success", message: "You have left the ministry." });
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to leave ministry",
+      });
+    } finally {
+      setLeavingMinistryId(null);
+    }
+  }
+
+  // ── Giving data ────────────────────────────────────────────────
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
@@ -789,7 +838,7 @@ export default function MyProfilePage() {
               </div>
               {profile.ward_id && (
                 <p className="text-sm text-warm-500 mt-1">
-                  Ward: {profile.ward_id}
+                  Ward: {profile.ward_name ?? profile.ward_id}
                 </p>
               )}
             </div>
@@ -862,28 +911,32 @@ export default function MyProfilePage() {
       <FadeIn direction="up" delay={0.1}>
         <Card className="p-6">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mb-6 h-auto">
-              <TabsTrigger value="personal" className="gap-1.5 text-xs sm:text-sm">
+            <TabsList className="flex flex-wrap w-full mb-6 h-auto gap-1">
+              <TabsTrigger value="personal" className="gap-1.5 text-xs sm:text-sm flex-1 min-w-[80px]">
                 <User className="h-4 w-4 hidden sm:block" />
                 Personal
               </TabsTrigger>
-              <TabsTrigger value="contact" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="contact" className="gap-1.5 text-xs sm:text-sm flex-1 min-w-[80px]">
                 <Heart className="h-4 w-4 hidden sm:block" />
                 Contact
               </TabsTrigger>
-              <TabsTrigger value="family" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="family" className="gap-1.5 text-xs sm:text-sm flex-1 min-w-[80px]">
                 <Users className="h-4 w-4 hidden sm:block" />
                 Family
               </TabsTrigger>
-              <TabsTrigger value="ministries" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="ward" className="gap-1.5 text-xs sm:text-sm flex-1 min-w-[80px]">
+                <Shield className="h-4 w-4 hidden sm:block" />
+                Ward
+              </TabsTrigger>
+              <TabsTrigger value="ministries" className="gap-1.5 text-xs sm:text-sm flex-1 min-w-[80px]">
                 <Church className="h-4 w-4 hidden sm:block" />
                 Ministries
               </TabsTrigger>
-              <TabsTrigger value="giving" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="giving" className="gap-1.5 text-xs sm:text-sm flex-1 min-w-[80px]">
                 <DollarSign className="h-4 w-4 hidden sm:block" />
                 Giving
               </TabsTrigger>
-              <TabsTrigger value="preferences" className="gap-1.5 text-xs sm:text-sm">
+              <TabsTrigger value="preferences" className="gap-1.5 text-xs sm:text-sm flex-1 min-w-[80px]">
                 <Settings className="h-4 w-4 hidden sm:block" />
                 Preferences
               </TabsTrigger>
@@ -1227,7 +1280,112 @@ export default function MyProfilePage() {
             </TabsContent>
 
             {/* ════════════════════════════════════════════════════════
-                Tab 4: Ministries
+                Tab: Ward & Deacon
+                ════════════════════════════════════════════════════════ */}
+            <TabsContent value="ward">
+              {!wardInfo.ward ? (
+                <div className="text-center py-10">
+                  <Shield className="h-12 w-12 text-warm-300 mx-auto mb-3" />
+                  <p className="text-warm-500">You have not been assigned to a ward yet.</p>
+                  <p className="text-sm text-warm-400 mt-1">Contact the church office to be assigned to a ward.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Ward info */}
+                  <div>
+                    <h3 className="font-heading font-bold text-lg text-warm-800 mb-1">{wardInfo.ward.name}</h3>
+                    {wardInfo.ward.description && (
+                      <p className="text-sm text-warm-500">{wardInfo.ward.description}</p>
+                    )}
+                  </div>
+
+                  {/* Deacon card */}
+                  {wardInfo.deacon && (
+                    <Card className="p-5 border-purple-200 bg-purple-50/50">
+                      <h4 className="text-sm font-semibold text-purple-700 uppercase tracking-wider mb-3">Your Deacon</h4>
+                      <div className="flex items-center gap-4">
+                        {wardInfo.deacon.photo_url ? (
+                          <img
+                            src={wardInfo.deacon.photo_url}
+                            alt={`${wardInfo.deacon.first_name} ${wardInfo.deacon.last_name}`}
+                            className="h-14 w-14 rounded-full object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="h-14 w-14 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold text-lg shrink-0">
+                            {getInitials(wardInfo.deacon.first_name, wardInfo.deacon.last_name)}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="font-bold text-warm-800 text-lg">
+                            Deacon {wardInfo.deacon.first_name} {wardInfo.deacon.last_name}
+                          </p>
+                          {wardInfo.deacon.phone && (
+                            <a href={`tel:${wardInfo.deacon.phone}`} className="flex items-center gap-1.5 text-sm text-purple-700 hover:underline mt-1">
+                              <Phone className="h-3.5 w-3.5" />
+                              {wardInfo.deacon.phone}
+                            </a>
+                          )}
+                          {wardInfo.deacon.email && (
+                            <a href={`mailto:${wardInfo.deacon.email}`} className="flex items-center gap-1.5 text-sm text-purple-700 hover:underline mt-0.5">
+                              <Mail className="h-3.5 w-3.5" />
+                              {wardInfo.deacon.email}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Ward members */}
+                  {wardInfo.members.length > 0 && (
+                    <div>
+                      <h4 className="font-heading font-semibold text-warm-800 mb-3">
+                        Ward Members ({wardInfo.members.length})
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {wardInfo.members.map((m) => (
+                          <Card key={m.id} className="p-4">
+                            <div className="flex items-center gap-3">
+                              {m.photo_url ? (
+                                <img
+                                  src={m.photo_url}
+                                  alt={`${m.first_name} ${m.last_name}`}
+                                  className="h-10 w-10 rounded-full object-cover shrink-0"
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-full bg-warm-200 flex items-center justify-center text-warm-600 font-bold text-sm shrink-0">
+                                  {getInitials(m.first_name, m.last_name)}
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-warm-800 text-sm">
+                                  {m.first_name} {m.last_name}
+                                </p>
+                                {m.phone && (
+                                  <a href={`tel:${m.phone}`} className="flex items-center gap-1 text-xs text-warm-500 hover:text-purple-600 mt-0.5">
+                                    <Phone className="h-3 w-3" />
+                                    {m.phone}
+                                  </a>
+                                )}
+                                {m.email && (
+                                  <a href={`mailto:${m.email}`} className="flex items-center gap-1 text-xs text-warm-500 hover:text-purple-600 truncate">
+                                    <Mail className="h-3 w-3 shrink-0" />
+                                    {m.email}
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ════════════════════════════════════════════════════════
+                Tab: Ministries
                 ════════════════════════════════════════════════════════ */}
             <TabsContent value="ministries">
               {ministries.length === 0 ? (
@@ -1296,6 +1454,19 @@ export default function MyProfilePage() {
                                   Manage
                                 </Link>
                               )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs h-6 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleLeaveMinistry(ministry.id)}
+                                disabled={leavingMinistryId === ministry.id}
+                              >
+                                {leavingMinistryId === ministry.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  "Leave"
+                                )}
+                              </Button>
                             </div>
                           ) : ministry.user_status === "denied" ? (
                             <div className="flex flex-col items-end gap-1">

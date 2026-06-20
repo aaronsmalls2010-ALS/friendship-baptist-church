@@ -3,6 +3,79 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
+ * GET /api/admin/ministries/[id]/messages
+ *
+ * Returns all messages for this ministry.
+ */
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: ministryId } = await params;
+
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
+    const admin = createAdminClient();
+
+    if (callerRole !== "admin" && callerRole !== "super_admin" && callerRole !== "pastor") {
+      const { data: managerRecord } = await admin
+        .from("ministry_members")
+        .select("id")
+        .eq("ministry_id", ministryId)
+        .eq("profile_id", user.id)
+        .eq("role", "manager")
+        .eq("status", "approved")
+        .maybeSingle();
+      if (!managerRecord) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      }
+    }
+
+    const { data: messages, error } = await admin
+      .from("ministry_messages")
+      .select("id, ministry_id, subject, body, sent_at, profiles:sender_id(first_name, last_name)")
+      .eq("ministry_id", ministryId)
+      .order("sent_at", { ascending: false });
+
+    if (error) {
+      console.error("[ADMIN] Fetch ministry messages error:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch messages" },
+        { status: 500 }
+      );
+    }
+
+    const formatted = (messages ?? []).map((msg: any) => ({
+      id: msg.id,
+      ministry_id: msg.ministry_id,
+      subject: msg.subject,
+      body: msg.body,
+      sent_at: msg.sent_at,
+      sender_name: msg.profiles
+        ? `${msg.profiles.first_name} ${msg.profiles.last_name}`.trim()
+        : "Unknown",
+    }));
+
+    return NextResponse.json({ messages: formatted });
+  } catch (err) {
+    console.error("[ADMIN] Ministry messages GET error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * POST /api/admin/ministries/[id]/messages
  *
  * Send a message to all approved ministry members.
@@ -29,7 +102,7 @@ export async function POST(
     const admin = createAdminClient();
 
     // Verify caller has access (admin/super_admin or ministry manager)
-    if (callerRole !== "admin" && callerRole !== "super_admin") {
+    if (callerRole !== "admin" && callerRole !== "super_admin" && callerRole !== "pastor") {
       const { data: managerRecord, error: managerError } = await admin
         .from("ministry_members")
         .select("id")

@@ -22,7 +22,6 @@ const ALLOWED_FIELDS = [
   "ward_id",
   "photo_url",
   "email_notifications",
-  "sms_notifications",
   "sms_opt_in",
   "public_directory",
 ] as const;
@@ -61,14 +60,25 @@ export async function GET() {
       .single();
 
     if (error) {
-      console.error("[PORTAL] Fetch profile error:", error);
+      console.error("[PORTAL] Fetch profile error:", error.code, error.message, error.details, error.hint);
       return NextResponse.json(
         { error: "Failed to fetch profile" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ profile });
+    // Look up the ward name separately to avoid PostgREST join issues
+    let wardName: string | null = null;
+    if (profile?.ward_id) {
+      const { data: ward } = await admin
+        .from("wards")
+        .select("name")
+        .eq("id", profile.ward_id)
+        .single();
+      wardName = ward?.name ?? null;
+    }
+
+    return NextResponse.json({ profile: { ...profile, ward_name: wardName } });
   } catch (err) {
     console.error("[PORTAL] Profile GET error:", err);
     return NextResponse.json(
@@ -164,6 +174,45 @@ export async function PATCH(request: NextRequest) {
       fields: Object.keys(updates),
       timestamp: new Date().toISOString(),
     });
+
+    // Auto-create birthday event when birthday is set/updated
+    if (updates.date_of_birth && profile) {
+      try {
+        const dob = new Date(updates.date_of_birth as string);
+        const currentYear = new Date().getFullYear();
+        const month = String(dob.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(dob.getUTCDate()).padStart(2, "0");
+        const birthdayDate = `${currentYear}-${month}-${day}`;
+        const firstName = profile.first_name || "Member";
+        const lastName = profile.last_name || "";
+
+        const { data: existing } = await admin
+          .from("events")
+          .select("id")
+          .eq("profile_id", user.id)
+          .eq("is_birthday", true)
+          .maybeSingle();
+
+        const eventData = {
+          title: `Happy Birthday, ${firstName} ${lastName}!`,
+          description: `Let's celebrate ${firstName}'s birthday! Send a birthday greeting to show the love of our church family.`,
+          start_date: `${birthdayDate}T00:00:00`,
+          end_date: `${birthdayDate}T23:59:59`,
+          location: "Friendship Baptist Church",
+          is_published: true,
+          is_birthday: true,
+          profile_id: user.id,
+        };
+
+        if (existing) {
+          await admin.from("events").update(eventData).eq("id", existing.id);
+        } else {
+          await admin.from("events").insert(eventData);
+        }
+      } catch (bdayErr) {
+        console.error("[PORTAL] Birthday event creation failed (non-fatal):", bdayErr);
+      }
+    }
 
     return NextResponse.json({ profile });
   } catch (err) {

@@ -8,8 +8,8 @@ export default function PortalLayout({
   return (
     <div className="flex min-h-screen">
       <PortalSidebar />
-      <main className="flex-1 bg-warm-50 dark:bg-warm-950">
-        <div className="p-6 lg:p-8">{children}</div>
+      <main className="flex-1 bg-warm-50 min-w-0">
+        <div className="p-4 md:p-6 lg:p-8 pb-20 md:pb-6 lg:pb-8">{children}</div>
       </main>
     </div>
   );

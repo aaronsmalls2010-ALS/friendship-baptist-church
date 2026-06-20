@@ -224,6 +224,24 @@ export async function POST(request: NextRequest) {
           is_approved: false,
         })
         .eq("id", userId);
+
+      // Auto-assign to Pew Ministry (every member starts here).
+      const { data: pewMinistry } = await supabase
+        .from("ministries")
+        .select("id")
+        .ilike("name", "%pew%")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (pewMinistry) {
+        await supabase.from("ministry_members").insert({
+          ministry_id: pewMinistry.id,
+          profile_id: userId,
+          role: "member",
+          status: "approved",
+          approved_at: new Date().toISOString(),
+        });
+      }
     }
 
     // ── Phone path: send the SMS code ──

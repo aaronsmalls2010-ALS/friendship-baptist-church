@@ -21,7 +21,7 @@ export async function GET() {
     }
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -92,7 +92,7 @@ export async function PUT(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -107,7 +107,7 @@ export async function PUT(request: NextRequest) {
     if ("ward_id" in body) updates.ward_id = ward_id || null;
 
     // Allow other safe fields
-    const safeFields = ["first_name", "last_name", "phone", "role"];
+    const safeFields = ["first_name", "last_name", "phone"];
     for (const key of safeFields) {
       if (key in otherFields) updates[key] = otherFields[key];
     }
@@ -142,7 +142,7 @@ export async function DELETE(request: NextRequest) {
     if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin") {
+    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

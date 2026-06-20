@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Target, Heart, Eye } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";

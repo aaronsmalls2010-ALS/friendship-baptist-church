@@ -3,6 +3,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getOrganization } from "@/lib/org/get-organization";
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -31,8 +35,8 @@ export async function GET(request: NextRequest) {
   const rows = (donations ?? []).map((d: { created_at: string; donation_types: unknown; donation_type: string; amount: number }) => {
     const t = d.donation_types as { name: string } | null;
     return `<tr>
-      <td>${String(d.created_at).split("T")[0]}</td>
-      <td>${t?.name ?? d.donation_type ?? ""}</td>
+      <td>${esc(String(d.created_at).split("T")[0])}</td>
+      <td>${esc(t?.name ?? d.donation_type ?? "")}</td>
       <td>$${Number(d.amount).toFixed(2)}</td>
     </tr>`;
   }).join("");
@@ -57,14 +61,14 @@ export async function GET(request: NextRequest) {
 </head>
 <body>
 <button onclick="window.print()" style="float:right;padding:6px 14px;background:#6b21a8;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:0.85rem;">Print / Save PDF</button>
-<h1>${org.church_name}</h1>
+<h1>${esc(org.church_name)}</h1>
 <div class="org">
-  ${org.address_street}, ${org.address_city}, ${org.address_state} ${org.address_zip}<br>
-  ${org.phone} · ${org.email}${org.ein ? ` · EIN: ${org.ein}` : ""}
+  ${esc(org.address_street)}, ${esc(org.address_city)}, ${esc(org.address_state)} ${esc(org.address_zip)}<br>
+  ${esc(org.phone)} · ${esc(org.email)}${org.ein ? ` · EIN: ${esc(org.ein)}` : ""}
 </div>
 <div class="member">
-  <strong>${profile.first_name} ${profile.last_name}</strong><br>
-  ${profile.email}
+  <strong>${esc(profile.first_name)} ${esc(profile.last_name)}</strong><br>
+  ${esc(profile.email)}
 </div>
 <h2 style="font-size:1.1rem;">${year} Contribution Statement</h2>
 <table>

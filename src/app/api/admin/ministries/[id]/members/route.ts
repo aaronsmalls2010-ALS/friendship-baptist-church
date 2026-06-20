@@ -13,7 +13,7 @@ async function verifyMinistryAccess(
   admin: ReturnType<typeof createAdminClient>
 ) {
   // Admins and super_admins always have access
-  if (userRole === "admin" || userRole === "super_admin") {
+  if (userRole === "admin" || userRole === "super_admin" || userRole === "pastor") {
     return { authorized: true as const, callerRole: userRole };
   }
 
@@ -97,10 +97,137 @@ export async function GET(
 }
 
 /**
+ * POST /api/admin/ministries/[id]/members
+ *
+ * Directly assign a member to a ministry (auto-approved).
+ * Body: { profile_id: string, role?: "member" | "manager" }
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: ministryId } = await params;
+
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+
+    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
+    const admin = createAdminClient();
+
+    const access = await verifyMinistryAccess(user.id, callerRole, ministryId, admin);
+    if (!access.authorized) {
+      return NextResponse.json({ error: access.error }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { profile_id, role = "member" } = body;
+
+    if (!profile_id || typeof profile_id !== "string") {
+      return NextResponse.json(
+        { error: "profile_id is required" },
+        { status: 400 }
+      );
+    }
+
+    if (role !== "member" && role !== "manager") {
+      return NextResponse.json(
+        { error: 'role must be "member" or "manager"' },
+        { status: 400 }
+      );
+    }
+
+    // Check if already a member
+    const { data: existing } = await admin
+      .from("ministry_members")
+      .select("id, status")
+      .eq("ministry_id", ministryId)
+      .eq("profile_id", profile_id)
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.status === "approved") {
+        return NextResponse.json(
+          { error: "This person is already a member of this ministry" },
+          { status: 409 }
+        );
+      }
+      // Upgrade pending/denied to approved
+      const { data: updated, error: updateError } = await admin
+        .from("ministry_members")
+        .update({
+          status: "approved",
+          role,
+          approved_at: new Date().toISOString(),
+          approved_by: user.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+        .select("*, profiles(id, first_name, last_name, email, phone, photo_url)")
+        .single();
+
+      if (updateError) {
+        console.error("[ADMIN] Update membership error:", updateError);
+        return NextResponse.json(
+          { error: "Failed to update membership" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ membership: updated });
+    }
+
+    const now = new Date().toISOString();
+    const { data: membership, error: createError } = await admin
+      .from("ministry_members")
+      .insert({
+        ministry_id: ministryId,
+        profile_id,
+        role,
+        status: "approved",
+        approved_at: now,
+        approved_by: user.id,
+      })
+      .select("*, profiles(id, first_name, last_name, email, phone, photo_url)")
+      .single();
+
+    if (createError) {
+      console.error("[ADMIN] Create ministry membership error:", createError);
+      return NextResponse.json(
+        { error: "Failed to assign member" },
+        { status: 500 }
+      );
+    }
+
+    console.log("[AUDIT] ministry.admin_assign", {
+      ministryId,
+      profileId: profile_id,
+      role,
+      performedBy: user.id,
+      timestamp: now,
+    });
+
+    return NextResponse.json({ membership }, { status: 201 });
+  } catch (err) {
+    console.error("[ADMIN] Ministry members POST error:", err);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * PATCH /api/admin/ministries/[id]/members
  *
- * Approve or deny a ministry membership request.
- * Body: { member_id: string, action: "approve" | "deny" }
+ * Manage ministry memberships.
+ * Body: { member_id: string, action: "approve" | "deny" | "update_role" | "remove", role?: string }
  * Accessible by admin/super_admin or the ministry's manager.
  */
 export async function PATCH(
@@ -128,7 +255,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { member_id, action } = body;
+    const { member_id, action, role } = body;
 
     if (!member_id || typeof member_id !== "string") {
       return NextResponse.json(
@@ -137,9 +264,10 @@ export async function PATCH(
       );
     }
 
-    if (action !== "approve" && action !== "deny") {
+    const validActions = ["approve", "deny", "update_role", "remove"];
+    if (!validActions.includes(action)) {
       return NextResponse.json(
-        { error: 'action must be "approve" or "deny"' },
+        { error: `action must be one of: ${validActions.join(", ")}` },
         { status: 400 }
       );
     }
@@ -159,6 +287,69 @@ export async function PATCH(
       );
     }
 
+    // Handle remove action
+    if (action === "remove") {
+      const { error: deleteError } = await admin
+        .from("ministry_members")
+        .delete()
+        .eq("id", member_id);
+
+      if (deleteError) {
+        console.error("[ADMIN] Remove ministry member error:", deleteError);
+        return NextResponse.json(
+          { error: "Failed to remove member" },
+          { status: 500 }
+        );
+      }
+
+      console.log("[AUDIT] ministry.member_removed", {
+        ministryId,
+        memberId: member_id,
+        profileId: memberRecord.profile_id,
+        performedBy: user.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    // Handle role update
+    if (action === "update_role") {
+      if (role !== "member" && role !== "manager") {
+        return NextResponse.json(
+          { error: 'role must be "member" or "manager"' },
+          { status: 400 }
+        );
+      }
+
+      const { data: updated, error: updateError } = await admin
+        .from("ministry_members")
+        .update({ role, updated_at: new Date().toISOString() })
+        .eq("id", member_id)
+        .select("*")
+        .single();
+
+      if (updateError) {
+        console.error("[ADMIN] Update ministry member role error:", updateError);
+        return NextResponse.json(
+          { error: "Failed to update role" },
+          { status: 500 }
+        );
+      }
+
+      console.log("[AUDIT] ministry.role_updated", {
+        ministryId,
+        memberId: member_id,
+        profileId: memberRecord.profile_id,
+        newRole: role,
+        performedBy: user.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      return NextResponse.json({ success: true, membership: updated });
+    }
+
+    // Handle approve/deny
     const newStatus = action === "approve" ? "approved" : "denied";
     const updates: Record<string, unknown> = {
       status: newStatus,

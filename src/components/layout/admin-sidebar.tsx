@@ -24,15 +24,16 @@ import {
   ScrollText,
   Tags,
   UserCog,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/brand/logo";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { canViewFinancials, isSuperAdmin } from "@/lib/auth/roles";
+import { canViewFinancials } from "@/lib/auth/roles";
 import type { User } from "@supabase/supabase-js";
 
-// roles: undefined = visible to all admins; "finance" = finance/pastor/super_admin only; "super_admin" = super_admin only
+// roles: undefined = visible to all admins; "finance" = finance/admin/pastor/super_admin only
 const navItems = [
   { label: "Dashboard",       href: "/admin",                 icon: LayoutDashboard },
   { label: "Members",         href: "/admin/members",         icon: Users },
@@ -48,8 +49,8 @@ const navItems = [
   { label: "Donation Types",  href: "/admin/donation-types",  icon: Tags,         roles: "finance" as const },
   { label: "Reports",         href: "/admin/reports",         icon: ClipboardList },
   { label: "Analytics",       href: "/admin/analytics",       icon: BarChart3 },
-  { label: "Users",           href: "/admin/users",           icon: UserCog,      roles: "super_admin" as const },
-  { label: "Audit Log",       href: "/admin/audit",           icon: ScrollText,   roles: "super_admin" as const },
+  { label: "Users",           href: "/admin/users",           icon: UserCog },
+  { label: "Audit Log",       href: "/admin/audit",           icon: ScrollText },
   { label: "Settings",        href: "/admin/settings",        icon: Settings },
 ] as const;
 
@@ -65,12 +66,10 @@ export function AdminSidebar() {
   }, []);
 
   const isFinance = user ? canViewFinancials(user) : false;
-  const isSA = user ? isSuperAdmin(user) : false;
 
   const visibleItems = navItems.filter((item) => {
     if (!("roles" in item)) return true;
     if (item.roles === "finance") return isFinance;
-    if (item.roles === "super_admin") return isSA;
     return true;
   });
 
@@ -132,6 +131,17 @@ export function AdminSidebar() {
       </nav>
 
       <div className="p-2 border-t border-purple-900 space-y-0.5">
+        <Link
+          href="/portal"
+          title={collapsed ? "Member Portal" : undefined}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-purple-400 hover:text-white hover:bg-purple-900 w-full transition-colors",
+            collapsed && "justify-center px-2"
+          )}
+        >
+          <ArrowLeftRight className="h-4.5 w-4.5 shrink-0" />
+          {!collapsed && "Member Portal"}
+        </Link>
         <Link
           href="/"
           title={collapsed ? "Back to Website" : undefined}

@@ -70,6 +70,10 @@ function isMinistryEvent(event: Event): boolean {
   return !!event.ministry_id;
 }
 
+function isBirthdayEvent(event: Event): boolean {
+  return event.id.startsWith("bday-");
+}
+
 /** Get days needed to fill the calendar grid for a given month */
 function getCalendarDays(year: number, month: number): Date[] {
   const firstDayOfMonth = new Date(year, month, 1);
@@ -127,10 +131,11 @@ export default function CalendarPage() {
         setEvents(eventsData.events ?? []);
         setMinistries(ministriesData.ministries ?? []);
 
-        // Convert birthday data into Event objects for the calendar
+        // Convert birthday data into Event objects for current and next year
+        // so navigating across year boundaries still shows birthdays
         const currentYear = new Date().getFullYear();
         const bdays: Event[] = (birthdaysData.birthdays ?? [])
-          .map(
+          .flatMap(
             (p: {
               id: string;
               first_name: string;
@@ -138,27 +143,21 @@ export default function CalendarPage() {
               date_of_birth: string;
             }) => {
               const dob = new Date(p.date_of_birth + "T12:00:00");
-              const birthdayThisYear = new Date(
-                currentYear,
-                dob.getMonth(),
-                dob.getDate(),
-                12,
-                0,
-                0
-              );
-              return {
-                id: `bday-${p.id}`,
-                title: `🎂 ${p.first_name} ${p.last_name}'s Birthday`,
-                description: `Happy Birthday to ${p.first_name} ${p.last_name}! Wishing you many blessings.`,
-                start_date: birthdayThisYear.toISOString(),
-                location: "",
-                rsvp_enabled: false,
-                is_published: true,
-                created_at: new Date().toISOString(),
-              } as Event;
+              return [currentYear, currentYear + 1].map((yr) => {
+                const bdayDate = new Date(yr, dob.getMonth(), dob.getDate(), 12, 0, 0);
+                return {
+                  id: `bday-${p.id}-${yr}`,
+                  title: `🎂 ${p.first_name} ${p.last_name}'s Birthday`,
+                  description: `Happy Birthday to ${p.first_name} ${p.last_name}! Wishing you many blessings.`,
+                  start_date: bdayDate.toISOString(),
+                  location: "",
+                  rsvp_enabled: false,
+                  is_published: true,
+                  created_at: new Date().toISOString(),
+                } as Event;
+              });
             }
-          )
-          .filter(Boolean);
+          );
         setBirthdayEvents(bdays);
       } catch (err) {
         console.error("Failed to load calendar data:", err);
@@ -306,10 +305,13 @@ export default function CalendarPage() {
                     const dayKey = day.toDateString();
                     const dayEvents = eventsByDay.get(dayKey) ?? [];
                     const hasChurchEvents = dayEvents.some(
-                      (e) => !isMinistryEvent(e)
+                      (e) => !isMinistryEvent(e) && !isBirthdayEvent(e)
                     );
-                    const hasMinistryEvents = dayEvents.some((e) =>
-                      isMinistryEvent(e)
+                    const hasMinistryEvents = dayEvents.some(
+                      (e) => isMinistryEvent(e)
+                    );
+                    const hasBirthdayEvents = dayEvents.some(
+                      (e) => isBirthdayEvent(e)
                     );
                     const dayIsToday = isToday(day);
                     const isSelected =
@@ -347,13 +349,16 @@ export default function CalendarPage() {
                         </span>
 
                         {/* Event Dots */}
-                        {(hasChurchEvents || hasMinistryEvents) && (
+                        {(hasChurchEvents || hasMinistryEvents || hasBirthdayEvents) && (
                           <div className="flex gap-1 mt-1 ml-1">
                             {hasChurchEvents && (
                               <span className="w-2 h-2 rounded-full bg-purple-500" />
                             )}
                             {hasMinistryEvents && (
                               <span className="w-2 h-2 rounded-full bg-peach-400" />
+                            )}
+                            {hasBirthdayEvents && (
+                              <span className="w-2 h-2 rounded-full bg-amber-400" />
                             )}
                           </div>
                         )}
@@ -366,9 +371,11 @@ export default function CalendarPage() {
                                 key={event.id}
                                 className={cn(
                                   "text-[10px] leading-tight truncate rounded px-1 py-0.5 mb-0.5",
-                                  isMinistryEvent(event)
-                                    ? "bg-peach-100 text-peach-700 dark:bg-peach-900/30 dark:text-peach-300"
-                                    : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+                                  isBirthdayEvent(event)
+                                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                    : isMinistryEvent(event)
+                                      ? "bg-peach-100 text-peach-700 dark:bg-peach-900/30 dark:text-peach-300"
+                                      : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
                                 )}
                               >
                                 {event.title}
@@ -388,7 +395,7 @@ export default function CalendarPage() {
               </div>
 
               {/* Category Legend */}
-              <div className="flex items-center justify-center gap-6 mt-4 text-sm text-warm-600 dark:text-warm-400">
+              <div className="flex flex-wrap items-center justify-center gap-6 mt-4 text-sm text-warm-600 dark:text-warm-400">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-purple-500" />
                   <span>Church Events</span>
@@ -396,6 +403,10 @@ export default function CalendarPage() {
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-peach-400" />
                   <span>Ministry Events</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-400" />
+                  <span>Birthdays</span>
                 </div>
               </div>
 
@@ -435,9 +446,11 @@ export default function CalendarPage() {
                               key={event.id}
                               className={cn(
                                 "p-4 rounded-xl border",
-                                isMinistryEvent(event)
-                                  ? "bg-peach-50/50 border-peach-100 dark:bg-peach-950/10 dark:border-peach-900/30"
-                                  : "bg-purple-50/50 border-purple-100 dark:bg-purple-950/10 dark:border-purple-900/30"
+                                isBirthdayEvent(event)
+                                  ? "bg-amber-50/50 border-amber-100 dark:bg-amber-950/10 dark:border-amber-900/30"
+                                  : isMinistryEvent(event)
+                                    ? "bg-peach-50/50 border-peach-100 dark:bg-peach-950/10 dark:border-peach-900/30"
+                                    : "bg-purple-50/50 border-purple-100 dark:bg-purple-950/10 dark:border-purple-900/30"
                               )}
                             >
                               <div className="flex flex-wrap items-center gap-2 mb-2">

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { BookOpen, Users, Heart, Send, Calendar } from "lucide-react";
 import { FadeIn } from "@/components/motion/fade-in";

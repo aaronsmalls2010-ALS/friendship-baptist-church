@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +38,7 @@ import {
 interface FamilyMember {
   profile_id: string;
   relationship: string | null;
-  profiles?: { first_name?: string; last_name?: string; email?: string } | null;
+  profiles?: { first_name?: string; last_name?: string; email?: string; photo_url?: string } | null;
 }
 interface Family {
   id: string;
@@ -234,6 +235,13 @@ export default function AdminFamiliesPage() {
     return p ? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || p.email : m.profile_id;
   }
 
+  function memberInitials(m: FamilyMember) {
+    const p = m.profiles;
+    const first = (p?.first_name ?? "")[0] ?? "";
+    const last = (p?.last_name ?? "")[0] ?? "";
+    return (first + last).toUpperCase() || "?";
+  }
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -358,24 +366,31 @@ export default function AdminFamiliesPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-1.5 flex-1">
+                <div className="mt-3 flex items-center flex-1">
                   {family.members.length === 0 ? (
                     <span className="text-sm text-warm-400">No members yet</span>
                   ) : (
-                    family.members.slice(0, 6).map((m) => (
-                      <Badge
-                        key={m.profile_id}
-                        variant="outline"
-                        className="border-0 bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
-                      >
-                        {memberName(m)}
-                      </Badge>
-                    ))
-                  )}
-                  {family.members.length > 6 && (
-                    <Badge variant="outline" className="border-0 bg-warm-100 text-warm-600">
-                      +{family.members.length - 6}
-                    </Badge>
+                    <div className="flex -space-x-2">
+                      {family.members.slice(0, 6).map((m) => (
+                        <Avatar
+                          key={m.profile_id}
+                          className="h-8 w-8 border-2 border-white dark:border-warm-900 ring-0"
+                          title={memberName(m)}
+                        >
+                          {m.profiles?.photo_url && (
+                            <AvatarImage src={m.profiles.photo_url} alt={memberName(m)} />
+                          )}
+                          <AvatarFallback className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 text-xs font-medium">
+                            {memberInitials(m)}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {family.members.length > 6 && (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white dark:border-warm-900 bg-warm-100 dark:bg-warm-800 text-xs font-medium text-warm-600 dark:text-warm-300">
+                          +{family.members.length - 6}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -483,9 +498,19 @@ export default function AdminFamiliesPage() {
                       key={m.profile_id}
                       className="flex items-center justify-between rounded-lg border border-warm-100 dark:border-warm-800 px-3 py-2"
                     >
-                      <span className="text-sm text-warm-700 dark:text-warm-200">
-                        {memberName(m)}
-                      </span>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="h-7 w-7">
+                          {m.profiles?.photo_url && (
+                            <AvatarImage src={m.profiles.photo_url} alt={memberName(m)} />
+                          )}
+                          <AvatarFallback className="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 text-[11px] font-medium">
+                            {memberInitials(m)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-warm-700 dark:text-warm-200">
+                          {memberName(m)}
+                        </span>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"

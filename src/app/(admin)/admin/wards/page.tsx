@@ -304,7 +304,6 @@ export default function WardManagementPage() {
                 <TableHead className="font-medium">Name</TableHead>
                 <TableHead className="font-medium">Description</TableHead>
                 <TableHead className="font-medium">Deacon(s)</TableHead>
-                <TableHead className="font-medium">Families</TableHead>
                 <TableHead className="font-medium">Members</TableHead>
                 <TableHead className="font-medium text-right">Actions</TableHead>
               </TableRow>
@@ -312,7 +311,7 @@ export default function WardManagementPage() {
             <TableBody>
               {filteredWards.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-warm-400">
+                  <TableCell colSpan={6} className="text-center py-8 text-warm-400">
                     {searchTerm ? "No wards match your search" : "No wards found"}
                   </TableCell>
                 </TableRow>
@@ -651,7 +650,6 @@ function WardRow({
             {getDeaconDisplayForWard(ward.id, allWards, deacons)}
           </button>
         </TableCell>
-        <TableCell>{ward.families_count ?? 0}</TableCell>
         <TableCell>
           <Badge
             variant="outline"
@@ -694,7 +692,7 @@ function WardRow({
       {/* Expanded detail row */}
       {isExpanded && (
         <TableRow className="bg-purple-50/50 dark:bg-purple-900/10">
-          <TableCell colSpan={7} className="p-0">
+          <TableCell colSpan={6} className="p-0">
             <div className="px-6 py-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-warm-700 dark:text-warm-300">

@@ -3,7 +3,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
-  // Return only approved testimonies (public)
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("testimonies")
@@ -30,10 +33,15 @@ export async function POST(request: NextRequest) {
   if (!author_name || !content)
     return NextResponse.json({ error: "author_name and content are required" }, { status: 400 });
 
+  const safeName = String(author_name).trim().slice(0, 200);
+  const safeContent = String(content).trim().slice(0, 5000);
+  if (!safeName || !safeContent)
+    return NextResponse.json({ error: "author_name and content are required" }, { status: 400 });
+
   const admin = createAdminClient();
   const { error } = await admin.from("testimonies").insert({
-    author_name: String(author_name).trim(),
-    content: String(content).trim(),
+    author_name: safeName,
+    content: safeContent,
     is_approved: false, // requires admin approval
     date: new Date().toISOString().split("T")[0],
   });

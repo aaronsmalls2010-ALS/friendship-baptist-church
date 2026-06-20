@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -27,11 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  MOCK_MINISTRIES,
-  MOCK_MINISTRY_MEMBERS,
-  MOCK_MINISTRY_MESSAGES,
-} from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -46,8 +41,45 @@ import {
   Mail,
   UserCog,
   Trash2,
+  UserPlus,
 } from "lucide-react";
-import type { MinistryMember, MinistryMessage, MinistryRole } from "@/types";
+import type { MinistryRole } from "@/types";
+
+interface MinistryData {
+  id: string;
+  name: string;
+  description?: string;
+  schedule?: string;
+  is_active: boolean;
+}
+
+interface MemberRecord {
+  id: string;
+  ministry_id: string;
+  profile_id: string;
+  role: MinistryRole;
+  status: string;
+  requested_at?: string;
+  approved_at?: string;
+  created_at: string;
+  profiles?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+    photo_url?: string;
+  };
+}
+
+interface MessageRecord {
+  id: string;
+  ministry_id: string;
+  subject: string;
+  body: string;
+  sent_at: string;
+  sender_name?: string;
+}
 
 // ── Toast component ──────────────────────────────────────────────────
 function Toast({
@@ -80,18 +112,14 @@ export default function MinistryDetailPage() {
   const params = useParams<{ id: string }>();
   const ministryId = params.id;
 
-  // Find the ministry from mock data
-  const ministry = MOCK_MINISTRIES.find((m) => m.id === ministryId);
-
-  // Local state for members (so we can modify on approve/deny/role change/remove)
-  const [members, setMembers] = useState<MinistryMember[]>(
-    MOCK_MINISTRY_MEMBERS.filter((mm) => mm.ministry_id === ministryId)
-  );
-
-  // Messages state
-  const [messages] = useState<MinistryMessage[]>(
-    MOCK_MINISTRY_MESSAGES.filter((msg) => msg.ministry_id === ministryId)
-  );
+  // Data state
+  const [ministry, setMinistry] = useState<MinistryData | null>(null);
+  const [members, setMembers] = useState<MemberRecord[]>([]);
+  const [messages, setMessages] = useState<MessageRecord[]>([]);
+  const [allProfiles, setAllProfiles] = useState<
+    { id: string; first_name: string; last_name: string; email: string }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
 
   // UI state
   const [search, setSearch] = useState("");
@@ -107,10 +135,84 @@ export default function MinistryDetailPage() {
   const [composeBody, setComposeBody] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
 
-  // Auto-dismiss toast
-  useState(() => {
-    // no-op on mount, handled in effect below
-  });
+  // Add member state
+  const [showAddMember, setShowAddMember] = useState(false);
+  const [addMemberSearch, setAddMemberSearch] = useState("");
+  const [addingProfileId, setAddingProfileId] = useState<string | null>(null);
+
+  // ── Fetch data ─────────────────────────────────────────────────────
+  const fetchData = useCallback(async () => {
+    try {
+      const [ministriesRes, membersRes, messagesRes] = await Promise.all([
+        fetch("/api/admin/ministries"),
+        fetch(`/api/admin/ministries/${ministryId}/members`),
+        fetch(`/api/admin/ministries/${ministryId}/messages`),
+      ]);
+
+      if (ministriesRes.ok) {
+        const data = await ministriesRes.json();
+        const found = (data.ministries || []).find(
+          (m: MinistryData) => m.id === ministryId
+        );
+        setMinistry(found || null);
+      }
+
+      if (membersRes.ok) {
+        const data = await membersRes.json();
+        setMembers(data.members || []);
+      }
+
+      if (messagesRes.ok) {
+        const data = await messagesRes.json();
+        setMessages(data.messages || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch ministry data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [ministryId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Fetch all profiles for the Add Member picker
+  useEffect(() => {
+    async function fetchProfiles() {
+      try {
+        const res = await fetch("/api/admin/members");
+        if (res.ok) {
+          const data = await res.json();
+          setAllProfiles(
+            (data.members || data.profiles || []).map(
+              (p: Record<string, string>) => ({
+                id: p.id,
+                first_name: p.first_name,
+                last_name: p.last_name,
+                email: p.email,
+              })
+            )
+          );
+        }
+      } catch {
+        // non-fatal
+      }
+    }
+    fetchProfiles();
+  }, []);
+
+  // Helper to get display name from member record
+  function memberName(m: MemberRecord) {
+    if (m.profiles) {
+      return `${m.profiles.first_name} ${m.profiles.last_name}`.trim();
+    }
+    return "Unknown";
+  }
+
+  function memberEmail(m: MemberRecord) {
+    return m.profiles?.email ?? "—";
+  }
 
   // Derived data
   const approvedMembers = useMemo(
@@ -124,21 +226,38 @@ export default function MinistryDetailPage() {
   );
 
   const manager = useMemo(
-    () =>
-      approvedMembers.find((m) => m.role === "manager"),
+    () => approvedMembers.find((m) => m.role === "manager"),
     [approvedMembers]
   );
 
-  // Filtered approved members for search
   const filteredApproved = useMemo(() => {
     if (!search) return approvedMembers;
     const term = search.toLowerCase();
     return approvedMembers.filter(
       (m) =>
-        m.profile_name?.toLowerCase().includes(term) ||
-        m.profile_email?.toLowerCase().includes(term)
+        memberName(m).toLowerCase().includes(term) ||
+        memberEmail(m).toLowerCase().includes(term)
     );
   }, [approvedMembers, search]);
+
+  // Profiles not already in this ministry (for Add Member)
+  const memberProfileIds = useMemo(
+    () => new Set(members.map((m) => m.profile_id)),
+    [members]
+  );
+
+  const availableProfiles = useMemo(() => {
+    const filtered = allProfiles.filter((p) => !memberProfileIds.has(p.id));
+    if (!addMemberSearch) return filtered.slice(0, 20);
+    const term = addMemberSearch.toLowerCase();
+    return filtered
+      .filter(
+        (p) =>
+          `${p.first_name} ${p.last_name}`.toLowerCase().includes(term) ||
+          p.email.toLowerCase().includes(term)
+      )
+      .slice(0, 20);
+  }, [allProfiles, memberProfileIds, addMemberSearch]);
 
   // ── Show toast with auto-dismiss ───────────────────────────────────
   function showToast(type: "success" | "error", message: string) {
@@ -161,12 +280,9 @@ export default function MinistryDetailPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(
-          data.error || `Failed to ${action} member`
-        );
+        throw new Error(data.error || `Failed to ${action} member`);
       }
 
-      // Update local state
       setMembers((prev) =>
         prev.map((m) =>
           m.id === memberId
@@ -185,7 +301,7 @@ export default function MinistryDetailPage() {
       const member = members.find((m) => m.id === memberId);
       showToast(
         "success",
-        `${member?.profile_name ?? "Member"} has been ${action === "approve" ? "approved" : "denied"}.`
+        `${member ? memberName(member) : "Member"} has been ${action === "approve" ? "approved" : "denied"}.`
       );
     } catch (err) {
       showToast(
@@ -225,7 +341,7 @@ export default function MinistryDetailPage() {
       const member = members.find((m) => m.id === memberId);
       showToast(
         "success",
-        `${member?.profile_name ?? "Member"} is now ${newRole === "manager" ? "a Manager" : "a Member"}.`
+        `${member ? memberName(member) : "Member"} is now ${newRole === "manager" ? "a Manager" : "a Member"}.`
       );
     } catch (err) {
       showToast(
@@ -256,7 +372,7 @@ export default function MinistryDetailPage() {
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
       showToast(
         "success",
-        `${member?.profile_name ?? "Member"} has been removed from the ministry.`
+        `${member ? memberName(member) : "Member"} has been removed from the ministry.`
       );
     } catch (err) {
       showToast(
@@ -265,6 +381,42 @@ export default function MinistryDetailPage() {
       );
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  // ── Handle add member ──────────────────────────────────────────────
+  async function handleAddMember(profileId: string) {
+    setAddingProfileId(profileId);
+    try {
+      const res = await fetch(`/api/admin/ministries/${ministryId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: profileId }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to add member");
+      }
+
+      const data = await res.json();
+      if (data.membership) {
+        setMembers((prev) => [data.membership, ...prev]);
+      }
+
+      const profile = allProfiles.find((p) => p.id === profileId);
+      showToast(
+        "success",
+        `${profile ? `${profile.first_name} ${profile.last_name}` : "Member"} has been added to the ministry.`
+      );
+      setAddMemberSearch("");
+    } catch (err) {
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Failed to add member"
+      );
+    } finally {
+      setAddingProfileId(null);
     }
   }
 
@@ -304,6 +456,15 @@ export default function MinistryDetailPage() {
     } finally {
       setSendingMessage(false);
     }
+  }
+
+  // ── Loading state ──────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
   }
 
   // ── Not found state ────────────────────────────────────────────────
@@ -364,7 +525,7 @@ export default function MinistryDetailPage() {
               className="border-0 bg-blue-50 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 gap-1.5"
             >
               <UserCog className="h-3.5 w-3.5" />
-              Manager: {manager.profile_name}
+              Manager: {memberName(manager)}
             </Badge>
           )}
           <Badge
@@ -408,16 +569,83 @@ export default function MinistryDetailPage() {
 
           {/* ── Members Tab ──────────────────────────────────────── */}
           <TabsContent value="members" className="space-y-4">
-            {/* Search */}
-            <div className="relative max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
-              <Input
-                placeholder="Search by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
+            {/* Search + Add Member button */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+              <div className="relative max-w-sm flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Button
+                size="sm"
+                className="bg-purple-700 hover:bg-purple-600 text-white gap-1.5"
+                onClick={() => setShowAddMember(!showAddMember)}
+              >
+                <UserPlus className="h-4 w-4" />
+                {showAddMember ? "Cancel" : "Add Member"}
+              </Button>
             </div>
+
+            {/* Add Member Panel */}
+            {showAddMember && (
+              <Card className="p-4 border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10">
+                <h4 className="font-medium text-warm-800 dark:text-warm-100 mb-3">
+                  Add a church member to this ministry
+                </h4>
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
+                  <Input
+                    placeholder="Search members by name or email..."
+                    value={addMemberSearch}
+                    onChange={(e) => setAddMemberSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                {availableProfiles.length === 0 ? (
+                  <p className="text-sm text-warm-500 py-2">
+                    {addMemberSearch
+                      ? "No matching members found."
+                      : "All members are already in this ministry."}
+                  </p>
+                ) : (
+                  <div className="max-h-60 overflow-y-auto space-y-1">
+                    {availableProfiles.map((profile) => (
+                      <div
+                        key={profile.id}
+                        className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-purple-100/50 dark:hover:bg-purple-900/20"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-warm-800 dark:text-warm-100">
+                            {profile.first_name} {profile.last_name}
+                          </p>
+                          <p className="text-xs text-warm-500 truncate">
+                            {profile.email}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="shrink-0 h-7 text-xs gap-1 border-purple-300 text-purple-700 hover:bg-purple-100"
+                          onClick={() => handleAddMember(profile.id)}
+                          disabled={addingProfileId === profile.id}
+                        >
+                          {addingProfileId === profile.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <UserPlus className="h-3 w-3" />
+                          )}
+                          Add
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            )}
 
             {/* Members table */}
             <div className="rounded-xl border border-warm-100 dark:border-warm-800 overflow-hidden">
@@ -450,11 +678,11 @@ export default function MinistryDetailPage() {
                       <TableRow key={member.id}>
                         <TableCell>
                           <span className="font-medium text-warm-900 dark:text-warm-50">
-                            {member.profile_name ?? "Unknown"}
+                            {memberName(member)}
                           </span>
                         </TableCell>
                         <TableCell className="text-warm-600 dark:text-warm-400">
-                          {member.profile_email ?? "—"}
+                          {memberEmail(member)}
                         </TableCell>
                         <TableCell>
                           {actionLoading === member.id ? (
@@ -552,14 +780,17 @@ export default function MinistryDetailPage() {
                   >
                     <div>
                       <h3 className="font-medium text-warm-900 dark:text-warm-50">
-                        {member.profile_name ?? "Unknown"}
+                        {memberName(member)}
                       </h3>
                       <p className="text-sm text-warm-500">
-                        {member.profile_email ?? "No email"}
+                        {memberEmail(member)}
                       </p>
                     </div>
                     <p className="text-xs text-warm-400">
-                      Requested {formatDate(member.requested_at)}
+                      Requested{" "}
+                      {member.requested_at
+                        ? formatDate(member.requested_at)
+                        : formatDate(member.created_at)}
                     </p>
                     <div className="flex gap-2">
                       <Button
@@ -699,7 +930,7 @@ export default function MinistryDetailPage() {
                           {msg.sender_name ?? "Unknown"}
                         </span>
                       </span>
-                      <span>·</span>
+                      <span>&middot;</span>
                       <span>{formatDate(msg.sent_at)}</span>
                     </div>
                   </Card>

@@ -64,6 +64,7 @@ export function ProfilePictureUpload({
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onCropComplete = useCallback((_: Area, croppedPixels: Area) => {
@@ -119,11 +120,12 @@ export function ProfilePictureUpload({
       {/* Profile Picture Display + Upload Trigger */}
       <div className="relative group">
         <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-peach-100 ring-4 ring-white shadow-lg overflow-hidden sm:h-28 sm:w-28">
-          {currentPhotoUrl ? (
+          {currentPhotoUrl && !imgError ? (
             <img
               src={currentPhotoUrl}
               alt="Profile"
               className="h-full w-full object-cover"
+              onError={() => setImgError(true)}
             />
           ) : (
             <span className="font-heading text-2xl font-bold text-purple-400 sm:text-3xl">

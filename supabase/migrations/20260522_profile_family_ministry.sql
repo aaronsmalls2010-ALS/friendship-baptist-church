@@ -284,7 +284,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS ministry_messages (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ministry_id     UUID NOT NULL REFERENCES ministries(id) ON DELETE CASCADE,
-  sent_by         UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  sender_id       UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   subject         TEXT NOT NULL,
   body            TEXT NOT NULL,
   sent_at         TIMESTAMPTZ NOT NULL DEFAULT now()

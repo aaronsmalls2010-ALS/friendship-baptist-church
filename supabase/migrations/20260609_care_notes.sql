@@ -14,11 +14,13 @@ CREATE INDEX IF NOT EXISTS idx_care_notes_author  ON public.care_notes(author_id
 
 ALTER TABLE public.care_notes ENABLE ROW LEVEL SECURITY;
 
--- Only pastor, super_admin, and the ward deacon for this member can read
+-- Pastoral access ONLY (pastor / super_admin / the member's ward deacon).
+-- Deliberately NOT is_finance_team() — a bookkeeper must never read care notes.
 DROP POLICY IF EXISTS care_notes_read ON public.care_notes;
 CREATE POLICY care_notes_read ON public.care_notes
   FOR SELECT USING (
-    public.is_finance_team()  -- super_admin, pastor (finance_team includes pastor)
+    public.is_super_admin()
+    OR EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'pastor')
     OR author_id = auth.uid()
     OR EXISTS (
       SELECT 1 FROM public.profiles p
@@ -38,9 +40,9 @@ CREATE POLICY care_notes_insert ON public.care_notes
   FOR INSERT WITH CHECK (
     author_id = auth.uid()
     AND (
-      public.is_finance_team()
+      public.is_super_admin()
       OR EXISTS (
-        SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role = 'deacon'
+        SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND role IN ('pastor', 'deacon')
       )
     )
   );

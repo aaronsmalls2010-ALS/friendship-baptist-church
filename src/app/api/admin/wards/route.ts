@@ -14,9 +14,13 @@ export async function GET() {
     if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const admin = createAdminClient();
+    // Select wards flat; the page resolves the assigned deacon client-side from
+    // the separately-loaded deacons list via wards.deacon_id (which now FKs to
+    // deacons.id). Embedding deacons(...) is ambiguous now that both
+    // wards.deacon_id->deacons and deacons.ward_id->wards exist.
     const { data: wards, error } = await admin
       .from("wards")
-      .select("*, deacons(id, profiles(first_name, last_name))")
+      .select("*")
       .order("name", { ascending: true });
 
     if (error) {

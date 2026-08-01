@@ -61,6 +61,7 @@ interface Member {
   is_approved?: boolean;
   status?: string;
   families?: { id: string; name: string }[];
+  ministries?: { id: string; name: string }[];
 }
 
 interface FamilyOption {
@@ -146,7 +147,6 @@ export default function MemberManagementPage() {
   const [editDeaconId, setEditDeaconId] = useState("");
   const [editFamilyIds, setEditFamilyIds] = useState<string[]>([]);
   const [editMinistryIds, setEditMinistryIds] = useState<string[]>([]);
-  const [memberMinistryMap, setMemberMinistryMap] = useState<Map<string, string[]>>(new Map());
 
   // Roles dialog state
   const [rolesOpen, setRolesOpen] = useState(false);
@@ -194,6 +194,9 @@ export default function MemberManagementPage() {
       }
 
       if (ministriesRes.ok) {
+        // The ministries LIST is fetched once to populate the edit dialog's
+        // dropdown. Each member's actual ministry memberships now arrive on the
+        // member objects from /api/admin/members (no per-ministry N+1 fetch).
         const ministriesData = await ministriesRes.json();
         setAllMinistries(
           (ministriesData.ministries ?? []).map((m: MinistryOption) => ({
@@ -201,28 +204,6 @@ export default function MemberManagementPage() {
             name: m.name,
           }))
         );
-
-        // Build a map of member -> ministry IDs by fetching each ministry's members
-        const mMap = new Map<string, string[]>();
-        const ministryList = ministriesData.ministries ?? [];
-        await Promise.all(
-          ministryList.map(async (ministry: MinistryOption) => {
-            try {
-              const mRes = await fetch(`/api/admin/ministries/${ministry.id}/members`);
-              if (mRes.ok) {
-                const mData = await mRes.json();
-                for (const mm of mData.members ?? []) {
-                  if (mm.status === "approved") {
-                    const existing = mMap.get(mm.profile_id) ?? [];
-                    existing.push(ministry.id);
-                    mMap.set(mm.profile_id, existing);
-                  }
-                }
-              }
-            } catch { /* non-fatal */ }
-          })
-        );
-        setMemberMinistryMap(mMap);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
@@ -326,7 +307,7 @@ export default function MemberManagementPage() {
     setEditingMember(member);
     setEditWardId(member.ward_id ?? "");
     setEditFamilyIds((member.families ?? []).map((f) => f.id));
-    setEditMinistryIds(memberMinistryMap.get(member.id) ?? []);
+    setEditMinistryIds((member.ministries ?? []).map((m) => m.id));
     const ward = member.ward_id
       ? wards.find((w) => w.id === member.ward_id)
       : undefined;
@@ -341,7 +322,7 @@ export default function MemberManagementPage() {
     if (!editingMember) return;
 
     const wardValue = editWardId === "__none__" ? "" : editWardId;
-    const currentMinistryIds = memberMinistryMap.get(editingMember.id) ?? [];
+    const currentMinistryIds = (editingMember.ministries ?? []).map((m) => m.id);
 
     // Update ward + families in parallel
     const [wardRes, famRes] = await Promise.all([
@@ -392,19 +373,13 @@ export default function MemberManagementPage() {
       } catch { /* non-fatal */ }
     }
 
-    // Update local ministry map
-    setMemberMinistryMap((prev) => {
-      const next = new Map(prev);
-      next.set(editingMember.id, editMinistryIds);
-      return next;
-    });
-
     if (wardRes.ok && famRes.ok) {
       const newFamilies = allFamilies.filter((f) => editFamilyIds.includes(f.id));
+      const newMinistries = allMinistries.filter((m) => editMinistryIds.includes(m.id));
       setMembers((prev) =>
         prev.map((m) =>
           m.id === editingMember.id
-            ? { ...m, ward_id: wardValue || undefined, families: newFamilies }
+            ? { ...m, ward_id: wardValue || undefined, families: newFamilies, ministries: newMinistries }
             : m
         )
       );

@@ -55,12 +55,14 @@ import {
 // ── Helpers ──────────────────────────────────────────────────────────
 
 function getDeaconsForWard(wardId: string, allWards: Ward[], deacons: Deacon[]): Deacon[] {
+  // Single source of truth: the assignment dialog writes the chosen deacon's id
+  // (deacons.id) into wards.deacon_id, and the dialog pre-fills from ward.deacon_id.
+  // Display must read that SAME field so an assignment shows immediately — not a
+  // fuzzy match on the deacon's own ward_id / ward_name.
   const ward = allWards.find((w) => w.id === wardId);
-  return deacons.filter((d) => {
-    if (d.ward_id === wardId) return true;
-    if (d.ward_name && ward) return d.ward_name.includes(ward.name);
-    return false;
-  });
+  if (!ward?.deacon_id) return [];
+  const assigned = deacons.find((d) => d.id === ward.deacon_id);
+  return assigned ? [assigned] : [];
 }
 
 function formatDeaconName(d: Deacon): string {

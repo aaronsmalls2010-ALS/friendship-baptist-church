@@ -52,10 +52,26 @@ export async function GET() {
       famsByUser.set(row.profile_id, list);
     }
 
+    // Attach each member's approved ministry memberships (id + name) with one
+    // bulk query — replaces the old per-ministry N+1 fetch on the client.
+    const { data: minRows } = await admin
+      .from("ministry_members")
+      .select("profile_id, ministries(id, name)")
+      .eq("status", "approved");
+    const minsByUser = new Map<string, { id: string; name: string }[]>();
+    for (const row of minRows ?? []) {
+      const min = row.ministries as unknown as { id?: string; name?: string } | null;
+      if (!min?.id) continue;
+      const list = minsByUser.get(row.profile_id) ?? [];
+      list.push({ id: min.id, name: min.name ?? "Ministry" });
+      minsByUser.set(row.profile_id, list);
+    }
+
     const members = (profiles ?? []).map((p) => ({
       ...p,
       roles: rolesByUser.get(p.id) ?? [p.role],
       families: famsByUser.get(p.id) ?? [],
+      ministries: minsByUser.get(p.id) ?? [],
     }));
 
     return NextResponse.json({ members });

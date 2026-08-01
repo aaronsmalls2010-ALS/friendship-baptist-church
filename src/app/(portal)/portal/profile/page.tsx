@@ -20,6 +20,8 @@ import {
   Shield,
   Phone,
   Mail,
+  Baby,
+  Trash2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +43,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { FadeIn } from "@/components/motion/fade-in";
 import { ProfilePictureUpload } from "@/components/portal/profile-picture-upload";
 import { AlertDialog } from "@/components/ui/alert-dialog";
@@ -72,6 +82,17 @@ interface DirectoryFamily {
   name: string;
   member_count: number;
   joined: boolean;
+}
+
+// ── Children / dependents ────────────────────────────────────────────
+interface Child {
+  id: string;
+  first_name: string;
+  last_name: string | null;
+  birthdate: string | null;
+  grade: string | null;
+  allergies: string | null;
+  notes: string | null;
 }
 
 interface MinistryWithStatus extends Ministry {
@@ -108,12 +129,15 @@ interface FormSnapshot {
   aboutBio: string;
   baptismDate: string;
   anniversary: string;
+  maritalStatus: string;
+  occupation: string;
   address: string;
   city: string;
   state: string;
   zip: string;
   emergencyName: string;
   emergencyPhone: string;
+  preferredContact: string;
   emailNotifs: boolean;
   smsNotifs: boolean;
   publicDirectory: boolean;
@@ -133,12 +157,15 @@ function isSnapshotEqual(a: FormSnapshot, b: FormSnapshot): boolean {
     a.aboutBio === b.aboutBio &&
     a.baptismDate === b.baptismDate &&
     a.anniversary === b.anniversary &&
+    a.maritalStatus === b.maritalStatus &&
+    a.occupation === b.occupation &&
     a.address === b.address &&
     a.city === b.city &&
     a.state === b.state &&
     a.zip === b.zip &&
     a.emergencyName === b.emergencyName &&
     a.emergencyPhone === b.emergencyPhone &&
+    a.preferredContact === b.preferredContact &&
     a.emailNotifs === b.emailNotifs &&
     a.smsNotifs === b.smsNotifs &&
     a.publicDirectory === b.publicDirectory
@@ -158,6 +185,19 @@ function formatCurrency(amount: number): string {
     style: "currency",
     currency: "USD",
   }).format(amount);
+}
+
+// ── Helper: age from birthdate ──────────────────────────────────────
+
+function ageFromBirthdate(birthdate: string | null): number | null {
+  if (!birthdate) return null;
+  const dob = new Date(birthdate);
+  if (Number.isNaN(dob.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+  return age >= 0 ? age : null;
 }
 
 // ── Helper: short date ──────────────────────────────────────────────
@@ -232,6 +272,8 @@ export default function MyProfilePage() {
   const [aboutBio, setAboutBio] = useState("");
   const [baptismDate, setBaptismDate] = useState("");
   const [anniversary, setAnniversary] = useState("");
+  const [maritalStatus, setMaritalStatus] = useState("");
+  const [occupation, setOccupation] = useState("");
 
   // ── Contact form ────────────────────────────────────────────────
   const [address, setAddress] = useState("");
@@ -240,6 +282,7 @@ export default function MyProfilePage() {
   const [zip, setZip] = useState("");
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [preferredContact, setPreferredContact] = useState("email");
 
   // ── Preferences ─────────────────────────────────────────────────
   const [emailNotifs, setEmailNotifs] = useState(true);
@@ -254,6 +297,21 @@ export default function MyProfilePage() {
 
   // ── Family actions ──────────────────────────────────────────────
   const [familyBusyId, setFamilyBusyId] = useState<string | null>(null);
+
+  // ── Children / dependents ───────────────────────────────────────
+  const [children, setChildren] = useState<Child[]>([]);
+  const [childDialogOpen, setChildDialogOpen] = useState(false);
+  const [editingChild, setEditingChild] = useState<Child | null>(null);
+  const [savingChild, setSavingChild] = useState(false);
+  const [childBusyId, setChildBusyId] = useState<string | null>(null);
+  const [childToDelete, setChildToDelete] = useState<Child | null>(null);
+  // Child form fields
+  const [childFirstName, setChildFirstName] = useState("");
+  const [childLastName, setChildLastName] = useState("");
+  const [childBirthdate, setChildBirthdate] = useState("");
+  const [childGrade, setChildGrade] = useState("");
+  const [childAllergies, setChildAllergies] = useState("");
+  const [childNotes, setChildNotes] = useState("");
 
   // ── Ministry actions ────────────────────────────────────────────
   const [joiningMinistryId, setJoiningMinistryId] = useState<string | null>(null);
@@ -278,12 +336,15 @@ export default function MyProfilePage() {
     const bio = p.about_bio || "";
     const bapt = p.baptism_date || "";
     const anniv = p.anniversary || "";
+    const marital = p.marital_status || "";
+    const occ = p.occupation || "";
     const addr = p.address || "";
     const ct = p.city || "";
     const st = p.state || "";
     const zp = p.zip || "";
     const emName = p.emergency_contact_name || "";
     const emPhone = p.emergency_contact_phone || "";
+    const prefContact = p.preferred_contact || "email";
 
     setFirstName(fName);
     setLastName(lName);
@@ -294,12 +355,15 @@ export default function MyProfilePage() {
     setAboutBio(bio);
     setBaptismDate(bapt);
     setAnniversary(anniv);
+    setMaritalStatus(marital);
+    setOccupation(occ);
     setAddress(addr);
     setCity(ct);
     setState(st);
     setZip(zp);
     setEmergencyName(emName);
     setEmergencyPhone(emPhone);
+    setPreferredContact(prefContact);
 
     // Preferences from profile
     const eNotifs = p.email_notifications !== false; // default true
@@ -319,12 +383,15 @@ export default function MyProfilePage() {
       aboutBio: bio,
       baptismDate: bapt,
       anniversary: anniv,
+      maritalStatus: marital,
+      occupation: occ,
       address: addr,
       city: ct,
       state: st,
       zip: zp,
       emergencyName: emName,
       emergencyPhone: emPhone,
+      preferredContact: prefContact,
       emailNotifs: eNotifs,
       smsNotifs: sNotifs,
       publicDirectory: pubDir,
@@ -343,12 +410,15 @@ export default function MyProfilePage() {
       aboutBio,
       baptismDate,
       anniversary,
+      maritalStatus,
+      occupation,
       address,
       city,
       state,
       zip,
       emergencyName,
       emergencyPhone,
+      preferredContact,
       emailNotifs,
       smsNotifs,
       publicDirectory,
@@ -372,12 +442,15 @@ export default function MyProfilePage() {
     setAboutBio(savedSnapshot.aboutBio);
     setBaptismDate(savedSnapshot.baptismDate);
     setAnniversary(savedSnapshot.anniversary);
+    setMaritalStatus(savedSnapshot.maritalStatus);
+    setOccupation(savedSnapshot.occupation);
     setAddress(savedSnapshot.address);
     setCity(savedSnapshot.city);
     setState(savedSnapshot.state);
     setZip(savedSnapshot.zip);
     setEmergencyName(savedSnapshot.emergencyName);
     setEmergencyPhone(savedSnapshot.emergencyPhone);
+    setPreferredContact(savedSnapshot.preferredContact);
     setEmailNotifs(savedSnapshot.emailNotifs);
     setSmsNotifs(savedSnapshot.smsNotifs);
     setPublicDirectory(savedSnapshot.publicDirectory);
@@ -425,13 +498,14 @@ export default function MyProfilePage() {
   const fetchData = useCallback(async () => {
     try {
       setError("");
-      const [profileRes, familyRes, dirRes, ministriesRes, wardRes, givingRes] = await Promise.all([
+      const [profileRes, familyRes, dirRes, ministriesRes, wardRes, givingRes, childrenRes] = await Promise.all([
         fetch("/api/portal/profile"),
         fetch("/api/portal/family"),
         fetch("/api/portal/family/directory"),
         fetch("/api/portal/ministries"),
         fetch("/api/portal/ward"),
         fetch("/api/portal/giving"),
+        fetch("/api/portal/family/children"),
       ]);
 
       if (!profileRes.ok) {
@@ -467,6 +541,11 @@ export default function MyProfilePage() {
         const givingData = await givingRes.json();
         setDonations(givingData.donations || []);
       }
+
+      if (childrenRes.ok) {
+        const childrenData = await childrenRes.json();
+        setChildren(childrenData.children || []);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load profile");
     } finally {
@@ -494,6 +573,8 @@ export default function MyProfilePage() {
           about_bio: aboutBio || null,
           baptism_date: baptismDate || null,
           anniversary: anniversary || null,
+          marital_status: maritalStatus || null,
+          occupation: occupation || null,
         }),
       });
       const data = await res.json();
@@ -527,6 +608,7 @@ export default function MyProfilePage() {
           zip: zip || null,
           emergency_contact_name: emergencyName || null,
           emergency_contact_phone: emergencyPhone || null,
+          preferred_contact: preferredContact || null,
         }),
       });
       const data = await res.json();
@@ -635,6 +717,105 @@ export default function MyProfilePage() {
       });
     } finally {
       setFamilyBusyId(null);
+    }
+  }
+
+  // ── Refresh children after a create/edit/remove ─────────────────
+  async function refreshChildren() {
+    const res = await fetch("/api/portal/family/children");
+    if (res.ok) {
+      const d = await res.json();
+      setChildren(d.children || []);
+    }
+  }
+
+  // ── Open the child dialog to add a new child ────────────────────
+  function openAddChild() {
+    setEditingChild(null);
+    setChildFirstName("");
+    setChildLastName("");
+    setChildBirthdate("");
+    setChildGrade("");
+    setChildAllergies("");
+    setChildNotes("");
+    setChildDialogOpen(true);
+  }
+
+  // ── Open the child dialog to edit an existing child ─────────────
+  function openEditChild(child: Child) {
+    setEditingChild(child);
+    setChildFirstName(child.first_name || "");
+    setChildLastName(child.last_name || "");
+    setChildBirthdate(child.birthdate || "");
+    setChildGrade(child.grade || "");
+    setChildAllergies(child.allergies || "");
+    setChildNotes(child.notes || "");
+    setChildDialogOpen(true);
+  }
+
+  // ── Create or update a child ────────────────────────────────────
+  async function handleSaveChild() {
+    if (!childFirstName.trim()) {
+      setToast({ type: "error", message: "First name is required." });
+      return;
+    }
+    setSavingChild(true);
+    try {
+      const payload = {
+        first_name: childFirstName.trim(),
+        last_name: childLastName.trim() || null,
+        birthdate: childBirthdate || null,
+        grade: childGrade.trim() || null,
+        allergies: childAllergies.trim() || null,
+        notes: childNotes.trim() || null,
+      };
+      const url = editingChild
+        ? `/api/portal/family/children/${editingChild.id}`
+        : "/api/portal/family/children";
+      const res = await fetch(url, {
+        method: editingChild ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save");
+      setChildDialogOpen(false);
+      setToast({
+        type: "success",
+        message: editingChild ? "Child updated." : "Child added.",
+      });
+      await refreshChildren();
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Save failed",
+      });
+    } finally {
+      setSavingChild(false);
+    }
+  }
+
+  // ── Remove a child (after confirmation) ─────────────────────────
+  async function handleDeleteChild() {
+    if (!childToDelete) return;
+    const id = childToDelete.id;
+    setChildToDelete(null);
+    setChildBusyId(id);
+    try {
+      const res = await fetch(`/api/portal/family/children/${id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Failed to remove");
+      setToast({ type: "success", message: "Child removed." });
+      await refreshChildren();
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: err instanceof Error ? err.message : "Failed to remove child",
+      });
+    } finally {
+      setChildBusyId(null);
     }
   }
 
@@ -1044,6 +1225,37 @@ export default function MyProfilePage() {
                     disabled={!editMode}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maritalStatus">Marital Status</Label>
+                  <Select
+                    value={maritalStatus}
+                    onValueChange={setMaritalStatus}
+                    disabled={!editMode}
+                  >
+                    <SelectTrigger id="maritalStatus">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="single">Single</SelectItem>
+                      <SelectItem value="married">Married</SelectItem>
+                      <SelectItem value="widowed">Widowed</SelectItem>
+                      <SelectItem value="divorced">Divorced</SelectItem>
+                      <SelectItem value="prefer_not_to_say">
+                        Prefer not to say
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="occupation">Occupation</Label>
+                  <Input
+                    id="occupation"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                    disabled={!editMode}
+                    placeholder="e.g. Teacher"
+                  />
+                </div>
               </div>
               {editMode && (
                 <div className="mt-6 flex items-center gap-3">
@@ -1128,6 +1340,27 @@ export default function MyProfilePage() {
                     placeholder="(843) 555-0000"
                   />
                 </div>
+                <div className="sm:col-span-2 border-t pt-4 mt-2">
+                  <h3 className="font-medium text-warm-800 mb-3">
+                    Contact Preference
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="preferredContact">Preferred Contact Method</Label>
+                  <Select
+                    value={preferredContact}
+                    onValueChange={setPreferredContact}
+                  >
+                    <SelectTrigger id="preferredContact">
+                      <SelectValue placeholder="Select method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="phone">Phone</SelectItem>
+                      <SelectItem value="text">Text</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="mt-6 flex items-center gap-3">
                 <Button
@@ -1150,6 +1383,90 @@ export default function MyProfilePage() {
                 ════════════════════════════════════════════════════════ */}
             <TabsContent value="family">
               <div className="space-y-8">
+                {/* Children / dependents */}
+                <div>
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Baby className="h-5 w-5 text-purple-700" />
+                      <h3 className="font-heading text-lg font-bold text-warm-800">
+                        Children &amp; Dependents
+                      </h3>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={openAddChild}
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      Add child
+                    </Button>
+                  </div>
+                  {children.length === 0 ? (
+                    <p className="text-sm text-warm-500">
+                      You haven&apos;t added any children yet. Use &ldquo;Add
+                      child&rdquo; to list your dependents.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {children.map((child) => {
+                        const age = ageFromBirthdate(child.birthdate);
+                        const details = [
+                          age !== null ? `Age ${age}` : null,
+                          child.grade ? `Grade ${child.grade}` : null,
+                        ].filter(Boolean);
+                        return (
+                          <div
+                            key={child.id}
+                            className="flex items-center justify-between gap-3 rounded-lg border border-warm-100 px-3 py-2.5"
+                          >
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-purple-700">
+                                {getInitials(child.first_name, child.last_name ?? "")}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-medium text-warm-800">
+                                  {child.first_name} {child.last_name ?? ""}
+                                </p>
+                                {details.length > 0 && (
+                                  <p className="truncate text-xs text-warm-400">
+                                    {details.join(" · ")}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-warm-400 hover:text-purple-700"
+                                onClick={() => openEditChild(child)}
+                                disabled={childBusyId === child.id}
+                                aria-label={`Edit ${child.first_name}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-warm-400 hover:text-red-500"
+                                onClick={() => setChildToDelete(child)}
+                                disabled={childBusyId === child.id}
+                                aria-label={`Remove ${child.first_name}`}
+                              >
+                                {childBusyId === child.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 {/* My families */}
                 <div>
                   <div className="mb-3 flex items-center gap-2">
@@ -1679,6 +1996,122 @@ export default function MyProfilePage() {
         cancelLabel="Discard"
         onConfirm={handleSaveAndSwitch}
         onCancel={handleDiscardAndSwitch}
+      />
+
+      {/* ── Add / Edit Child Dialog ─────────────────────────────── */}
+      <Dialog open={childDialogOpen} onOpenChange={setChildDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingChild ? "Edit Child" : "Add Child"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingChild
+                ? "Update your child's details."
+                : "Add a child or dependent to your family record."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="childFirstName">
+                First Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="childFirstName"
+                value={childFirstName}
+                onChange={(e) => setChildFirstName(e.target.value)}
+                placeholder="First name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="childLastName">Last Name</Label>
+              <Input
+                id="childLastName"
+                value={childLastName}
+                onChange={(e) => setChildLastName(e.target.value)}
+                placeholder="Last name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="childBirthdate">Birthdate</Label>
+              <Input
+                id="childBirthdate"
+                type="date"
+                value={childBirthdate}
+                onChange={(e) => setChildBirthdate(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="childGrade">Grade</Label>
+              <Input
+                id="childGrade"
+                value={childGrade}
+                onChange={(e) => setChildGrade(e.target.value)}
+                placeholder="e.g. 3rd"
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="childAllergies">Allergies</Label>
+              <Input
+                id="childAllergies"
+                value={childAllergies}
+                onChange={(e) => setChildAllergies(e.target.value)}
+                placeholder="Any allergies to note"
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="childNotes">Notes</Label>
+              <Textarea
+                id="childNotes"
+                rows={3}
+                value={childNotes}
+                onChange={(e) => setChildNotes(e.target.value)}
+                placeholder="Anything the church should know"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setChildDialogOpen(false)}
+              disabled={savingChild}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-purple-700 hover:bg-purple-800"
+              onClick={handleSaveChild}
+              disabled={savingChild}
+            >
+              {savingChild ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <Check className="h-4 w-4 mr-2" />
+              )}
+              {editingChild ? "Save Changes" : "Add Child"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Remove Child Confirmation Dialog ────────────────────── */}
+      <AlertDialog
+        open={childToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setChildToDelete(null);
+        }}
+        title="Remove Child"
+        description={
+          childToDelete
+            ? `Remove ${childToDelete.first_name}${
+                childToDelete.last_name ? " " + childToDelete.last_name : ""
+              } from your family record? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteChild}
+        onCancel={() => setChildToDelete(null)}
       />
     </div>
   );

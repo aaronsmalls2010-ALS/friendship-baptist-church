@@ -26,6 +26,9 @@ export interface Profile {
   baptism_date?: string;
   birthday?: string;
   anniversary?: string;
+  marital_status?: string;
+  occupation?: string;
+  preferred_contact?: string;
   ward_id?: string;
   ward_name?: string;
   family_id?: string;

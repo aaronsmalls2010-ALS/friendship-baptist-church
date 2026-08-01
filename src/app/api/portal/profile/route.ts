@@ -19,6 +19,9 @@ const ALLOWED_FIELDS = [
   "emergency_contact_phone",
   "anniversary",
   "baptism_date",
+  "marital_status",
+  "occupation",
+  "preferred_contact",
   // ward_id intentionally NOT member-editable — ward assignment is managed by
   // the church office (self-assigning exposed other wards' rosters).
   "photo_url",

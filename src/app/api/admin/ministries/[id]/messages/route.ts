@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getAuthContext } from "@/lib/auth/context";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -14,19 +14,14 @@ export async function GET(
   try {
     const { id: ministryId } = await params;
 
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
+    const user = authCtx.user;
     const admin = createAdminClient();
 
-    if (callerRole !== "admin" && callerRole !== "super_admin" && callerRole !== "pastor") {
+    if (!authCtx.isAdmin) {
       const { data: managerRecord } = await admin
         .from("ministry_members")
         .select("id")
@@ -89,20 +84,15 @@ export async function POST(
   try {
     const { id: ministryId } = await params;
 
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
+    const user = authCtx.user;
     const admin = createAdminClient();
 
     // Verify caller has access (admin/super_admin or ministry manager)
-    if (callerRole !== "admin" && callerRole !== "super_admin" && callerRole !== "pastor") {
+    if (!authCtx.isAdmin) {
       const { data: managerRecord, error: managerError } = await admin
         .from("ministry_members")
         .select("id")

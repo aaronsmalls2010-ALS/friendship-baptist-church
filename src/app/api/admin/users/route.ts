@@ -36,6 +36,16 @@ export async function POST(request: NextRequest) {
   if (action !== "grant" && action !== "revoke")
     return NextResponse.json({ error: "action must be grant or revoke" }, { status: 400 });
 
+  // Only a super_admin may grant or revoke admin-level roles — prevents a plain
+  // admin from minting another admin/super_admin (privilege escalation).
+  const ADMIN_LEVEL = ["admin", "super_admin", "pastor"];
+  if (ADMIN_LEVEL.includes(role as string) && !auth.ctx.isSuperAdmin) {
+    return NextResponse.json(
+      { error: "Only a super admin can grant or revoke admin-level roles." },
+      { status: 403 }
+    );
+  }
+
   const admin = createAdminClient();
 
   if (action === "grant") {

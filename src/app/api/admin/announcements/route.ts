@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -10,19 +10,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const admin = createAdminClient();
     const { data: announcements, error } = await admin
@@ -56,19 +45,8 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
     const { title, body: announcementBody, start_date, end_date, is_pinned, is_published } = body;
@@ -113,19 +91,8 @@ export async function POST(request: Request) {
  */
 export async function PUT(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
     const { id, ...raw } = body;
@@ -187,19 +154,8 @@ export async function PUT(request: Request) {
  */
 export async function DELETE(request: Request) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
     const { id } = body;

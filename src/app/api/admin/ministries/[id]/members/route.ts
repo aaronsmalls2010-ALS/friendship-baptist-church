@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getAuthContext } from "@/lib/auth/context";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -8,13 +8,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 async function verifyMinistryAccess(
   userId: string,
-  userRole: string | undefined,
+  isAdminLevel: boolean,
   ministryId: string,
   admin: ReturnType<typeof createAdminClient>
 ) {
-  // Admins and super_admins always have access
-  if (userRole === "admin" || userRole === "super_admin" || userRole === "pastor") {
-    return { authorized: true as const, callerRole: userRole };
+  // Admins and super_admins always have access (role sourced from the DB)
+  if (isAdminLevel) {
+    return { authorized: true as const, callerRole: "admin" };
   }
 
   // Check if user is a manager of this specific ministry
@@ -52,19 +52,14 @@ export async function GET(
   try {
     const { id: ministryId } = await params;
 
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
+    const user = authCtx.user;
     const admin = createAdminClient();
 
-    const access = await verifyMinistryAccess(user.id, callerRole, ministryId, admin);
+    const access = await verifyMinistryAccess(user.id, authCtx.isAdmin, ministryId, admin);
     if (!access.authorized) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }
@@ -109,19 +104,14 @@ export async function POST(
   try {
     const { id: ministryId } = await params;
 
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
+    const user = authCtx.user;
     const admin = createAdminClient();
 
-    const access = await verifyMinistryAccess(user.id, callerRole, ministryId, admin);
+    const access = await verifyMinistryAccess(user.id, authCtx.isAdmin, ministryId, admin);
     if (!access.authorized) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }
@@ -237,19 +227,14 @@ export async function PATCH(
   try {
     const { id: ministryId } = await params;
 
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const authCtx = await getAuthContext();
+    if (!authCtx) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
+    const user = authCtx.user;
     const admin = createAdminClient();
 
-    const access = await verifyMinistryAccess(user.id, callerRole, ministryId, admin);
+    const access = await verifyMinistryAccess(user.id, authCtx.isAdmin, ministryId, admin);
     if (!access.authorized) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }

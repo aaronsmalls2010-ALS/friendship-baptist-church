@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -10,26 +10,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export async function GET() {
   try {
-    // Verify caller is admin
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
-    // Fetch all profiles using admin client
+    // Fetch all non-archived profiles using admin client
     const admin = createAdminClient();
     const { data: profiles, error } = await admin
       .from("profiles")
       .select("id, email, first_name, last_name, phone, role, photo_url, ward_id, created_at, updated_at")
+      .is("archived_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -87,14 +76,8 @@ export async function GET() {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-
-    const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
     const { id, ward_id, ...otherFields } = body;
@@ -137,41 +120,50 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-    const role = user.user_metadata?.role || user.app_metadata?.role;
-    if (role !== "admin" && role !== "super_admin" && role !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
-    const body = await request.json();
-    const { id } = body;
+    const body = await request.json().catch(() => ({}));
+    const { id, hard } = body as { id?: string; hard?: boolean };
     if (!id) return NextResponse.json({ error: "Member ID required" }, { status: 400 });
 
     // Prevent deleting yourself
-    if (id === user.id) {
+    if (id === auth.user.id) {
       return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
     }
 
     const admin = createAdminClient();
 
-    // Delete the auth user — profile cascades via FK
-    const { error } = await admin.auth.admin.deleteUser(id);
-
-    if (error) {
-      console.error("[ADMIN] Delete member error:", error);
-      return NextResponse.json({ error: "Failed to delete member" }, { status: 500 });
+    // Hard delete is irreversible and wipes giving history — reserved for a
+    // super_admin who explicitly opts in. Everyone else soft-deletes (archives).
+    if (hard === true) {
+      if (!auth.ctx.isSuperAdmin) {
+        return NextResponse.json(
+          { error: "Only a super admin can permanently delete a member." },
+          { status: 403 }
+        );
+      }
+      const { error } = await admin.auth.admin.deleteUser(id);
+      if (error) {
+        console.error("[ADMIN] Delete member error:", error);
+        return NextResponse.json({ error: "Failed to delete member" }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, deleted: "hard" });
     }
 
-    console.log("[AUDIT] member.deleted", {
-      deletedId: id,
-      deletedBy: user.id,
-      timestamp: new Date().toISOString(),
-    });
+    // Soft delete: archive the profile so the member record and their giving
+    // history survive. Archived members are filtered out of the members list.
+    const { error } = await admin
+      .from("profiles")
+      .update({ archived_at: new Date().toISOString(), archived_by: auth.user.id })
+      .eq("id", id);
 
-    return NextResponse.json({ success: true });
+    if (error) {
+      console.error("[ADMIN] Archive member error:", error);
+      return NextResponse.json({ error: "Failed to archive member" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, deleted: "soft" });
   } catch (err) {
     console.error("[ADMIN] Members DELETE error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

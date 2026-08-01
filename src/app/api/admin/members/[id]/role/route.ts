@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthContext } from "@/lib/auth/context";
 import {
   ADMIN_LEVEL_ROLES,
   isRole,
   primaryRole,
-  rolesFromUser,
   type Role,
 } from "@/lib/auth/roles";
 
@@ -29,20 +28,13 @@ export async function PATCH(
   try {
     const { id: targetId } = await params;
 
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    const ctx = await getAuthContext();
+    if (!ctx) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
-
-    const callerRoles = rolesFromUser(user);
-    const callerIsAdmin = callerRoles.some(
-      (r) => r === "admin" || r === "super_admin" || r === "pastor"
-    );
-    const callerIsSuperAdmin = callerRoles.includes("super_admin");
-    if (!callerIsAdmin) {
+    const user = ctx.user;
+    const callerIsSuperAdmin = ctx.isSuperAdmin;
+    if (!ctx.isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -100,9 +92,9 @@ export async function PATCH(
     const touchesAdminLevel = [...toAdd, ...toRemove].some((r) =>
       ADMIN_LEVEL_ROLES.includes(r)
     );
-    if (touchesAdminLevel && !callerIsAdmin) {
+    if (touchesAdminLevel && !callerIsSuperAdmin) {
       return NextResponse.json(
-        { error: "Only admins can grant or revoke admin-level roles." },
+        { error: "Only a super admin can grant or revoke admin-level roles." },
         { status: 403 }
       );
     }

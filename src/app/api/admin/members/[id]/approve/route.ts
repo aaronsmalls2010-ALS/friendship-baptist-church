@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/email/send";
 import { getSiteUrl } from "@/lib/site-url";
@@ -18,20 +18,10 @@ export async function POST(
   try {
     const { id: targetId } = await params;
 
-    // Verify caller is authenticated and has admin privileges
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-    }
-
-    const callerRole = user.user_metadata?.role || user.app_metadata?.role;
-    if (callerRole !== "admin" && callerRole !== "super_admin" && callerRole !== "pastor") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    // Verify caller is authenticated and has admin privileges (DB-sourced roles)
+    const auth = await requireAdmin();
+    if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
+    const user = auth.user;
 
     const admin = createAdminClient();
 

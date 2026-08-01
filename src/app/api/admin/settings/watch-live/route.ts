@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const SETTING_ID = "settings.watch_live_enabled";
@@ -39,30 +39,19 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    // Verify authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    // Verify authentication + role (admin / super_admin only — NOT pastor).
+    // Roles are sourced from the DB, not self-writable user_metadata.
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
     }
-
-    // Verify admin or super_admin role
-    const role =
-      user.user_metadata?.role || user.app_metadata?.role || "member";
-    if (role !== "super_admin" && role !== "admin") {
+    if (!auth.ctx.has("admin", "super_admin")) {
       return NextResponse.json(
         { error: "Insufficient permissions" },
         { status: 403 }
       );
     }
+    const user = auth.user;
 
     // Parse request body
     const body = await request.json();

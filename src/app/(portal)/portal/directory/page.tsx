@@ -1,10 +1,16 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, Phone, Mail, Loader2 } from "lucide-react";
+import { Search, Phone, Mail, Loader2, Church } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectTrigger,
@@ -42,6 +48,7 @@ export default function ChurchDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [ministryFilter, setMinistryFilter] = useState("all");
+  const [selected, setSelected] = useState<any | null>(null);
 
   useEffect(() => {
     async function fetchDirectory() {
@@ -168,7 +175,19 @@ export default function ChurchDirectoryPage() {
 
           return (
             <SlideUpItem key={profile.id}>
-              <Card className="p-5 hover:shadow-card-hover transition-shadow">
+              <Card
+                role="button"
+                tabIndex={0}
+                aria-label={`View ${profile.first_name} ${profile.last_name}'s profile`}
+                onClick={() => setSelected(profile)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setSelected(profile);
+                  }
+                }}
+                className="p-5 cursor-pointer hover:shadow-card-hover transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500"
+              >
                 <div className="flex items-start gap-3">
                   {profile.photo_url ? (
                     <img
@@ -218,6 +237,84 @@ export default function ChurchDirectoryPage() {
           <p className="text-sm mt-1">Try adjusting your search or filters.</p>
         </div>
       )}
+
+      {/* Member profile detail */}
+      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="sm:max-w-md">
+          {selected && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="sr-only">
+                  {selected.first_name} {selected.last_name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col items-center text-center pt-2">
+                {selected.photo_url ? (
+                  <img
+                    src={selected.photo_url}
+                    alt={`${selected.first_name} ${selected.last_name}`}
+                    className="h-24 w-24 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-purple-700 text-white font-bold text-2xl">
+                    {selected.first_name?.[0]}
+                    {selected.last_name?.[0]}
+                  </div>
+                )}
+                <h2 className="mt-4 font-heading font-bold text-xl text-warm-800">
+                  {selected.first_name} {selected.last_name}
+                </h2>
+                <Badge
+                  className={`${roleBadgeStyles[selected.role as UserRole] || roleBadgeStyles.member} capitalize mt-2`}
+                >
+                  {selected.role}
+                </Badge>
+              </div>
+
+              <div className="mt-4 space-y-2 border-t border-warm-100 pt-4">
+                {selected.phone && (
+                  <a
+                    href={`tel:${selected.phone}`}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                  >
+                    <Phone className="h-4 w-4 shrink-0 text-purple-600" />
+                    {selected.phone}
+                  </a>
+                )}
+                {selected.email && (
+                  <a
+                    href={`mailto:${selected.email}`}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                  >
+                    <Mail className="h-4 w-4 shrink-0 text-purple-600" />
+                    <span className="truncate">{selected.email}</span>
+                  </a>
+                )}
+              </div>
+
+              {Array.isArray(selected.ministries) && selected.ministries.length > 0 && (
+                <div className="mt-2 border-t border-warm-100 pt-4">
+                  <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-warm-500 mb-2">
+                    <Church className="h-3.5 w-3.5" /> Ministries
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.ministries.map(
+                      (m: { ministry_id?: string; name?: string }, i: number) => (
+                        <Badge
+                          key={m.ministry_id || i}
+                          className="bg-warm-100 text-warm-700"
+                        >
+                          {m.name}
+                        </Badge>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

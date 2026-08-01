@@ -58,6 +58,8 @@ interface Member {
   photo_url?: string;
   created_at: string;
   ward_id?: string;
+  is_approved?: boolean;
+  status?: string;
   families?: { id: string; name: string }[];
 }
 
@@ -133,6 +135,9 @@ export default function MemberManagementPage() {
 
   // Delete confirmation dialog
   const [confirmDeleteMember, setConfirmDeleteMember] = useState<Member | null>(null);
+
+  // Tracks which member is currently being approved (disables its button)
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   // Edit member dialog state
   const [editOpen, setEditOpen] = useState(false);
@@ -455,6 +460,39 @@ export default function MemberManagementPage() {
     }
   }
 
+  // ── Approve pending member ───────────────────────────────────────
+  async function handleApprove(member: Member) {
+    setApprovingId(member.id);
+    setToast(null);
+    try {
+      const res = await fetch(`/api/admin/members/${member.id}/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setToast({ type: "error", message: data.error || "Failed to approve member." });
+        return;
+      }
+
+      setMembers((prev) =>
+        prev.map((m) => (m.id === member.id ? { ...m, is_approved: true } : m))
+      );
+      setToast({
+        type: "success",
+        message: `${member.first_name} ${member.last_name} has been approved.`,
+      });
+    } catch {
+      setToast({ type: "error", message: "Network error. Please try again." });
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  // Members awaiting approval (newest first, following the list order).
+  const pendingMembers = members.filter((m) => m.is_approved === false);
+
   // ── Filter + paginate ────────────────────────────────────────────
   const filtered = members.filter((m) => {
     // Status filter — exclude deceased by default; show all when filter = "all"
@@ -549,6 +587,71 @@ export default function MemberManagementPage() {
           )}
           <span>{toast.message}</span>
         </div>
+      )}
+
+      {/* Pending approval queue */}
+      {pendingMembers.length > 0 && (
+        <FadeIn>
+          <div className="rounded-xl border border-amber-200 bg-amber-50/70 dark:border-amber-900/40 dark:bg-amber-900/10">
+            <div className="flex items-center gap-2 border-b border-amber-200 px-4 py-3 dark:border-amber-900/40">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                Pending approval
+              </h2>
+              <Badge
+                variant="outline"
+                className="border-0 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+              >
+                {pendingMembers.length}
+              </Badge>
+            </div>
+            <ul className="divide-y divide-amber-100 dark:divide-amber-900/30">
+              {pendingMembers.map((member) => (
+                <li
+                  key={member.id}
+                  className="flex items-center justify-between gap-3 px-4 py-3"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage
+                        src={member.photo_url}
+                        alt={`${member.first_name} ${member.last_name}`}
+                      />
+                      <AvatarFallback className="bg-amber-100 text-amber-700 text-xs">
+                        {member.first_name?.[0]}
+                        {member.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-warm-900 dark:text-warm-50">
+                        {member.first_name} {member.last_name}
+                      </p>
+                      <p className="truncate text-xs text-warm-500">{member.email}</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => handleApprove(member)}
+                    disabled={approvingId === member.id}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {approvingId === member.id ? (
+                      <>
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        Approving...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                        Approve
+                      </>
+                    )}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </FadeIn>
       )}
 
       {/* Search */}

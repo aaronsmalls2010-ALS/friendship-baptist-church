@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { requireSuperAdmin } from "@/lib/auth/require-admin";
+import { isAllowedImage } from "@/lib/security/image-validation";
 
 /**
  * POST /api/cms/upload
@@ -50,6 +51,16 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: "File too large. Maximum size is 10 MB." },
+        { status: 400 }
+      );
+    }
+
+    // Verify the actual file bytes match a real image type — don't trust the
+    // client-declared file.type (a mislabeled payload would otherwise pass).
+    const sniffBytes = Buffer.from(await file.arrayBuffer());
+    if (!isAllowedImage(sniffBytes, ["jpeg", "png", "gif", "webp", "avif"], file.type)) {
+      return NextResponse.json(
+        { error: "File content does not match a supported image type." },
         { status: 400 }
       );
     }

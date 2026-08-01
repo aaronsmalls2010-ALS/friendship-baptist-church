@@ -46,7 +46,15 @@ export default function MemorialManagementPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     const res = await fetch("/api/admin/memorials");
-    if (res.ok) setMemorials((await res.json()).memorials ?? []);
+    if (res.ok) {
+      const data = await res.json();
+      setMemorials(
+        ((data.memorials ?? []) as Memorial[]).map((m) => ({
+          ...m,
+          comments: m.comments ?? [],
+        }))
+      );
+    }
     setLoading(false);
   }, []);
 

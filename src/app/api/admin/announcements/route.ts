@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
-    const { title, body: announcementBody, start_date, end_date, is_pinned, is_published } = body;
+    const { title, body: announcementBody, start_date, end_date, is_pinned, is_published, category } = body;
 
     if (!title || !announcementBody) {
       return NextResponse.json(
@@ -58,10 +58,17 @@ export async function POST(request: Request) {
       );
     }
 
+    if (category !== undefined && typeof category !== "string") {
+      return NextResponse.json(
+        { error: "Invalid category" },
+        { status: 400 }
+      );
+    }
+
     const admin = createAdminClient();
     const { data: announcement, error } = await admin
       .from("announcements")
-      .insert({ title, body: announcementBody, start_date, end_date, is_pinned, is_published })
+      .insert({ title, body: announcementBody, start_date, end_date, is_pinned, is_published, category })
       .select()
       .single();
 
@@ -104,7 +111,14 @@ export async function PUT(request: Request) {
       );
     }
 
-    const allowed = ["title", "body", "start_date", "end_date", "is_pinned", "is_published"];
+    if (raw.category !== undefined && typeof raw.category !== "string") {
+      return NextResponse.json(
+        { error: "Invalid category" },
+        { status: 400 }
+      );
+    }
+
+    const allowed = ["title", "body", "start_date", "end_date", "is_pinned", "is_published", "category"];
     const fields: Record<string, unknown> = {};
     for (const k of allowed) { if (k in raw) fields[k] = raw[k]; }
 

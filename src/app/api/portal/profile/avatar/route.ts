@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAllowedImage } from "@/lib/security/image-validation";
 
 const BUCKET_NAME = "avatars";
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB after decoding
@@ -52,6 +53,15 @@ export async function POST(request: NextRequest) {
     if (buffer.length > MAX_SIZE_BYTES) {
       return NextResponse.json(
         { error: "Image too large. Maximum 5 MB." },
+        { status: 400 }
+      );
+    }
+
+    // Verify the actual bytes match the claimed type (don't trust the data-URL
+    // prefix — a caller can mislabel a payload).
+    if (!isAllowedImage(buffer, ["jpeg", "png", "webp"], mimeSubtype)) {
+      return NextResponse.json(
+        { error: "File content is not a valid JPEG, PNG, or WebP image." },
         { status: 400 }
       );
     }

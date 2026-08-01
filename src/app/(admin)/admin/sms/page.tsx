@@ -5,7 +5,6 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -54,9 +53,6 @@ export default function SmsCenterPage() {
   const [recipientGroup, setRecipientGroup] = useState("");
   const [groupId, setGroupId] = useState("");
   const [message, setMessage] = useState("");
-  const [schedule, setSchedule] = useState("now");
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleTime, setScheduleTime] = useState("");
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -127,7 +123,7 @@ export default function SmsCenterPage() {
       const res = await fetch("/api/admin/sms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipientGroup, message, schedule, scheduleDate, scheduleTime, groupId: groupId || undefined }),
+        body: JSON.stringify({ recipientGroup, message, groupId: groupId || undefined }),
       });
       const data = await res.json();
 
@@ -139,9 +135,6 @@ export default function SmsCenterPage() {
         setMessage("");
         setRecipientGroup("");
         setGroupId("");
-        setSchedule("now");
-        setScheduleDate("");
-        setScheduleTime("");
         setOptInCount(null);
 
         const histRes = await fetch("/api/admin/sms");
@@ -296,32 +289,6 @@ export default function SmsCenterPage() {
                 <span>{message.length}/160 characters</span>
               </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sms-schedule">Schedule</Label>
-              <Select value={schedule} onValueChange={setSchedule}>
-                <SelectTrigger id="sms-schedule">
-                  <SelectValue placeholder="Select schedule" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="now">Send Now</SelectItem>
-                  <SelectItem value="later">Schedule for Later</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {schedule === "later" && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="sms-date">Date</Label>
-                  <Input id="sms-date" type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sms-time">Time</Label>
-                  <Input id="sms-time" type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} />
-                </div>
-              </div>
-            )}
 
             <Button
               className="bg-purple-700 hover:bg-purple-600 text-white"

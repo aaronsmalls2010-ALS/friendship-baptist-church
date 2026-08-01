@@ -42,6 +42,7 @@ export default function MediaManagementPage() {
   const [sermonDate, setSermonDate] = useState("");
   const [sermonScripture, setSermonScripture] = useState("");
   const [sermonTopics, setSermonTopics] = useState("");
+  const [sermonVideoUrl, setSermonVideoUrl] = useState("");
 
   // Sermon delete state
   const [sermonDeleteOpen, setSermonDeleteOpen] = useState(false);
@@ -55,6 +56,7 @@ export default function MediaManagementPage() {
   const [musicAlbum, setMusicAlbum] = useState("");
   const [musicType, setMusicType] = useState<MusicTrack["track_type"]>("gospel");
   const [musicDuration, setMusicDuration] = useState("");
+  const [musicAudioUrl, setMusicAudioUrl] = useState("");
 
   // Music delete state
   const [musicDeleteOpen, setMusicDeleteOpen] = useState(false);
@@ -95,6 +97,7 @@ export default function MediaManagementPage() {
     setSermonDate("");
     setSermonScripture("");
     setSermonTopics("");
+    setSermonVideoUrl("");
     setEditingSermon(null);
   }
 
@@ -110,6 +113,7 @@ export default function MediaManagementPage() {
     setSermonDate(sermon.date);
     setSermonScripture(sermon.scripture ?? "");
     setSermonTopics(sermon.topics.join(", "));
+    setSermonVideoUrl(sermon.video_url ?? "");
     setSermonFormOpen(true);
   }
 
@@ -125,6 +129,7 @@ export default function MediaManagementPage() {
       date: sermonDate,
       scripture: sermonScripture || undefined,
       topics,
+      video_url: sermonVideoUrl || undefined,
     };
 
     if (editingSermon) {
@@ -173,6 +178,7 @@ export default function MediaManagementPage() {
     setMusicAlbum("");
     setMusicType("gospel");
     setMusicDuration("");
+    setMusicAudioUrl("");
     setEditingTrack(null);
   }
 
@@ -188,6 +194,7 @@ export default function MediaManagementPage() {
     setMusicAlbum(track.album ?? "");
     setMusicType(track.track_type);
     setMusicDuration(String(track.duration));
+    setMusicAudioUrl(track.audio_url ?? "");
     setMusicFormOpen(true);
   }
 
@@ -198,6 +205,7 @@ export default function MediaManagementPage() {
       album: musicAlbum || undefined,
       track_type: musicType,
       duration: Number(musicDuration) || 0,
+      audio_url: musicAudioUrl,
     };
 
     if (editingTrack) {
@@ -499,6 +507,16 @@ export default function MediaManagementPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="sermon-video-url">Video URL</Label>
+              <Input
+                id="sermon-video-url"
+                type="url"
+                placeholder="https://youtube.com/watch?v=..."
+                value={sermonVideoUrl}
+                onChange={(e) => setSermonVideoUrl(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="sermon-topics">Topics (comma-separated)</Label>
               <Input
                 id="sermon-topics"
@@ -598,6 +616,17 @@ export default function MediaManagementPage() {
                 placeholder="Album name"
                 value={musicAlbum}
                 onChange={(e) => setMusicAlbum(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="music-audio-url">Audio URL</Label>
+              <Input
+                id="music-audio-url"
+                type="url"
+                placeholder="https://example.com/track.mp3"
+                value={musicAudioUrl}
+                onChange={(e) => setMusicAudioUrl(e.target.value)}
+                required
               />
             </div>
             <div className="space-y-2">

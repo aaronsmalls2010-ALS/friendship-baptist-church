@@ -62,8 +62,23 @@ export default function MyEventsPage() {
         setUpcomingEvents(upcoming);
         setPastEvents(past);
 
-        // Registered events: first 3 upcoming non-birthday events
-        const registeredNonBday = upcoming.filter((e: any) => !e.id.startsWith("bday-")).slice(0, 3);
+        // Hydrate the member's actual RSVP state from the server
+        const realEvents = allEvents.filter((e: any) => !e.id.startsWith("bday-"));
+        const rsvpResults = await Promise.all(
+          realEvents.map((e: any) =>
+            fetch(`/api/portal/events/${e.id}/rsvp`)
+              .then((r) => (r.ok ? r.json() : { rsvped: false }))
+              .then((d) => ({ id: e.id, rsvped: !!d.rsvped }))
+              .catch(() => ({ id: e.id, rsvped: false }))
+          )
+        );
+        const rsvpedSet = new Set(rsvpResults.filter((r) => r.rsvped).map((r) => r.id));
+        setRsvpedIds(rsvpedSet);
+
+        // Registered events: upcoming non-birthday events the member actually RSVP'd to
+        const registeredNonBday = upcoming.filter(
+          (e: any) => !e.id.startsWith("bday-") && rsvpedSet.has(e.id)
+        );
         setRegisteredEvents(registeredNonBday);
 
         // Recommended events: ministry events not in registered
@@ -319,10 +334,12 @@ export default function MyEventsPage() {
                         )}
                       </div>
                     </div>
-                    <Badge className="bg-green-100 text-green-700 hover:bg-green-100 w-fit inline-flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      Attended
-                    </Badge>
+                    {rsvpedIds.has(event.id) && (
+                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100 w-fit inline-flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        You RSVP&apos;d
+                      </Badge>
+                    )}
                   </div>
                 </FadeIn>
               ))}

@@ -36,6 +36,7 @@ import {
   Trash2,
   Search,
   Loader2,
+  AlertCircle,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -96,6 +97,9 @@ export default function MinistryManagementPage() {
   // Delete dialog state
   const [deleteMinistry, setDeleteMinistry] = useState<Ministry | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Error surfaced from edit/delete actions
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // ── Data fetching ─────────────────────────────────────────────────
 
@@ -183,6 +187,7 @@ export default function MinistryManagementPage() {
   }
 
   function handleOpenEdit(ministry: Ministry) {
+    setActionError(null);
     setEditMinistry(ministry);
     setEditName(ministry.name);
     setEditDescription(ministry.description ?? "");
@@ -192,13 +197,13 @@ export default function MinistryManagementPage() {
 
   async function handleSaveEdit() {
     if (!editMinistry || !editName.trim()) return;
+    setActionError(null);
     setEditSaving(true);
     try {
-      const res = await fetch("/api/admin/ministries", {
+      const res = await fetch(`/api/admin/ministries/${editMinistry.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: editMinistry.id,
           name: editName.trim(),
           description: editDescription.trim() || null,
           schedule: editSchedule.trim() || null,
@@ -208,9 +213,13 @@ export default function MinistryManagementPage() {
       if (res.ok) {
         setEditMinistry(null);
         await loadMinistries();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data.error || "Failed to update ministry.");
       }
     } catch (err) {
       console.error("Failed to update ministry:", err);
+      setActionError("Network error. Please try again.");
     } finally {
       setEditSaving(false);
     }
@@ -218,12 +227,12 @@ export default function MinistryManagementPage() {
 
   async function handleDelete() {
     if (!deleteMinistry) return;
+    setActionError(null);
     setDeleting(true);
     try {
-      const res = await fetch("/api/admin/ministries", {
+      const res = await fetch(`/api/admin/ministries/${deleteMinistry.id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: deleteMinistry.id }),
       });
       if (res.ok) {
         if (expandedId === deleteMinistry.id) {
@@ -232,9 +241,13 @@ export default function MinistryManagementPage() {
         }
         setDeleteMinistry(null);
         await loadMinistries();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data.error || "Failed to delete ministry.");
       }
     } catch (err) {
       console.error("Failed to delete ministry:", err);
+      setActionError("Network error. Please try again.");
     } finally {
       setDeleting(false);
     }
@@ -379,7 +392,10 @@ export default function MinistryManagementPage() {
       <Dialog
         open={!!editMinistry}
         onOpenChange={(open) => {
-          if (!open) setEditMinistry(null);
+          if (!open) {
+            setEditMinistry(null);
+            setActionError(null);
+          }
         }}
       >
         <DialogContent className="max-w-lg">
@@ -435,6 +451,12 @@ export default function MinistryManagementPage() {
                 onCheckedChange={setEditActive}
               />
             </div>
+            {actionError && (
+              <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{actionError}</span>
+              </div>
+            )}
             <DialogFooter>
               <Button variant="outline" type="button" onClick={() => setEditMinistry(null)}>
                 Cancel
@@ -455,7 +477,10 @@ export default function MinistryManagementPage() {
       <Dialog
         open={!!deleteMinistry}
         onOpenChange={(open) => {
-          if (!open) setDeleteMinistry(null);
+          if (!open) {
+            setDeleteMinistry(null);
+            setActionError(null);
+          }
         }}
       >
         <DialogContent className="max-w-sm">
@@ -467,6 +492,12 @@ export default function MinistryManagementPage() {
               action cannot be undone.
             </DialogDescription>
           </DialogHeader>
+          {actionError && (
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{actionError}</span>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteMinistry(null)}>
               Cancel

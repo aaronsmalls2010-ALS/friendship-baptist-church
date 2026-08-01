@@ -101,9 +101,21 @@ export default function NotificationsPage() {
   };
 
   const markAsRead = (id: string) => {
+    const target = notifications.find((n) => n.id === id);
+    if (!target || target.is_read) return;
+
+    // Optimistically update local state
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
+
+    fetch("/api/portal/notifications", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: [id] }),
+    }).catch((error) => {
+      console.error("Failed to mark notification as read:", error);
+    });
   };
 
   const getFilteredNotifications = (tab: TabValue): Notification[] => {

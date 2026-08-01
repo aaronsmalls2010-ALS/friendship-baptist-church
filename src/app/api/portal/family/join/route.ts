@@ -35,6 +35,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "That family no longer exists." }, { status: 404 });
   }
 
+  // PRIVACY: open self-join let anyone add themselves to any family and then see
+  // that household's members. Restrict self-join to an EMPTY family (claiming a
+  // household the office created). Once a family has members, only the church
+  // office can add people — so a member can never join a family to spy on it.
+  const { count: existingCount } = await admin
+    .from("family_members")
+    .select("*", { count: "exact", head: true })
+    .eq("family_id", familyId);
+  const alreadyMine = await admin
+    .from("family_members")
+    .select("profile_id", { head: true, count: "exact" })
+    .eq("family_id", familyId)
+    .eq("profile_id", user.id);
+  if ((existingCount ?? 0) > 0 && (alreadyMine.count ?? 0) === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "This household already has members. Please ask the church office to add you to your family.",
+      },
+      { status: 403 }
+    );
+  }
+
   // Add the caller as themselves (idempotent).
   const { error } = await admin
     .from("family_members")

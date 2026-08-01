@@ -125,15 +125,11 @@ export default function AdminDashboardPage() {
           icon={Users}
           label="Total Members"
           value={totalMembers}
-          trend="+3 this month"
-          trendUp
         />
         <StatCard
           icon={DollarSign}
           label="Monthly Donations"
           value={`$${monthlyDonations.toLocaleString()}`}
-          trend="+12% from last month"
-          trendUp
         />
         <StatCard
           icon={Calendar}
@@ -145,8 +141,6 @@ export default function AdminDashboardPage() {
           icon={Heart}
           label="Prayer Requests"
           value={prayerRequestsCount}
-          trend="+2 this week"
-          trendUp
         />
       </div>
 

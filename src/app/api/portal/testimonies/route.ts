@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
   const { error } = await admin.from("testimonies").insert({
+    profile_id: user.id,
     author_name: safeName,
     content: safeContent,
     is_approved: false, // requires admin approval

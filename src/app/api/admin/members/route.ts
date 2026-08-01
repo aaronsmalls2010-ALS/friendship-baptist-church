@@ -17,7 +17,7 @@ export async function GET() {
     const admin = createAdminClient();
     const { data: profiles, error } = await admin
       .from("profiles")
-      .select("id, email, first_name, last_name, phone, role, photo_url, ward_id, created_at, updated_at")
+      .select("id, email, first_name, last_name, phone, role, photo_url, ward_id, is_approved, status, created_at, updated_at")
       .is("archived_at", null)
       .order("created_at", { ascending: false });
 

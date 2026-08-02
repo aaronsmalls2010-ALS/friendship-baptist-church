@@ -59,12 +59,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { title, session_date, type, headcount, notes } = body as {
+  const { title, session_date, type, headcount, notes, group_id } = body as {
     title?: string;
     session_date?: string;
     type?: string;
     headcount?: number;
     notes?: string;
+    group_id?: string;
   };
 
   if (!title || !session_date) {
@@ -88,6 +89,10 @@ export async function POST(request: NextRequest) {
     insertData.headcount = Number(headcount);
   }
   if (notes !== undefined) insertData.notes = notes;
+  // Link a group only when the session is a group meeting.
+  if (sessionType === "group" && typeof group_id === "string" && group_id) {
+    insertData.group_id = group_id;
+  }
 
   const admin = createAdminClient();
   const { data: session, error } = await admin

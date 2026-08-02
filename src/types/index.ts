@@ -72,8 +72,14 @@ export interface Event {
   ministry_id?: string;
   image_url?: string;
   rsvp_enabled: boolean;
+  capacity?: number | null;
+  allow_waitlist?: boolean;
   is_published: boolean;
   created_at: string;
+  /** Count of confirmed ('going') RSVP rows — populated by list endpoints, not stored. */
+  going_count?: number;
+  /** Count of waitlisted RSVP rows — populated by list endpoints, not stored. */
+  waitlist_count?: number;
 }
 
 export interface Sermon {

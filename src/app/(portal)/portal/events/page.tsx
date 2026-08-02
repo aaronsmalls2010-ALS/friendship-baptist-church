@@ -6,7 +6,16 @@ import { FadeIn } from "@/components/motion/fade-in";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, MapPin, Clock, CheckCircle, Loader2, CalendarCheck, CalendarX, Cake } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CalendarDays, MapPin, Clock, CheckCircle, Loader2, CalendarCheck, CalendarX, Cake, Users, Hourglass, AlertCircle } from "lucide-react";
+
+type RsvpMeta = { status: "going" | "waitlist"; guests: number };
 
 export default function MyEventsPage() {
   const [loading, setLoading] = useState(true);
@@ -16,8 +25,10 @@ export default function MyEventsPage() {
   const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
   const [recommendedEvents, setRecommendedEvents] = useState<any[]>([]);
   const [rsvpedIds, setRsvpedIds] = useState<Set<string>>(new Set());
+  const [rsvpMeta, setRsvpMeta] = useState<Map<string, RsvpMeta>>(new Map());
+  const [guestSelect, setGuestSelect] = useState<Map<string, number>>(new Map());
   const [rsvpLoading, setRsvpLoading] = useState<string | null>(null);
-  const [rsvpToast, setRsvpToast] = useState<string | null>(null);
+  const [rsvpToast, setRsvpToast] = useState<{ text: string; tone: "success" | "error" | "waitlist" } | null>(null);
 
   useEffect(() => {
     async function fetchEvents() {
@@ -68,12 +79,23 @@ export default function MyEventsPage() {
           realEvents.map((e: any) =>
             fetch(`/api/portal/events/${e.id}/rsvp`)
               .then((r) => (r.ok ? r.json() : { rsvped: false }))
-              .then((d) => ({ id: e.id, rsvped: !!d.rsvped }))
-              .catch(() => ({ id: e.id, rsvped: false }))
+              .then((d) => ({
+                id: e.id,
+                rsvped: !!d.rsvped,
+                status: (d.status as "going" | "waitlist") ?? "going",
+                guests: Number(d.guests) || 0,
+              }))
+              .catch(() => ({ id: e.id, rsvped: false, status: "going" as const, guests: 0 }))
           )
         );
         const rsvpedSet = new Set(rsvpResults.filter((r) => r.rsvped).map((r) => r.id));
         setRsvpedIds(rsvpedSet);
+
+        const metaMap = new Map<string, RsvpMeta>();
+        for (const r of rsvpResults) {
+          if (r.rsvped) metaMap.set(r.id, { status: r.status, guests: r.guests });
+        }
+        setRsvpMeta(metaMap);
 
         // Registered events: upcoming non-birthday events the member actually RSVP'd to
         const registeredNonBday = upcoming.filter(
@@ -100,22 +122,171 @@ export default function MyEventsPage() {
     fetchEvents();
   }, []);
 
+  function showToast(text: string, tone: "success" | "error" | "waitlist") {
+    setRsvpToast({ text, tone });
+    setTimeout(() => setRsvpToast(null), 3000);
+  }
+
   async function handleRsvp(eventId: string) {
     const isRsvped = rsvpedIds.has(eventId);
     setRsvpLoading(eventId);
+
     const res = await fetch(`/api/portal/events/${eventId}/rsvp`, {
       method: isRsvped ? "DELETE" : "POST",
+      headers: isRsvped ? undefined : { "Content-Type": "application/json" },
+      body: isRsvped
+        ? undefined
+        : JSON.stringify({ guests: guestSelect.get(eventId) ?? 0 }),
     });
     setRsvpLoading(null);
-    if (res.ok) {
-      setRsvpedIds((prev) => {
-        const next = new Set(prev);
-        isRsvped ? next.delete(eventId) : next.add(eventId);
+
+    if (isRsvped) {
+      if (res.ok) {
+        setRsvpedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(eventId);
+          return next;
+        });
+        setRsvpMeta((prev) => {
+          const next = new Map(prev);
+          next.delete(eventId);
+          return next;
+        });
+        showToast("RSVP cancelled", "success");
+      }
+      return;
+    }
+
+    // POST (new RSVP)
+    const data = res.ok ? await res.json().catch(() => null) : null;
+    if (res.ok && data?.ok) {
+      const status: "going" | "waitlist" = data.status === "waitlist" ? "waitlist" : "going";
+      setRsvpedIds((prev) => new Set(prev).add(eventId));
+      setRsvpMeta((prev) => {
+        const next = new Map(prev);
+        next.set(eventId, { status, guests: Number(data.guests) || 0 });
         return next;
       });
-      setRsvpToast(isRsvped ? "RSVP cancelled" : "You're registered!");
-      setTimeout(() => setRsvpToast(null), 3000);
+      if (status === "waitlist") {
+        showToast("Event full — you're on the waitlist", "waitlist");
+      } else {
+        showToast("You're registered!", "success");
+      }
+    } else if (res.status === 409) {
+      showToast("This event is full.", "error");
+    } else {
+      showToast("Could not RSVP. Please try again.", "error");
     }
+  }
+
+  // Capacity / spots-remaining line for an event's meta row.
+  function capacityLine(event: any) {
+    if (!event.rsvp_enabled || event.capacity == null) return null;
+    const going = event.going_count ?? 0;
+    const remaining = Math.max(0, event.capacity - going);
+    const full = remaining <= 0;
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Users className={full ? "h-4 w-4 text-amber-500" : "h-4 w-4 text-purple-500"} />
+        {full
+          ? event.allow_waitlist
+            ? "Full — waitlist open"
+            : "Full"
+          : `${remaining} of ${event.capacity} spot${event.capacity === 1 ? "" : "s"} left`}
+      </span>
+    );
+  }
+
+  // RSVP control: guest picker + action button, or the member's current status.
+  function renderRsvpControl(event: any, idleClassName: string) {
+    const meta = rsvpMeta.get(event.id);
+    const isRsvped = rsvpedIds.has(event.id);
+    const going = event.going_count ?? 0;
+    const full = event.capacity != null && going >= event.capacity;
+    const busy = rsvpLoading === event.id;
+
+    if (isRsvped) {
+      const waitlisted = meta?.status === "waitlist";
+      return (
+        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:w-44">
+          <Badge
+            className={
+              waitlisted
+                ? "justify-center bg-amber-100 text-amber-700 hover:bg-amber-100"
+                : "justify-center bg-green-100 text-green-700 hover:bg-green-100"
+            }
+          >
+            {waitlisted ? (
+              <><Hourglass className="mr-1.5 h-3.5 w-3.5" />Waitlisted</>
+            ) : (
+              <><CalendarCheck className="mr-1.5 h-3.5 w-3.5" />Going</>
+            )}
+          </Badge>
+          {meta && meta.guests > 0 && (
+            <span className="text-center text-xs text-warm-500">
+              +{meta.guests} guest{meta.guests > 1 ? "s" : ""}
+            </span>
+          )}
+          <Button
+            variant="outline"
+            className="border-warm-200 text-warm-600 hover:bg-red-50 hover:text-red-600"
+            disabled={busy}
+            onClick={() => handleRsvp(event.id)}
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Cancel RSVP"}
+          </Button>
+        </div>
+      );
+    }
+
+    const canWaitlist = full && event.allow_waitlist;
+    const blocked = full && !event.allow_waitlist;
+
+    return (
+      <div className="flex shrink-0 flex-col items-stretch gap-2 sm:w-44">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 shrink-0 text-warm-400" />
+          <Select
+            value={String(guestSelect.get(event.id) ?? 0)}
+            onValueChange={(v) =>
+              setGuestSelect((prev) => new Map(prev).set(event.id, Number(v)))
+            }
+          >
+            <SelectTrigger className="h-9" aria-label="Number of guests">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 11 }, (_, n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n === 0 ? "Just me" : `+${n} guest${n > 1 ? "s" : ""}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button
+          className={
+            blocked
+              ? "shrink-0 cursor-not-allowed bg-warm-200 text-warm-500"
+              : canWaitlist
+                ? "shrink-0 bg-amber-500 text-white hover:bg-amber-600"
+                : idleClassName
+          }
+          disabled={busy || blocked}
+          onClick={() => handleRsvp(event.id)}
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : blocked ? (
+            "Event Full"
+          ) : canWaitlist ? (
+            <><Hourglass className="mr-2 h-4 w-4" />Join Waitlist</>
+          ) : (
+            <><CalendarX className="mr-2 h-4 w-4" />RSVP</>
+          )}
+        </Button>
+      </div>
+    );
   }
 
   if (loading) {
@@ -129,8 +300,25 @@ export default function MyEventsPage() {
   return (
     <div className="space-y-8">
       {rsvpToast && (
-        <div role="alert" className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium shadow-lg bg-green-50 text-green-800 border border-green-200">
-          <CheckCircle className="h-4 w-4 shrink-0" />{rsvpToast}
+        <div
+          role="alert"
+          className={
+            "fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-medium shadow-lg border " +
+            (rsvpToast.tone === "error"
+              ? "bg-red-50 text-red-800 border-red-200"
+              : rsvpToast.tone === "waitlist"
+                ? "bg-amber-50 text-amber-800 border-amber-200"
+                : "bg-green-50 text-green-800 border-green-200")
+          }
+        >
+          {rsvpToast.tone === "error" ? (
+            <AlertCircle className="h-4 w-4 shrink-0" />
+          ) : rsvpToast.tone === "waitlist" ? (
+            <Hourglass className="h-4 w-4 shrink-0" />
+          ) : (
+            <CheckCircle className="h-4 w-4 shrink-0" />
+          )}
+          {rsvpToast.text}
         </div>
       )}
       {/* Page Header */}
@@ -183,25 +371,13 @@ export default function MyEventsPage() {
                               {event.location}
                             </span>
                           )}
+                          {capacityLine(event)}
                         </div>
                         <p className="text-warm-600 leading-relaxed">
                           {event.description}
                         </p>
                       </div>
-                      <Button
-                        variant={rsvpedIds.has(event.id) ? "default" : "outline"}
-                        className={rsvpedIds.has(event.id)
-                          ? "shrink-0 bg-green-600 hover:bg-red-600 text-white"
-                          : "shrink-0 border-purple-200 text-purple-700 hover:bg-purple-50"}
-                        disabled={rsvpLoading === event.id}
-                        onClick={() => handleRsvp(event.id)}
-                      >
-                        {rsvpLoading === event.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : rsvpedIds.has(event.id)
-                            ? <><CalendarCheck className="mr-2 h-4 w-4" />RSVPed</>
-                            : <><CalendarX className="mr-2 h-4 w-4" />RSVP</>}
-                      </Button>
+                      {renderRsvpControl(event, "shrink-0 bg-purple-700 hover:bg-purple-600 text-white")}
                     </div>
                   </div>
                 </FadeIn>
@@ -245,24 +421,13 @@ export default function MyEventsPage() {
                               {event.location}
                             </span>
                           )}
+                          {capacityLine(event)}
                         </div>
                         <p className="text-warm-600 leading-relaxed">
                           {event.description}
                         </p>
                       </div>
-                      <Button
-                        className={rsvpedIds.has(event.id)
-                          ? "shrink-0 bg-green-600 hover:bg-red-600 text-white"
-                          : "shrink-0 bg-purple-700 hover:bg-purple-600 text-white"}
-                        disabled={rsvpLoading === event.id}
-                        onClick={() => handleRsvp(event.id)}
-                      >
-                        {rsvpLoading === event.id
-                          ? <Loader2 className="h-4 w-4 animate-spin" />
-                          : rsvpedIds.has(event.id)
-                            ? <><CalendarCheck className="mr-2 h-4 w-4" />RSVPed</>
-                            : "RSVP"}
-                      </Button>
+                      {renderRsvpControl(event, "shrink-0 bg-purple-700 hover:bg-purple-600 text-white")}
                     </div>
                   </div>
                 </FadeIn>

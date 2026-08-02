@@ -27,7 +27,25 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ events: events ?? [] });
+    // Attach current RSVP counts (going / waitlist) per event for the list view.
+    const { data: rsvps } = await admin
+      .from("event_rsvps")
+      .select("event_id, status");
+
+    const goingByEvent = new Map<string, number>();
+    const waitlistByEvent = new Map<string, number>();
+    for (const r of rsvps ?? []) {
+      const map = r.status === "waitlist" ? waitlistByEvent : goingByEvent;
+      map.set(r.event_id, (map.get(r.event_id) ?? 0) + 1);
+    }
+
+    const enriched = (events ?? []).map((e) => ({
+      ...e,
+      going_count: goingByEvent.get(e.id) ?? 0,
+      waitlist_count: waitlistByEvent.get(e.id) ?? 0,
+    }));
+
+    return NextResponse.json({ events: enriched });
   } catch (err) {
     console.error("[ADMIN] Events GET error:", err);
     return NextResponse.json(
@@ -49,7 +67,7 @@ export async function POST(request: Request) {
     if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
-    const { title, description, start_date, end_date, location, ministry_id, is_published, rsvp_enabled } = body;
+    const { title, description, start_date, end_date, location, ministry_id, is_published, rsvp_enabled, capacity, allow_waitlist } = body;
 
     if (!title || !start_date) {
       return NextResponse.json(
@@ -58,10 +76,28 @@ export async function POST(request: Request) {
       );
     }
 
+    // Normalize capacity: null (unlimited) or a positive integer.
+    const capNum = Number(capacity);
+    const normalizedCapacity =
+      capacity === null || capacity === undefined || capacity === "" || !Number.isFinite(capNum) || capNum <= 0
+        ? null
+        : Math.floor(capNum);
+
     const admin = createAdminClient();
     const { data: event, error } = await admin
       .from("events")
-      .insert({ title, description, start_date, end_date, location, ministry_id, is_published, rsvp_enabled })
+      .insert({
+        title,
+        description,
+        start_date,
+        end_date,
+        location,
+        ministry_id,
+        is_published,
+        rsvp_enabled,
+        capacity: normalizedCapacity,
+        allow_waitlist: allow_waitlist === true,
+      })
       .select()
       .single();
 
@@ -104,9 +140,21 @@ export async function PUT(request: Request) {
       );
     }
 
-    const allowed = ["title", "description", "start_date", "end_date", "location", "ministry_id", "is_published", "rsvp_enabled"];
+    const allowed = ["title", "description", "start_date", "end_date", "location", "ministry_id", "is_published", "rsvp_enabled", "capacity", "allow_waitlist"];
     const fields: Record<string, unknown> = {};
     for (const k of allowed) { if (k in raw) fields[k] = raw[k]; }
+
+    // Normalize capacity: null (unlimited) or a positive integer.
+    if ("capacity" in fields) {
+      const capNum = Number(fields.capacity);
+      fields.capacity =
+        fields.capacity === null || fields.capacity === "" || !Number.isFinite(capNum) || capNum <= 0
+          ? null
+          : Math.floor(capNum);
+    }
+    if ("allow_waitlist" in fields) {
+      fields.allow_waitlist = fields.allow_waitlist === true;
+    }
 
     const admin = createAdminClient();
 

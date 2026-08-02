@@ -40,6 +40,8 @@ export default function EventManagementPage() {
   const [formEndDate, setFormEndDate] = useState("");
   const [formLocation, setFormLocation] = useState("");
   const [formRsvpEnabled, setFormRsvpEnabled] = useState(false);
+  const [formCapacity, setFormCapacity] = useState("");
+  const [formAllowWaitlist, setFormAllowWaitlist] = useState(false);
   const [formIsPublished, setFormIsPublished] = useState(false);
 
   // ── Data fetching ─────────────────────────────────────────────────
@@ -67,6 +69,8 @@ export default function EventManagementPage() {
     setFormEndDate("");
     setFormLocation("");
     setFormRsvpEnabled(false);
+    setFormCapacity("");
+    setFormAllowWaitlist(false);
     setFormIsPublished(false);
     setEditingEvent(null);
   }
@@ -84,6 +88,8 @@ export default function EventManagementPage() {
     setFormEndDate(event.end_date ? toEasternInputValue(event.end_date) : "");
     setFormLocation(event.location ?? "");
     setFormRsvpEnabled(event.rsvp_enabled);
+    setFormCapacity(event.capacity != null ? String(event.capacity) : "");
+    setFormAllowWaitlist(event.allow_waitlist ?? false);
     setFormIsPublished(event.is_published);
     setFormOpen(true);
   }
@@ -96,6 +102,8 @@ export default function EventManagementPage() {
       end_date: formEndDate ? fromEasternInputValue(formEndDate) : undefined,
       location: formLocation || undefined,
       rsvp_enabled: formRsvpEnabled,
+      capacity: formCapacity.trim() === "" ? null : Number(formCapacity),
+      allow_waitlist: formAllowWaitlist,
       is_published: formIsPublished,
     };
 
@@ -168,6 +176,29 @@ export default function EventManagementPage() {
           {item.rsvp_enabled ? "Enabled" : "Disabled"}
         </Badge>
       ),
+    },
+    {
+      key: "going_count",
+      label: "Registered",
+      render: (item: Event) => {
+        if (!item.rsvp_enabled) return <span className="text-warm-400">—</span>;
+        const going = item.going_count ?? 0;
+        const cap = item.capacity;
+        const full = cap != null && going >= cap;
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className={full ? "font-medium text-red-600" : "text-warm-700"}>
+              {going}
+              {cap != null ? ` / ${cap}` : ""}
+            </span>
+            {(item.waitlist_count ?? 0) > 0 && (
+              <span className="text-xs text-amber-600">
+                {item.waitlist_count} waitlisted
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "is_published",
@@ -325,6 +356,38 @@ export default function EventManagementPage() {
               />
               <Label htmlFor="rsvp_enabled">Enable RSVP</Label>
             </div>
+
+            {formRsvpEnabled && (
+              <div className="space-y-4 rounded-lg border border-warm-200 bg-warm-50/50 p-4">
+                <div className="space-y-2">
+                  <Label htmlFor="capacity">Capacity</Label>
+                  <Input
+                    id="capacity"
+                    type="number"
+                    min={1}
+                    placeholder="Leave blank for unlimited"
+                    value={formCapacity}
+                    onChange={(e) => setFormCapacity(e.target.value)}
+                  />
+                  <p className="text-xs text-warm-500">
+                    Maximum confirmed RSVPs. Leave blank for no limit.
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="allow_waitlist"
+                    checked={formAllowWaitlist}
+                    onCheckedChange={(checked) =>
+                      setFormAllowWaitlist(checked === true)
+                    }
+                  />
+                  <Label htmlFor="allow_waitlist">
+                    Allow waitlist when full
+                  </Label>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center space-x-2">
               <Checkbox

@@ -1,4 +1,4 @@
-const CACHE_NAME = "fbc-v1";
+const CACHE_NAME = "fbc-v2";
 
 // Static assets to pre-cache on install
 const PRECACHE_URLS = ["/"];
@@ -47,9 +47,18 @@ self.addEventListener("fetch", (event) => {
 
   const path = url.pathname;
 
-  // Never cache auth / admin / portal / API routes
+  // Never touch auth / admin / portal / API routes. Do NOT call respondWith here
+  // — let the browser handle these requests natively. Intercepting App Router
+  // navigation (RSC) requests and re-issuing them via fetch() breaks client-side
+  // navigation and forces a full page reload on every click.
   if (NO_CACHE_PATTERNS.some((p) => p.test(path))) {
-    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Also let ALL App Router navigation/RSC requests pass through untouched
+  // (identified by the RSC header or the _rsc query param), so client-side
+  // navigation is never intercepted.
+  if (request.headers.get("RSC") === "1" || url.searchParams.has("_rsc")) {
     return;
   }
 

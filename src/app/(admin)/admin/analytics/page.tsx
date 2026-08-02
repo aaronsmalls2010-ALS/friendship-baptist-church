@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FadeIn } from "@/components/motion/fade-in";
-import { Users, DollarSign, Calendar, Heart, Loader2, Lock, CalendarClock } from "lucide-react";
+import { Users, DollarSign, Calendar, Heart, Loader2, Lock, CalendarClock, ClipboardCheck } from "lucide-react";
 
 // The trend charts are month-based, so the range control selects how many
 // months of history to render (and therefore which donations/members are
@@ -29,6 +29,14 @@ interface MinistryRow { id: string; name: string; ministry_members?: { count: nu
 interface PrayerRow { id: string; status?: string }
 interface EventRow { id: string; start_date: string }
 interface EventRsvp { id: string; title: string; rsvps: number }
+interface AttendanceSessionRow {
+  id: string;
+  title: string;
+  session_date: string;
+  type: string;
+  headcount: number | null;
+  present_count: number;
+}
 
 interface MonthBucket { key: string; label: string }
 
@@ -61,11 +69,12 @@ export default function AnalyticsPage() {
   const [prayers, setPrayers] = useState<PrayerRow[]>([]);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [eventRsvps, setEventRsvps] = useState<EventRsvp[]>([]);
+  const [attendanceSessions, setAttendanceSessions] = useState<AttendanceSessionRow[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
-        const [membersRes, donationsRes, ministriesRes, prayerRes, eventsRes, rsvpRes] =
+        const [membersRes, donationsRes, ministriesRes, prayerRes, eventsRes, rsvpRes, attendanceRes] =
           await Promise.all([
             fetch("/api/admin/members"),
             fetch("/api/admin/donations"),
@@ -73,6 +82,7 @@ export default function AnalyticsPage() {
             fetch("/api/admin/prayer-requests"),
             fetch("/api/admin/events"),
             fetch("/api/admin/analytics"),
+            fetch("/api/admin/attendance"),
           ]);
 
         if (membersRes.ok) {
@@ -107,6 +117,11 @@ export default function AnalyticsPage() {
         if (rsvpRes.ok) {
           const d = await rsvpRes.json();
           setEventRsvps(d.eventRsvps ?? []);
+        }
+
+        if (attendanceRes.ok) {
+          const d = await attendanceRes.json();
+          setAttendanceSessions(d.sessions ?? []);
         }
       } catch (err) {
         console.error("Failed to load analytics data:", err);
@@ -158,6 +173,27 @@ export default function AnalyticsPage() {
     return [...eventRsvps].sort((a, b) => b.rsvps - a.rsvps).slice(0, 5);
   }, [eventRsvps]);
   const maxRsvps = Math.max(1, ...topRsvps.map((e) => e.rsvps));
+
+  // Attendance over time: the most recent sessions (API returns newest-first),
+  // rendered oldest -> newest so the bars read left-to-right chronologically.
+  const attendanceData = useMemo(() => {
+    return [...attendanceSessions]
+      .slice(0, 12)
+      .reverse()
+      .map((s) => ({
+        id: s.id,
+        title: s.title,
+        count: s.present_count || s.headcount || 0,
+        // DATE column is "YYYY-MM-DD"; anchor at noon so the label doesn't
+        // shift a day under the church timezone.
+        label: new Date(`${s.session_date}T12:00:00`).toLocaleDateString("en-US", {
+          month: "numeric",
+          day: "numeric",
+        }),
+      }));
+  }, [attendanceSessions]);
+  const maxAttendance = Math.max(1, ...attendanceData.map((d) => d.count));
+  const totalAttendance = attendanceData.reduce((s, d) => s + d.count, 0);
 
   const now = Date.now();
   const eventsHeld = events.filter((e) => new Date(e.start_date).getTime() < now).length;

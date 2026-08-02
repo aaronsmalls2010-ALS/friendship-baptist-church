@@ -28,6 +28,8 @@ import {
   Menu,
   X,
   Search,
+  UsersRound,
+  ClipboardCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/brand/logo";
@@ -55,6 +57,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { label: "Members", href: "/admin/members", icon: Users },
       { label: "Families", href: "/admin/families", icon: Home },
       { label: "Ministries", href: "/admin/ministries", icon: Church },
+      { label: "Groups", href: "/admin/groups", icon: UsersRound },
       { label: "Deacons", href: "/admin/deacons", icon: Shield },
       { label: "Wards", href: "/admin/wards", icon: MapPin },
     ],
@@ -62,6 +65,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   {
     title: "Engagement",
     items: [
+      { label: "Attendance", href: "/admin/attendance", icon: ClipboardCheck },
       { label: "Events", href: "/admin/events", icon: CalendarDays },
       { label: "Announcements", href: "/admin/announcements", icon: Megaphone },
       { label: "Media", href: "/admin/media", icon: Image },

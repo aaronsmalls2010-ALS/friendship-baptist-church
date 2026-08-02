@@ -16,6 +16,7 @@ import {
   ArrowLeftRight,
   ChevronRight,
   ChevronLeft,
+  UsersRound,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/brand/logo";
@@ -28,6 +29,7 @@ const navItems = [
   { label: "Dashboard", href: "/portal", icon: LayoutDashboard },
   { label: "My Profile", href: "/portal/profile", icon: User },
   { label: "Directory", href: "/portal/directory", icon: Users },
+  { label: "Groups", href: "/portal/groups", icon: UsersRound },
   { label: "Giving History", href: "/portal/giving", icon: Heart },
   { label: "Events", href: "/portal/events", icon: CalendarDays },
   { label: "Devotionals", href: "/portal/devotionals", icon: BookOpen },

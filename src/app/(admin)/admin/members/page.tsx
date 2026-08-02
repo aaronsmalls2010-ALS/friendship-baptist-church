@@ -174,7 +174,6 @@ export default function MemberManagementPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [editWardId, setEditWardId] = useState("");
-  const [editDeaconId, setEditDeaconId] = useState("");
   const [editFamilyIds, setEditFamilyIds] = useState<string[]>([]);
   const [editMinistryIds, setEditMinistryIds] = useState<string[]>([]);
   const [editMembership, setEditMembership] = useState({
@@ -358,13 +357,6 @@ export default function MemberManagementPage() {
       marital_status: member.marital_status ?? "",
       occupation: member.occupation ?? "",
     });
-    const ward = member.ward_id
-      ? wards.find((w) => w.id === member.ward_id)
-      : undefined;
-    const deacon = ward
-      ? deacons.find((d) => d.ward_id === ward.id)
-      : undefined;
-    setEditDeaconId(deacon?.id ?? "");
     setEditOpen(true);
   }
 
@@ -453,15 +445,16 @@ export default function MemberManagementPage() {
     setEditingMember(null);
   }
 
-  // When ward changes in edit dialog, auto-select the deacon for that ward
+  // A member's deacon(s) are derived from their ward — see the read-only
+  // display in the edit dialog. Ward selection just updates editWardId.
   function handleEditWardChange(wardId: string) {
     setEditWardId(wardId);
-    if (wardId && wardId !== "__none__") {
-      const deacon = deacons.find((d) => d.ward_id === wardId);
-      setEditDeaconId(deacon?.id ?? "");
-    } else {
-      setEditDeaconId("");
-    }
+  }
+
+  // Deacon(s) of a given ward, derived from deacons.ward_id (may be multiple).
+  function getDeaconsForWardId(wardId: string): Deacon[] {
+    if (!wardId || wardId === "__none__") return [];
+    return deacons.filter((d) => d.ward_id === wardId);
   }
 
   // ── Delete member ────────────────────────────────────────────────
@@ -1243,26 +1236,24 @@ export default function MemberManagementPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-deacon">Deacon</Label>
-                <Select value={editDeaconId} onValueChange={setEditDeaconId}>
-                  <SelectTrigger id="edit-deacon">
-                    <SelectValue placeholder="Auto-assigned by ward" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">
-                      <span className="text-warm-400">None</span>
-                    </SelectItem>
-                    {deacons.filter((d) => d.is_active).map((deacon) => (
-                      <SelectItem key={deacon.id} value={deacon.id}>
-                        {deacon.title ? `${deacon.title} ` : ""}
-                        {deacon.first_name} {deacon.last_name}
-                        {deacon.ward_name ? ` (${deacon.ward_name})` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Deacon(s)</Label>
+                {(() => {
+                  const wardDeacons = getDeaconsForWardId(editWardId);
+                  return (
+                    <p className="text-sm text-warm-700 dark:text-warm-200">
+                      {wardDeacons.length > 0
+                        ? wardDeacons
+                            .map(
+                              (d) =>
+                                `${d.title ? `${d.title} ` : ""}${d.first_name} ${d.last_name}`
+                            )
+                            .join(", ")
+                        : "None"}
+                    </p>
+                  );
+                })()}
                 <p className="text-xs text-warm-400">
-                  Deacon is auto-selected when ward changes. Override manually if needed.
+                  Derived from the member&apos;s ward. Assign deacons on the Deacons page.
                 </p>
               </div>
 

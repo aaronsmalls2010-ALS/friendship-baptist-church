@@ -106,7 +106,7 @@ export async function DELETE(request: NextRequest) {
 
     const { data: membership, error: fetchError } = await admin
       .from("ministry_members")
-      .select("id, status")
+      .select("status")
       .eq("ministry_id", ministry_id)
       .eq("profile_id", user.id)
       .maybeSingle();
@@ -129,7 +129,8 @@ export async function DELETE(request: NextRequest) {
     const { error: deleteError } = await admin
       .from("ministry_members")
       .delete()
-      .eq("id", membership.id);
+      .eq("ministry_id", ministry_id)
+      .eq("profile_id", user.id);
 
     if (deleteError) {
       console.error("[PORTAL] Leave ministry error:", deleteError);
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
     // Check if user already has a membership record
     const { data: existing, error: existingError } = await admin
       .from("ministry_members")
-      .select("id, status")
+      .select("status")
       .eq("ministry_id", ministry_id)
       .eq("profile_id", user.id)
       .maybeSingle();

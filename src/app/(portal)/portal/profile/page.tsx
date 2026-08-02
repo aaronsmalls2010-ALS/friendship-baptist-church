@@ -283,9 +283,9 @@ export default function MyProfilePage() {
   const [ministries, setMinistries] = useState<MinistryWithStatus[]>([]);
   const [wardInfo, setWardInfo] = useState<{
     ward: { id: string; name: string; description: string } | null;
-    deacon: { id: string; first_name: string; last_name: string; phone: string; email: string; photo_url: string | null } | null;
+    deacons: { id: string; first_name: string; last_name: string; title: string | null; phone: string; email: string; photo_url: string | null }[];
     members: { id: string; first_name: string; last_name: string; phone: string; email: string; photo_url: string | null }[];
-  }>({ ward: null, deacon: null, members: [] });
+  }>({ ward: null, deacons: [], members: [] });
 
   // ── Loading / error ─────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
@@ -1747,39 +1747,45 @@ export default function MyProfilePage() {
                     )}
                   </div>
 
-                  {/* Deacon card */}
-                  {wardInfo.deacon && (
+                  {/* Deacon card(s) — a ward can have multiple deacons */}
+                  {wardInfo.deacons.length > 0 && (
                     <Card className="p-5 border-purple-200 bg-purple-50/50">
-                      <h4 className="text-sm font-semibold text-purple-700 uppercase tracking-wider mb-3">Your Deacon</h4>
-                      <div className="flex items-center gap-4">
-                        {wardInfo.deacon.photo_url ? (
-                          <img
-                            src={wardInfo.deacon.photo_url}
-                            alt={`${wardInfo.deacon.first_name} ${wardInfo.deacon.last_name}`}
-                            className="h-14 w-14 rounded-full object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className="h-14 w-14 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold text-lg shrink-0">
-                            {getInitials(wardInfo.deacon.first_name, wardInfo.deacon.last_name)}
+                      <h4 className="text-sm font-semibold text-purple-700 uppercase tracking-wider mb-3">
+                        {wardInfo.deacons.length > 1 ? "Your Deacons" : "Your Deacon"}
+                      </h4>
+                      <div className="space-y-4">
+                        {wardInfo.deacons.map((deacon) => (
+                          <div key={deacon.id} className="flex items-center gap-4">
+                            {deacon.photo_url ? (
+                              <img
+                                src={deacon.photo_url}
+                                alt={`${deacon.first_name} ${deacon.last_name}`}
+                                className="h-14 w-14 rounded-full object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="h-14 w-14 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold text-lg shrink-0">
+                                {getInitials(deacon.first_name, deacon.last_name)}
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-bold text-warm-800 text-lg">
+                                {deacon.title ? deacon.title : "Deacon"} {deacon.first_name} {deacon.last_name}
+                              </p>
+                              {deacon.phone && (
+                                <a href={`tel:${deacon.phone}`} className="flex items-center gap-1.5 text-sm text-purple-700 hover:underline mt-1">
+                                  <Phone className="h-3.5 w-3.5" />
+                                  {deacon.phone}
+                                </a>
+                              )}
+                              {deacon.email && (
+                                <a href={`mailto:${deacon.email}`} className="flex items-center gap-1.5 text-sm text-purple-700 hover:underline mt-0.5">
+                                  <Mail className="h-3.5 w-3.5" />
+                                  {deacon.email}
+                                </a>
+                              )}
+                            </div>
                           </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="font-bold text-warm-800 text-lg">
-                            Deacon {wardInfo.deacon.first_name} {wardInfo.deacon.last_name}
-                          </p>
-                          {wardInfo.deacon.phone && (
-                            <a href={`tel:${wardInfo.deacon.phone}`} className="flex items-center gap-1.5 text-sm text-purple-700 hover:underline mt-1">
-                              <Phone className="h-3.5 w-3.5" />
-                              {wardInfo.deacon.phone}
-                            </a>
-                          )}
-                          {wardInfo.deacon.email && (
-                            <a href={`mailto:${wardInfo.deacon.email}`} className="flex items-center gap-1.5 text-sm text-purple-700 hover:underline mt-0.5">
-                              <Mail className="h-3.5 w-3.5" />
-                              {wardInfo.deacon.email}
-                            </a>
-                          )}
-                        </div>
+                        ))}
                       </div>
                     </Card>
                   )}

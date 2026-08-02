@@ -54,15 +54,11 @@ import {
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
-function getDeaconsForWard(wardId: string, allWards: Ward[], deacons: Deacon[]): Deacon[] {
-  // Single source of truth: the assignment dialog writes the chosen deacon's id
-  // (deacons.id) into wards.deacon_id, and the dialog pre-fills from ward.deacon_id.
-  // Display must read that SAME field so an assignment shows immediately — not a
-  // fuzzy match on the deacon's own ward_id / ward_name.
-  const ward = allWards.find((w) => w.id === wardId);
-  if (!ward?.deacon_id) return [];
-  const assigned = deacons.find((d) => d.id === ward.deacon_id);
-  return assigned ? [assigned] : [];
+function getDeaconsForWard(wardId: string, deacons: Deacon[]): Deacon[] {
+  // Canonical model: a deacon serves a ward via deacons.ward_id. A ward's
+  // deacon(s) = every deacon whose ward_id matches this ward (there can be
+  // multiple). We derive from that field — wards.deacon_id is no longer used.
+  return deacons.filter((d) => d.ward_id === wardId);
 }
 
 function formatDeaconName(d: Deacon): string {
@@ -70,8 +66,8 @@ function formatDeaconName(d: Deacon): string {
   return `${prefix}${d.first_name} ${d.last_name}`;
 }
 
-function getDeaconDisplayForWard(wardId: string, allWards: Ward[], deacons: Deacon[]): string {
-  const matched = getDeaconsForWard(wardId, allWards, deacons);
+function getDeaconDisplayForWard(wardId: string, deacons: Deacon[]): string {
+  const matched = getDeaconsForWard(wardId, deacons);
   if (matched.length === 0) return "Unassigned";
   return matched.map(formatDeaconName).join(", ");
 }
@@ -100,10 +96,6 @@ export default function WardManagementPage() {
 
   // Dialog state for delete ward
   const [deleteDialogWard, setDeleteDialogWard] = useState<Ward | null>(null);
-
-  // Dialog state for assign deacon
-  const [deaconDialogWardId, setDeaconDialogWardId] = useState<string | null>(null);
-  const [selectedDeaconId, setSelectedDeaconId] = useState<string>("");
 
   // Dialog state for create ward
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -226,20 +218,6 @@ export default function WardManagementPage() {
     setDeleteDialogWard(null);
   }
 
-  async function handleAssignDeacon() {
-    if (!deaconDialogWardId || !selectedDeaconId) return;
-    const res = await fetch("/api/admin/wards", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: deaconDialogWardId, deacon_id: selectedDeaconId }),
-    });
-    if (res.ok) {
-      loadData();
-    }
-    setDeaconDialogWardId(null);
-    setSelectedDeaconId("");
-  }
-
   async function handleCreateWard() {
     if (!createName.trim()) return;
     const res = await fetch("/api/admin/wards", {
@@ -325,7 +303,6 @@ export default function WardManagementPage() {
                     <WardRow
                       key={ward.id}
                       ward={ward}
-                      allWards={wards}
                       isExpanded={isExpanded}
                       members={members}
                       deacons={deacons}
@@ -337,10 +314,6 @@ export default function WardManagementPage() {
                         setSelectedProfileId("");
                       }}
                       onRemoveMember={handleRemoveMember}
-                      onChangeDeacon={() => {
-                        setDeaconDialogWardId(ward.id);
-                        setSelectedDeaconId(ward.deacon_id ?? "");
-                      }}
                     />
                   );
                 })
@@ -532,59 +505,6 @@ export default function WardManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* ── Change Deacon Dialog ─────────────────────────────────────── */}
-      <Dialog
-        open={!!deaconDialogWardId}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeaconDialogWardId(null);
-            setSelectedDeaconId("");
-          }
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-xl">Assign Deacon</DialogTitle>
-            <DialogDescription>
-              Select a deacon for{" "}
-              {wards.find((w) => w.id === deaconDialogWardId)?.name ?? "this ward"}.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Select value={selectedDeaconId} onValueChange={setSelectedDeaconId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a deacon..." />
-              </SelectTrigger>
-              <SelectContent>
-                {deacons.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
-                    {formatDeaconName(d)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setDeaconDialogWardId(null);
-                  setSelectedDeaconId("");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleAssignDeacon}
-                className="bg-purple-700 hover:bg-purple-600 text-white"
-                disabled={!selectedDeaconId}
-              >
-                Save
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -593,7 +513,6 @@ export default function WardManagementPage() {
 
 interface WardRowProps {
   ward: Ward;
-  allWards: Ward[];
   isExpanded: boolean;
   members: Profile[];
   deacons: Deacon[];
@@ -602,12 +521,10 @@ interface WardRowProps {
   onDelete: () => void;
   onAssignMember: () => void;
   onRemoveMember: (profileId: string) => void;
-  onChangeDeacon: () => void;
 }
 
 function WardRow({
   ward,
-  allWards,
   isExpanded,
   members,
   deacons,
@@ -616,7 +533,6 @@ function WardRow({
   onDelete,
   onAssignMember,
   onRemoveMember,
-  onChangeDeacon,
 }: WardRowProps) {
   return (
     <>
@@ -641,16 +557,12 @@ function WardRow({
           {ward.description ?? "—"}
         </TableCell>
         <TableCell>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onChangeDeacon();
-            }}
-            className="text-left hover:underline text-purple-700 dark:text-purple-400 text-sm"
-            title="Change deacon assignment"
+          <span
+            className="text-sm text-warm-700 dark:text-warm-300"
+            title="Assign deacons on the Deacons page."
           >
-            {getDeaconDisplayForWard(ward.id, allWards, deacons)}
-          </button>
+            {getDeaconDisplayForWard(ward.id, deacons)}
+          </span>
         </TableCell>
         <TableCell>
           <Badge
@@ -696,6 +608,19 @@ function WardRow({
         <TableRow className="bg-purple-50/50 dark:bg-purple-900/10">
           <TableCell colSpan={6} className="p-0">
             <div className="px-6 py-4 space-y-3">
+              {/* Deacon(s) — derived from deacons.ward_id, read-only here */}
+              <div className="space-y-1">
+                <h4 className="text-sm font-semibold text-warm-700 dark:text-warm-300">
+                  Deacon(s)
+                </h4>
+                <p className="text-sm text-warm-700 dark:text-warm-300">
+                  {getDeaconDisplayForWard(ward.id, deacons)}
+                </p>
+                <p className="text-xs text-warm-400">
+                  Assign deacons on the Deacons page.
+                </p>
+              </div>
+
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-warm-700 dark:text-warm-300">
                   Members in {ward.name}

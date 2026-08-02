@@ -13,11 +13,13 @@ import {
   Music,
   List,
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useMusicPlayer } from "@/providers/music-provider";
 import { formatDuration } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 export function MusicPlayer() {
+  const pathname = usePathname();
   const {
     currentTrack,
     isPlaying,
@@ -34,6 +36,10 @@ export function MusicPlayer() {
     setExpanded,
     play,
   } = useMusicPlayer();
+
+  // The worship music player belongs to the public site — never show it inside
+  // the admin dashboard or member portal (business/app surfaces).
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/portal")) return null;
 
   if (!currentTrack && queue.length === 0) return null;
 

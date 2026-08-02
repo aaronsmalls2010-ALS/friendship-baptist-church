@@ -85,7 +85,7 @@ export function DataTable<T extends Record<string, unknown>>({
     <div className="space-y-4">
       {searchable && (
         <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="Search..."
             value={search}
@@ -98,16 +98,19 @@ export function DataTable<T extends Record<string, unknown>>({
         </div>
       )}
 
-      <div className="rounded-xl border border-warm-100 dark:border-warm-800 overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <Table>
           <TableHeader>
-            <TableRow className="bg-warm-50 dark:bg-warm-900">
+            <TableRow className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:bg-slate-800/50">
               {columns.map((col) => (
-                <TableHead key={col.key}>
+                <TableHead
+                  key={col.key}
+                  className="h-11 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                >
                   {col.sortable ? (
                     <button
                       onClick={() => handleSort(col.key)}
-                      className="inline-flex items-center gap-1 font-medium hover:text-purple-700"
+                      className="inline-flex items-center gap-1 uppercase tracking-wider transition-colors duration-150 hover:text-purple-600 dark:hover:text-purple-300"
                     >
                       {col.label}
                       <ArrowUpDown className="h-3.5 w-3.5" />
@@ -122,7 +125,7 @@ export function DataTable<T extends Record<string, unknown>>({
           <TableBody>
             {paged.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-warm-400">
+                <TableCell colSpan={columns.length} className="py-10 text-center text-sm text-slate-400">
                   No results found
                 </TableCell>
               </TableRow>
@@ -130,11 +133,19 @@ export function DataTable<T extends Record<string, unknown>>({
               paged.map((item, i) => (
                 <TableRow
                   key={i}
-                  className={onRowClick ? "cursor-pointer hover:bg-warm-50 dark:hover:bg-warm-800" : ""}
+                  className={
+                    "border-b border-slate-100 transition-colors duration-150 dark:border-slate-800" +
+                    (onRowClick
+                      ? " cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                      : " hover:bg-slate-50/60 dark:hover:bg-slate-800/40")
+                  }
                   onClick={() => onRowClick?.(item)}
                 >
                   {columns.map((col) => (
-                    <TableCell key={col.key}>
+                    <TableCell
+                      key={col.key}
+                      className="py-3.5 text-slate-700 tabular-nums dark:text-slate-300"
+                    >
                       {col.render
                         ? col.render(item)
                         : (item[col.key] as React.ReactNode) ?? "—"}
@@ -149,7 +160,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-warm-500">
+          <p className="text-sm tabular-nums text-slate-500 dark:text-slate-400">
             Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, filtered.length)} of{" "}
             {filtered.length}
           </p>

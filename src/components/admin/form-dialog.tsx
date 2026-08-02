@@ -36,7 +36,7 @@ export function FormDialog({
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading text-xl">{title}</DialogTitle>
+          <DialogTitle className="text-lg font-semibold tracking-tight">{title}</DialogTitle>
         </DialogHeader>
         {children}
       </DialogContent>

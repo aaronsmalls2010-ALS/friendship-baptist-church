@@ -17,16 +17,16 @@ export function AdminPageHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-4 border-b border-slate-200 pb-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between",
         className
       )}
     >
       <div>
-        <h1 className="font-heading text-fluid-2xl font-bold text-warm-900 dark:text-warm-50">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
           {title}
         </h1>
         {description && (
-          <p className="mt-1 text-warm-500 dark:text-warm-400">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {description}
           </p>
         )}

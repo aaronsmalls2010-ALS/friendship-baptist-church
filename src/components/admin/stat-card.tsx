@@ -25,21 +25,23 @@ export function StatCard({
     <FadeIn>
       <div
         className={cn(
-          "rounded-xl border border-warm-100 bg-white p-6 dark:border-warm-800 dark:bg-warm-900",
+          "rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-150 hover:shadow-md dark:border-slate-800 dark:bg-slate-900",
           className
         )}
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-warm-500">{label}</p>
-            <p className="mt-1 text-fluid-2xl font-bold text-warm-900 dark:text-warm-50">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              {label}
+            </p>
+            <p className="mt-2 text-3xl font-semibold tracking-tight tabular-nums text-slate-900 dark:text-slate-50">
               {value}
             </p>
             {trend && (
               <p
                 className={cn(
-                  "mt-1 text-xs font-medium",
-                  trendUp ? "text-green-600" : "text-warm-400"
+                  "mt-1 text-xs font-medium tabular-nums",
+                  trendUp ? "text-green-600" : "text-slate-400"
                 )}
               >
                 {trend}
@@ -47,7 +49,7 @@ export function StatCard({
             )}
           </div>
           <div className="rounded-lg bg-purple-50 p-2.5 dark:bg-purple-900/30">
-            <Icon className="h-5 w-5 text-purple-600" />
+            <Icon className="h-5 w-5 text-purple-600 dark:text-purple-300" />
           </div>
         </div>
       </div>

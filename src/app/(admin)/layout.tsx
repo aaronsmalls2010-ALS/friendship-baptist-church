@@ -12,7 +12,7 @@ export default function AdminLayout({
   return (
     <div className="flex h-screen overflow-hidden">
       <AdminSidebar />
-      <ScrollMain className="flex-1 bg-warm-50 dark:bg-warm-950 min-w-0 overflow-y-auto pt-14 lg:pt-0">
+      <ScrollMain className="flex-1 bg-[#F6F7F9] dark:bg-[#0D1117] min-w-0 overflow-y-auto pt-14 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </ScrollMain>
     </div>

@@ -20,10 +20,13 @@ export async function GET() {
 
     const admin = createAdminClient();
 
-    // Fetch profiles that are public in the directory
+    // Fetch profiles that are public in the directory.
+    // Per-field visibility flags let each member control what is shown.
     const { data: profiles, error: profilesError } = await admin
       .from("profiles")
-      .select("id, first_name, last_name, phone, email, photo_url, role")
+      .select(
+        "id, first_name, last_name, phone, email, address, city, state, zip, photo_url, role, directory_show_phone, directory_show_email, directory_show_address"
+      )
       .eq("public_directory", true);
 
     if (profilesError) {
@@ -75,11 +78,47 @@ export async function GET() {
       ministryMap.set(m.profile_id, list);
     }
 
-    // Merge ministry objects into profiles
-    const directory = (profiles ?? []).map((profile) => ({
-      ...profile,
-      ministries: ministryMap.get(profile.id) ?? [],
-    }));
+    // Merge ministry objects into profiles and apply per-field visibility.
+    // Phone/email default to visible (only hidden when the flag is explicitly
+    // false); address defaults to hidden (only shown when the flag is true).
+    // The flag columns themselves are stripped from the response.
+    const directory = (profiles ?? []).map((profile) => {
+      const {
+        directory_show_phone,
+        directory_show_email,
+        directory_show_address,
+        phone,
+        email,
+        address,
+        city,
+        state,
+        zip,
+        ...rest
+      } = profile as typeof profile & {
+        directory_show_phone?: boolean | null;
+        directory_show_email?: boolean | null;
+        directory_show_address?: boolean | null;
+        address?: string | null;
+        city?: string | null;
+        state?: string | null;
+        zip?: string | null;
+      };
+
+      const showPhone = directory_show_phone !== false;
+      const showEmail = directory_show_email !== false;
+      const showAddress = directory_show_address === true;
+
+      return {
+        ...rest,
+        phone: showPhone ? phone : null,
+        email: showEmail ? email : null,
+        address: showAddress ? address : null,
+        city: showAddress ? city : null,
+        state: showAddress ? state : null,
+        zip: showAddress ? zip : null,
+        ministries: ministryMap.get(profile.id) ?? [],
+      };
+    });
 
     // Return distinct ministries list for filter dropdown
     const ministriesList = Array.from(allMinistries.entries()).map(([id, name]) => ({ id, name }));

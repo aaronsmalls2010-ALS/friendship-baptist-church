@@ -17,15 +17,15 @@ export async function GET(request: NextRequest) {
   let query = admin
     .from("donations")
     .select(`
-      id, amount, donation_type, campaign, created_at, is_recurring,
+      id, amount, donation_type, campaign, date, created_at, is_recurring,
       profiles(first_name, last_name),
       donation_types(name)
     `)
     .is("archived_at", null)
-    .order("created_at", { ascending: false });
+    .order("date", { ascending: false });
 
-  if (dateFrom) query = query.gte("created_at", dateFrom);
-  if (dateTo)   query = query.lte("created_at", dateTo + "T23:59:59");
+  if (dateFrom) query = query.gte("date", dateFrom);
+  if (dateTo)   query = query.lte("date", dateTo);
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: "Failed to fetch donations" }, { status: 500 });
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     const p = d.profiles as unknown as { first_name: string; last_name: string } | null;
     const t = d.donation_types as unknown as { name: string } | null;
     return {
-      date: d.created_at?.split("T")[0] ?? "",
+      date: (d.date as string | null) ?? d.created_at?.split("T")[0] ?? "",
       donor: p ? `${p.first_name} ${p.last_name}` : "Anonymous",
       amount: d.amount,
       type: t?.name ?? d.donation_type ?? "",

@@ -141,6 +141,13 @@ interface FormSnapshot {
   emailNotifs: boolean;
   smsNotifs: boolean;
   publicDirectory: boolean;
+  dirShowPhone: boolean;
+  dirShowEmail: boolean;
+  dirShowAddress: boolean;
+  notifyEvents: boolean;
+  notifyPrayer: boolean;
+  notifyGiving: boolean;
+  notifyNewsletter: boolean;
 }
 
 function createSnapshot(values: FormSnapshot): FormSnapshot {
@@ -168,7 +175,14 @@ function isSnapshotEqual(a: FormSnapshot, b: FormSnapshot): boolean {
     a.preferredContact === b.preferredContact &&
     a.emailNotifs === b.emailNotifs &&
     a.smsNotifs === b.smsNotifs &&
-    a.publicDirectory === b.publicDirectory
+    a.publicDirectory === b.publicDirectory &&
+    a.dirShowPhone === b.dirShowPhone &&
+    a.dirShowEmail === b.dirShowEmail &&
+    a.dirShowAddress === b.dirShowAddress &&
+    a.notifyEvents === b.notifyEvents &&
+    a.notifyPrayer === b.notifyPrayer &&
+    a.notifyGiving === b.notifyGiving &&
+    a.notifyNewsletter === b.notifyNewsletter
   );
 }
 
@@ -198,6 +212,29 @@ function ageFromBirthdate(birthdate: string | null): number | null {
   const m = now.getMonth() - dob.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
   return age >= 0 ? age : null;
+}
+
+// ── Helper: profile completeness ────────────────────────────────────
+
+interface CompletenessResult {
+  percent: number;
+  missing: string[];
+}
+
+function computeCompleteness(p: Profile): CompletenessResult {
+  const hasAddress = Boolean(p.address || (p.city && p.state));
+  const checks: { label: string; done: boolean }[] = [
+    { label: "Profile photo", done: Boolean(p.photo_url) },
+    { label: "Phone number", done: Boolean(p.phone) },
+    { label: "Address", done: hasAddress },
+    { label: "Date of birth", done: Boolean(p.date_of_birth || p.birthday) },
+    { label: "About / bio", done: Boolean(p.about_bio) },
+    { label: "Emergency contact", done: Boolean(p.emergency_contact_name) },
+  ];
+  const doneCount = checks.filter((c) => c.done).length;
+  const percent = Math.round((doneCount / checks.length) * 100);
+  const missing = checks.filter((c) => !c.done).map((c) => c.label);
+  return { percent, missing };
 }
 
 // ── Helper: short date ──────────────────────────────────────────────
@@ -289,6 +326,17 @@ export default function MyProfilePage() {
   const [smsNotifs, setSmsNotifs] = useState(false);
   const [publicDirectory, setPublicDirectory] = useState(true);
 
+  // ── Granular directory visibility ───────────────────────────────
+  const [dirShowPhone, setDirShowPhone] = useState(true);
+  const [dirShowEmail, setDirShowEmail] = useState(true);
+  const [dirShowAddress, setDirShowAddress] = useState(false);
+
+  // ── Notification categories ─────────────────────────────────────
+  const [notifyEvents, setNotifyEvents] = useState(true);
+  const [notifyPrayer, setNotifyPrayer] = useState(true);
+  const [notifyGiving, setNotifyGiving] = useState(true);
+  const [notifyNewsletter, setNotifyNewsletter] = useState(true);
+
   // ── Dirty form detection ────────────────────────────────────────
   const [savedSnapshot, setSavedSnapshot] = useState<FormSnapshot | null>(null);
   const [unsavedDialogOpen, setUnsavedDialogOpen] = useState(false);
@@ -373,6 +421,24 @@ export default function MyProfilePage() {
     setSmsNotifs(sNotifs);
     setPublicDirectory(pubDir);
 
+    // Granular directory visibility (phone/email default true, address false)
+    const dShowPhone = p.directory_show_phone !== false;
+    const dShowEmail = p.directory_show_email !== false;
+    const dShowAddress = p.directory_show_address === true;
+    setDirShowPhone(dShowPhone);
+    setDirShowEmail(dShowEmail);
+    setDirShowAddress(dShowAddress);
+
+    // Notification categories (all default true)
+    const nEvents = p.notify_events !== false;
+    const nPrayer = p.notify_prayer !== false;
+    const nGiving = p.notify_giving !== false;
+    const nNewsletter = p.notify_newsletter !== false;
+    setNotifyEvents(nEvents);
+    setNotifyPrayer(nPrayer);
+    setNotifyGiving(nGiving);
+    setNotifyNewsletter(nNewsletter);
+
     // Store snapshot for dirty detection
     const snapshot: FormSnapshot = {
       firstName: fName,
@@ -395,6 +461,13 @@ export default function MyProfilePage() {
       emailNotifs: eNotifs,
       smsNotifs: sNotifs,
       publicDirectory: pubDir,
+      dirShowPhone: dShowPhone,
+      dirShowEmail: dShowEmail,
+      dirShowAddress: dShowAddress,
+      notifyEvents: nEvents,
+      notifyPrayer: nPrayer,
+      notifyGiving: nGiving,
+      notifyNewsletter: nNewsletter,
     };
     setSavedSnapshot(snapshot);
   }
@@ -422,6 +495,13 @@ export default function MyProfilePage() {
       emailNotifs,
       smsNotifs,
       publicDirectory,
+      dirShowPhone,
+      dirShowEmail,
+      dirShowAddress,
+      notifyEvents,
+      notifyPrayer,
+      notifyGiving,
+      notifyNewsletter,
     };
   }
 
@@ -454,6 +534,13 @@ export default function MyProfilePage() {
     setEmailNotifs(savedSnapshot.emailNotifs);
     setSmsNotifs(savedSnapshot.smsNotifs);
     setPublicDirectory(savedSnapshot.publicDirectory);
+    setDirShowPhone(savedSnapshot.dirShowPhone);
+    setDirShowEmail(savedSnapshot.dirShowEmail);
+    setDirShowAddress(savedSnapshot.dirShowAddress);
+    setNotifyEvents(savedSnapshot.notifyEvents);
+    setNotifyPrayer(savedSnapshot.notifyPrayer);
+    setNotifyGiving(savedSnapshot.notifyGiving);
+    setNotifyNewsletter(savedSnapshot.notifyNewsletter);
   }
 
   // ── Tab change with dirty detection ─────────────────────────────
@@ -640,6 +727,13 @@ export default function MyProfilePage() {
           email_notifications: emailNotifs,
           sms_opt_in: smsNotifs,
           public_directory: publicDirectory,
+          directory_show_phone: dirShowPhone,
+          directory_show_email: dirShowEmail,
+          directory_show_address: dirShowAddress,
+          notify_events: notifyEvents,
+          notify_prayer: notifyPrayer,
+          notify_giving: notifyGiving,
+          notify_newsletter: notifyNewsletter,
         }),
       });
       const data = await res.json();
@@ -942,6 +1036,7 @@ export default function MyProfilePage() {
 
   // ── Render ──────────────────────────────────────────────────────
   const initials = getInitials(profile.first_name, profile.last_name);
+  const completeness = computeCompleteness(profile);
 
   return (
     <div className="space-y-6">
@@ -1022,6 +1117,42 @@ export default function MyProfilePage() {
                   Ward: {profile.ward_name ?? profile.ward_id}
                 </p>
               )}
+
+              {/* Profile completeness meter */}
+              <div className="mt-3 max-w-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-warm-600">
+                    Profile {completeness.percent}% complete
+                  </span>
+                  {completeness.percent === 100 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-600">
+                      <CheckCircle className="h-3.5 w-3.5" />
+                      All set
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="h-1.5 w-full overflow-hidden rounded-full bg-warm-100"
+                  role="progressbar"
+                  aria-valuenow={completeness.percent}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Profile completeness"
+                >
+                  <div
+                    className="h-full rounded-full bg-purple-600 transition-all duration-500"
+                    style={{ width: `${completeness.percent}%` }}
+                  />
+                </div>
+                {completeness.missing.length > 0 && (
+                  <p className="mt-1 text-xs text-warm-400">
+                    Add: {completeness.missing.slice(0, 3).join(", ")}
+                    {completeness.missing.length > 3
+                      ? `, +${completeness.missing.length - 3} more`
+                      : ""}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Edit / Save / Cancel Button */}
@@ -1965,6 +2096,117 @@ export default function MyProfilePage() {
                     checked={publicDirectory}
                     onCheckedChange={setPublicDirectory}
                   />
+                </div>
+
+                {/* ── Directory visibility (nested under listing) ──── */}
+                <div
+                  className={`ml-0 sm:ml-4 space-y-4 rounded-lg border border-warm-100 bg-warm-50/50 p-4 transition-opacity ${
+                    publicDirectory ? "" : "opacity-50"
+                  }`}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">
+                    Directory Visibility
+                  </p>
+                  {!publicDirectory && (
+                    <p className="text-xs text-warm-400">
+                      Turn on your directory listing above to choose what other
+                      members can see.
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-warm-800">Show my phone</p>
+                      <p className="text-sm text-warm-500">
+                        Display your phone number to other members
+                      </p>
+                    </div>
+                    <Switch
+                      checked={dirShowPhone}
+                      onCheckedChange={setDirShowPhone}
+                      disabled={!publicDirectory}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-warm-800">Show my email</p>
+                      <p className="text-sm text-warm-500">
+                        Display your email address to other members
+                      </p>
+                    </div>
+                    <Switch
+                      checked={dirShowEmail}
+                      onCheckedChange={setDirShowEmail}
+                      disabled={!publicDirectory}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-warm-800">Show my address</p>
+                      <p className="text-sm text-warm-500">
+                        Display your mailing address to other members
+                      </p>
+                    </div>
+                    <Switch
+                      checked={dirShowAddress}
+                      onCheckedChange={setDirShowAddress}
+                      disabled={!publicDirectory}
+                    />
+                  </div>
+                </div>
+
+                {/* ── Notifications ──────────────────────────────── */}
+                <div className="space-y-4 border-t border-warm-100 pt-6">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-warm-500">
+                    Notifications
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-warm-800">Events</p>
+                      <p className="text-sm text-warm-500">
+                        Reminders and updates about church events
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifyEvents}
+                      onCheckedChange={setNotifyEvents}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-warm-800">Prayer</p>
+                      <p className="text-sm text-warm-500">
+                        New prayer requests and prayer alerts
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifyPrayer}
+                      onCheckedChange={setNotifyPrayer}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-warm-800">Giving receipts</p>
+                      <p className="text-sm text-warm-500">
+                        Confirmations and receipts for your donations
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifyGiving}
+                      onCheckedChange={setNotifyGiving}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-warm-800">Newsletter</p>
+                      <p className="text-sm text-warm-500">
+                        The church newsletter and periodic digests
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notifyNewsletter}
+                      onCheckedChange={setNotifyNewsletter}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="mt-6 flex items-center gap-3">

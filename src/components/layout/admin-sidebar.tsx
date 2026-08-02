@@ -30,6 +30,9 @@ import {
   Search,
   UsersRound,
   ClipboardCheck,
+  Target,
+  Receipt,
+  Inbox,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/brand/logo";
@@ -58,6 +61,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { label: "Families", href: "/admin/families", icon: Home },
       { label: "Ministries", href: "/admin/ministries", icon: Church },
       { label: "Groups", href: "/admin/groups", icon: UsersRound },
+      { label: "Connections", href: "/admin/connections", icon: Inbox },
       { label: "Deacons", href: "/admin/deacons", icon: Shield },
       { label: "Wards", href: "/admin/wards", icon: MapPin },
     ],
@@ -76,6 +80,8 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     title: "Finance",
     items: [
       { label: "Donations", href: "/admin/donations", icon: DollarSign, roles: "finance" },
+      { label: "Campaigns", href: "/admin/campaigns", icon: Target, roles: "finance" },
+      { label: "Statements", href: "/admin/statements", icon: Receipt, roles: "finance" },
       { label: "Donation Types", href: "/admin/donation-types", icon: Tags, roles: "finance" },
     ],
   },

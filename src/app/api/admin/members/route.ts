@@ -17,7 +17,7 @@ export async function GET() {
     const admin = createAdminClient();
     const { data: profiles, error } = await admin
       .from("profiles")
-      .select("id, email, first_name, last_name, phone, role, photo_url, ward_id, is_approved, status, created_at, updated_at")
+      .select("id, email, first_name, last_name, phone, role, photo_url, ward_id, is_approved, status, membership_type, membership_date, how_joined, marital_status, occupation, created_at, updated_at")
       .is("archived_at", null)
       .order("created_at", { ascending: false });
 
@@ -106,7 +106,11 @@ export async function PUT(request: NextRequest) {
     if ("ward_id" in body) updates.ward_id = ward_id || null;
 
     // Allow other safe fields
-    const safeFields = ["first_name", "last_name", "phone"];
+    const safeFields = [
+      "first_name", "last_name", "phone",
+      "membership_type", "membership_date", "how_joined",
+      "marital_status", "occupation",
+    ];
     for (const key of safeFields) {
       if (key in otherFields) updates[key] = otherFields[key];
     }

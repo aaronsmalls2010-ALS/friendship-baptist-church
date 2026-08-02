@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Search, Phone, Mail, Loader2, Church } from "lucide-react";
+import { Search, Phone, Mail, MapPin, Loader2, Church } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +79,7 @@ export default function ChurchDirectoryPage() {
         `${profile.first_name} ${profile.last_name}`
           .toLowerCase()
           .includes(query) ||
-        profile.email.toLowerCase().includes(query);
+        (profile.email || "").toLowerCase().includes(query);
 
       // Filter by role
       const matchesRole =
@@ -219,10 +219,12 @@ export default function ChurchDirectoryPage() {
                         {profile.phone}
                       </p>
                     )}
-                    <p className="text-sm text-warm-500 flex items-center gap-1.5 mt-1">
-                      <Mail className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{profile.email}</span>
-                    </p>
+                    {profile.email && (
+                      <p className="text-sm text-warm-500 flex items-center gap-1.5 mt-1">
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{profile.email}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -289,6 +291,27 @@ export default function ChurchDirectoryPage() {
                     <Mail className="h-4 w-4 shrink-0 text-purple-600" />
                     <span className="truncate">{selected.email}</span>
                   </a>
+                )}
+                {(() => {
+                  const line = [
+                    selected.address,
+                    [selected.city, selected.state].filter(Boolean).join(", "),
+                    selected.zip,
+                  ]
+                    .filter(Boolean)
+                    .join(" ")
+                    .trim();
+                  return line ? (
+                    <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-warm-700">
+                      <MapPin className="h-4 w-4 shrink-0 text-purple-600" />
+                      <span>{line}</span>
+                    </div>
+                  ) : null;
+                })()}
+                {!selected.phone && !selected.email && (
+                  <p className="px-3 py-2.5 text-sm text-warm-400">
+                    This member has chosen to keep their contact details private.
+                  </p>
                 )}
               </div>
 

@@ -28,6 +28,15 @@ const ALLOWED_FIELDS = [
   "email_notifications",
   "sms_opt_in",
   "public_directory",
+  // Granular directory visibility
+  "directory_show_phone",
+  "directory_show_email",
+  "directory_show_address",
+  // Notification category opt-ins
+  "notify_events",
+  "notify_prayer",
+  "notify_giving",
+  "notify_newsletter",
 ] as const;
 
 /**

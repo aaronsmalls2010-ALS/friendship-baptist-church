@@ -37,6 +37,15 @@ export interface Profile {
   sms_opt_in?: boolean;
   email_notifications?: boolean;
   public_directory?: boolean;
+  // Granular directory visibility (only meaningful when public_directory is on)
+  directory_show_phone?: boolean;
+  directory_show_email?: boolean;
+  directory_show_address?: boolean;
+  // Notification category opt-ins
+  notify_events?: boolean;
+  notify_prayer?: boolean;
+  notify_giving?: boolean;
+  notify_newsletter?: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -19,16 +19,16 @@ export async function GET(request: NextRequest) {
   let query = admin
     .from("donations")
     .select(`
-      id, amount, donation_type, campaign, created_at, is_recurring,
+      id, amount, donation_type, campaign, date, created_at, is_recurring,
       profile_id, archived_at, donation_type_id,
       profiles(first_name, last_name),
       donation_types(name, slug)
     `)
-    .order("created_at", { ascending: false });
+    .order("date", { ascending: false });
 
   if (!showArchived) query = query.is("archived_at", null);
-  if (dateFrom)      query = query.gte("created_at", dateFrom);
-  if (dateTo)        query = query.lte("created_at", dateTo + "T23:59:59");
+  if (dateFrom)      query = query.gte("date", dateFrom);
+  if (dateTo)        query = query.lte("date", dateTo);
   if (recurring === "true")  query = query.eq("is_recurring", true);
   if (recurring === "false") query = query.eq("is_recurring", false);
 

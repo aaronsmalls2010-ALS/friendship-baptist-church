@@ -60,6 +60,11 @@ interface Member {
   ward_id?: string;
   is_approved?: boolean;
   status?: string;
+  membership_type?: string;
+  membership_date?: string;
+  how_joined?: string;
+  marital_status?: string;
+  occupation?: string;
   families?: { id: string; name: string }[];
   ministries?: { id: string; name: string }[];
 }
@@ -147,6 +152,13 @@ export default function MemberManagementPage() {
   const [editDeaconId, setEditDeaconId] = useState("");
   const [editFamilyIds, setEditFamilyIds] = useState<string[]>([]);
   const [editMinistryIds, setEditMinistryIds] = useState<string[]>([]);
+  const [editMembership, setEditMembership] = useState({
+    membership_type: "",
+    membership_date: "",
+    how_joined: "",
+    marital_status: "",
+    occupation: "",
+  });
 
   // Roles dialog state
   const [rolesOpen, setRolesOpen] = useState(false);
@@ -308,6 +320,13 @@ export default function MemberManagementPage() {
     setEditWardId(member.ward_id ?? "");
     setEditFamilyIds((member.families ?? []).map((f) => f.id));
     setEditMinistryIds((member.ministries ?? []).map((m) => m.id));
+    setEditMembership({
+      membership_type: member.membership_type ?? "",
+      membership_date: member.membership_date ?? "",
+      how_joined: member.how_joined ?? "",
+      marital_status: member.marital_status ?? "",
+      occupation: member.occupation ?? "",
+    });
     const ward = member.ward_id
       ? wards.find((w) => w.id === member.ward_id)
       : undefined;
@@ -329,7 +348,15 @@ export default function MemberManagementPage() {
       fetch("/api/admin/members", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingMember.id, ward_id: wardValue || null }),
+        body: JSON.stringify({
+          id: editingMember.id,
+          ward_id: wardValue || null,
+          membership_type: editMembership.membership_type || "member",
+          membership_date: editMembership.membership_date || null,
+          how_joined: editMembership.how_joined || null,
+          marital_status: editMembership.marital_status || null,
+          occupation: editMembership.occupation || null,
+        }),
       }),
       fetch(`/api/admin/members/${editingMember.id}/families`, {
         method: "PUT",
@@ -987,6 +1014,80 @@ export default function MemberManagementPage() {
                     })}
                   </div>
                 )}
+              </div>
+
+              {/* Membership details */}
+              <div className="space-y-3 rounded-lg border border-warm-200 dark:border-warm-800 p-3">
+                <Label className="text-xs uppercase tracking-wide text-warm-500">
+                  Membership
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-mtype" className="text-xs">Type</Label>
+                    <Select
+                      value={editMembership.membership_type || "member"}
+                      onValueChange={(v) => setEditMembership((s) => ({ ...s, membership_type: v }))}
+                    >
+                      <SelectTrigger id="edit-mtype"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="member">Member</SelectItem>
+                        <SelectItem value="regular_attender">Regular Attender</SelectItem>
+                        <SelectItem value="visitor">Visitor</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-hjoined" className="text-xs">How joined</Label>
+                    <Select
+                      value={editMembership.how_joined || "__none__"}
+                      onValueChange={(v) => setEditMembership((s) => ({ ...s, how_joined: v === "__none__" ? "" : v }))}
+                    >
+                      <SelectTrigger id="edit-hjoined"><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__"><span className="text-warm-400">—</span></SelectItem>
+                        <SelectItem value="baptism">Baptism</SelectItem>
+                        <SelectItem value="transfer">Transfer</SelectItem>
+                        <SelectItem value="statement">Statement of Faith</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-mdate" className="text-xs">Member since</Label>
+                    <Input
+                      id="edit-mdate"
+                      type="date"
+                      value={editMembership.membership_date}
+                      onChange={(e) => setEditMembership((s) => ({ ...s, membership_date: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="edit-marital" className="text-xs">Marital status</Label>
+                    <Select
+                      value={editMembership.marital_status || "__none__"}
+                      onValueChange={(v) => setEditMembership((s) => ({ ...s, marital_status: v === "__none__" ? "" : v }))}
+                    >
+                      <SelectTrigger id="edit-marital"><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__"><span className="text-warm-400">—</span></SelectItem>
+                        <SelectItem value="single">Single</SelectItem>
+                        <SelectItem value="married">Married</SelectItem>
+                        <SelectItem value="widowed">Widowed</SelectItem>
+                        <SelectItem value="divorced">Divorced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="edit-occ" className="text-xs">Occupation</Label>
+                  <Input
+                    id="edit-occ"
+                    value={editMembership.occupation}
+                    onChange={(e) => setEditMembership((s) => ({ ...s, occupation: e.target.value }))}
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
 
               <DialogFooter>

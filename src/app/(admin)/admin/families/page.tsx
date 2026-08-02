@@ -33,13 +33,17 @@ import {
   UserPlus,
   X,
   Home,
+  Crown,
 } from "lucide-react";
 
 interface FamilyMember {
   profile_id: string;
   relationship: string | null;
+  is_head: boolean;
   profiles?: { first_name?: string; last_name?: string; email?: string; photo_url?: string } | null;
 }
+
+const RELATIONSHIP_OPTIONS = ["Head", "Spouse", "Child", "Other"] as const;
 interface Family {
   id: string;
   name: string;
@@ -230,6 +234,39 @@ export default function AdminFamiliesPage() {
     }
   }
 
+  async function patchMember(profileId: string, payload: Record<string, unknown>) {
+    if (!activeFamily) return;
+    try {
+      const res = await fetch(`/api/admin/families/${activeFamily.id}/members`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profile_id: profileId, ...payload }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        throw new Error(d.error || "Failed to update member");
+      }
+      const famRes = await fetch("/api/admin/families");
+      const famData = await famRes.json();
+      setFamilies(famData.families ?? []);
+      setActiveFamily(
+        (famData.families ?? []).find((f: Family) => f.id === activeFamily.id) ?? activeFamily
+      );
+    } catch (err) {
+      setToast({ type: "error", message: err instanceof Error ? err.message : "Failed" });
+    }
+  }
+
+  async function handleRelationshipChange(profileId: string, relationship: string) {
+    await patchMember(profileId, { relationship });
+    setToast({ type: "success", message: "Relationship updated." });
+  }
+
+  async function handleSetHead(profileId: string) {
+    await patchMember(profileId, { is_head: true, relationship: "Head" });
+    setToast({ type: "success", message: "Head of household updated." });
+  }
+
   function memberName(m: FamilyMember) {
     const p = m.profiles;
     return p ? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || p.email : m.profile_id;
@@ -343,6 +380,12 @@ export default function AdminFamiliesPage() {
                       {family.members.length} member
                       {family.members.length !== 1 ? "s" : ""}
                     </p>
+                    {family.members.find((m) => m.is_head) && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-0.5">
+                        <Crown className="h-3 w-3" />
+                        {memberName(family.members.find((m) => m.is_head)!)}
+                      </p>
+                    )}
                   </div>
                   <div className="flex gap-1">
                     <Button
@@ -496,9 +539,9 @@ export default function AdminFamiliesPage() {
                   activeFamily.members.map((m) => (
                     <div
                       key={m.profile_id}
-                      className="flex items-center justify-between rounded-lg border border-warm-100 dark:border-warm-800 px-3 py-2"
+                      className="flex items-center justify-between gap-2 rounded-lg border border-warm-100 dark:border-warm-800 px-3 py-2"
                     >
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex min-w-0 items-center gap-2.5">
                         <Avatar className="h-7 w-7">
                           {m.profiles?.photo_url && (
                             <AvatarImage src={m.profiles.photo_url} alt={memberName(m)} />
@@ -507,19 +550,56 @@ export default function AdminFamiliesPage() {
                             {memberInitials(m)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm text-warm-700 dark:text-warm-200">
+                        <span className="truncate text-sm text-warm-700 dark:text-warm-200 flex items-center gap-1">
                           {memberName(m)}
+                          {m.is_head && (
+                            <Crown
+                              className="h-3.5 w-3.5 text-amber-500 shrink-0"
+                              aria-label="Head of household"
+                            />
+                          )}
                         </span>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-warm-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => handleRemoveMember(m.profile_id)}
-                        title="Remove from family"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Select
+                          value={m.relationship ?? ""}
+                          onValueChange={(v) => handleRelationshipChange(m.profile_id, v)}
+                        >
+                          <SelectTrigger className="h-8 w-[110px] text-xs" aria-label="Relationship">
+                            <SelectValue placeholder="Relationship" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {RELATIONSHIP_OPTIONS.map((r) => (
+                              <SelectItem key={r} value={r}>
+                                {r}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-8 w-8 p-0 ${
+                            m.is_head
+                              ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                              : "text-warm-400 hover:text-amber-500 hover:bg-amber-50"
+                          }`}
+                          onClick={() => handleSetHead(m.profile_id)}
+                          disabled={m.is_head}
+                          title={m.is_head ? "Head of household" : "Mark as head of household"}
+                        >
+                          <Crown className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-warm-400 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => handleRemoveMember(m.profile_id)}
+                          title="Remove from family"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))
                 )}

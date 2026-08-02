@@ -42,6 +42,11 @@ import {
   RefreshCw,
   Pencil,
   Trash2,
+  Download,
+  Tags as TagsIcon,
+  Plus,
+  X,
+  Archive,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { UserRole, Ward, Deacon } from "@/types";
@@ -67,6 +72,7 @@ interface Member {
   occupation?: string;
   families?: { id: string; name: string }[];
   ministries?: { id: string; name: string }[];
+  tags?: { id: string; name: string; color?: string | null }[];
 }
 
 interface FamilyOption {
@@ -77,6 +83,13 @@ interface FamilyOption {
 interface MinistryOption {
   id: string;
   name: string;
+}
+
+interface TagOption {
+  id: string;
+  name: string;
+  color?: string | null;
+  member_count?: number;
 }
 
 // ── Constants ────────────────────────────────────────────────────────
@@ -129,11 +142,23 @@ export default function MemberManagementPage() {
   const [deacons, setDeacons] = useState<Deacon[]>([]);
   const [allFamilies, setAllFamilies] = useState<FamilyOption[]>([]);
   const [allMinistries, setAllMinistries] = useState<MinistryOption[]>([]);
+  const [allTags, setAllTags] = useState<TagOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [tagFilter, setTagFilter] = useState("all");
   const [page, setPage] = useState(0);
+
+  // Bulk selection + actions
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  // Manage-tags dialog
+  const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [newTagColor, setNewTagColor] = useState("#6366f1");
+  const [creatingTag, setCreatingTag] = useState(false);
   const [toast, setToast] = useState<{
     type: "success" | "error";
     message: string;
@@ -170,12 +195,13 @@ export default function MemberManagementPage() {
   const fetchData = useCallback(async () => {
     try {
       setError("");
-      const [membersRes, wardsRes, deaconsRes, familiesRes, ministriesRes] = await Promise.all([
+      const [membersRes, wardsRes, deaconsRes, familiesRes, ministriesRes, tagsRes] = await Promise.all([
         fetch("/api/admin/members"),
         fetch("/api/admin/wards"),
         fetch("/api/admin/deacons"),
         fetch("/api/admin/families"),
         fetch("/api/admin/ministries"),
+        fetch("/api/admin/tags"),
       ]);
 
       if (!membersRes.ok) {
@@ -216,6 +242,11 @@ export default function MemberManagementPage() {
             name: m.name,
           }))
         );
+      }
+
+      if (tagsRes.ok) {
+        const tagsData = await tagsRes.json();
+        setAllTags(tagsData.tags ?? []);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
@@ -492,6 +523,160 @@ export default function MemberManagementPage() {
     }
   }
 
+  // ── Bulk selection helpers ───────────────────────────────────────
+  function toggleSelect(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  function toggleSelectAll(rows: Member[], checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const m of rows) {
+        if (checked) next.add(m.id);
+        else next.delete(m.id);
+      }
+      return next;
+    });
+  }
+
+  // ── CSV export (respects the active search + status + tag filters) ──
+  function csvCell(value: string): string {
+    // Guard against CSV injection and quote-escape.
+    const v = /^[=+\-@]/.test(value) ? `'${value}` : value;
+    return `"${v.replace(/"/g, '""')}"`;
+  }
+
+  function exportCSV(rows: Member[]) {
+    const headers = ["Name", "Email", "Phone", "Role", "Status", "Ward", "Tags"];
+    const lines = [headers.map(csvCell).join(",")];
+    for (const m of rows) {
+      const ward = getWardForMember(m.id);
+      const status = (m as unknown as { status?: string }).status ?? "active";
+      const tagNames = (m.tags ?? []).map((t) => t.name).join("; ");
+      const primaryRole = ROLE_LABELS[m.role] ?? m.role;
+      lines.push(
+        [
+          `${m.first_name} ${m.last_name}`.trim(),
+          m.email ?? "",
+          m.phone ?? "",
+          primaryRole,
+          status,
+          ward?.name ?? "",
+          tagNames,
+        ]
+          .map((c) => csvCell(String(c)))
+          .join(",")
+      );
+    }
+
+    // Prepend BOM so Excel reads UTF-8 correctly.
+    const blob = new Blob(["﻿" + lines.join("\r\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `members-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setToast({ type: "success", message: `Exported ${rows.length} member${rows.length !== 1 ? "s" : ""} to CSV.` });
+  }
+
+  // ── Bulk actions ─────────────────────────────────────────────────
+  async function runBulk(action: string, value?: string) {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    setToast(null);
+    try {
+      const res = await fetch("/api/admin/members/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, action, value }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setToast({ type: "error", message: data.error || "Bulk action failed." });
+        return;
+      }
+      const labels: Record<string, string> = {
+        archive: "Archived",
+        set_status: "Updated status for",
+        add_tag: "Tagged",
+        remove_tag: "Untagged",
+      };
+      setToast({
+        type: "success",
+        message: `${labels[action] ?? "Updated"} ${data.count ?? ids.length} member${(data.count ?? ids.length) !== 1 ? "s" : ""}.`,
+      });
+      clearSelection();
+      await fetchData();
+    } catch {
+      setToast({ type: "error", message: "Network error. Please try again." });
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  // ── Tag management ───────────────────────────────────────────────
+  async function handleCreateTag() {
+    const name = newTagName.trim();
+    if (!name) return;
+    setCreatingTag(true);
+    try {
+      const res = await fetch("/api/admin/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, color: newTagColor }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setToast({ type: "error", message: data.error || "Failed to create tag." });
+        return;
+      }
+      setAllTags((prev) =>
+        [...prev, data.tag].sort((a, b) => a.name.localeCompare(b.name))
+      );
+      setNewTagName("");
+      setToast({ type: "success", message: `Tag "${data.tag.name}" created.` });
+    } catch {
+      setToast({ type: "error", message: "Network error. Please try again." });
+    } finally {
+      setCreatingTag(false);
+    }
+  }
+
+  async function handleDeleteTag(tag: TagOption) {
+    try {
+      const res = await fetch(`/api/admin/tags/${tag.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setToast({ type: "error", message: data.error || "Failed to delete tag." });
+        return;
+      }
+      setAllTags((prev) => prev.filter((t) => t.id !== tag.id));
+      // Drop the tag from any loaded member rows + clear it from the filter.
+      setMembers((prev) =>
+        prev.map((m) => ({ ...m, tags: (m.tags ?? []).filter((t) => t.id !== tag.id) }))
+      );
+      if (tagFilter === tag.id) setTagFilter("all");
+      setToast({ type: "success", message: `Tag "${tag.name}" deleted.` });
+    } catch {
+      setToast({ type: "error", message: "Network error. Please try again." });
+    }
+  }
+
   // Members awaiting approval (newest first, following the list order).
   const pendingMembers = members.filter((m) => m.is_approved === false);
 
@@ -501,6 +686,9 @@ export default function MemberManagementPage() {
     const status = (m as unknown as { status?: string }).status ?? "active";
     if (statusFilter === "all" && status === "deceased") return false;
     if (statusFilter !== "all" && status !== statusFilter) return false;
+
+    // Tag filter
+    if (tagFilter !== "all" && !(m.tags ?? []).some((t) => t.id === tagFilter)) return false;
 
     if (!search) return true;
     const term = search.toLowerCase();
@@ -677,6 +865,35 @@ export default function MemberManagementPage() {
             <SelectItem value="deceased">Deceased</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={tagFilter} onValueChange={(v) => { setTagFilter(v); setPage(0); }}>
+          <SelectTrigger className="w-40"><SelectValue placeholder="All tags" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All tags</SelectItem>
+            {allTags.map((t) => (
+              <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => exportCSV(filtered)}
+          title="Export the filtered members to CSV"
+          className="gap-1.5"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setTagsDialogOpen(true)}
+          title="Create or delete tags"
+          className="gap-1.5"
+        >
+          <TagsIcon className="h-4 w-4" />
+          Manage tags
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -690,12 +907,93 @@ export default function MemberManagementPage() {
         </Button>
       </div>
 
+      {/* Bulk actions bar — visible when one or more members are selected */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-purple-200 bg-purple-50/70 px-4 py-3 dark:border-purple-900/40 dark:bg-purple-900/10">
+          <span className="text-sm font-medium text-purple-900 dark:text-purple-200">
+            {selectedIds.size} selected
+          </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={bulkBusy}
+            onClick={() => runBulk("archive")}
+            className="h-9 gap-1.5 border-red-200 text-red-700 hover:bg-red-50 dark:border-red-900/40 dark:text-red-300"
+            title="Archive selected members"
+          >
+            <Archive className="h-4 w-4" />
+            Archive
+          </Button>
+
+          <Select
+            value=""
+            disabled={bulkBusy}
+            onValueChange={(v) => runBulk("set_status", v)}
+          >
+            <SelectTrigger className="h-9 w-40"><SelectValue placeholder="Set status…" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="visitor">Visitor</SelectItem>
+              <SelectItem value="deceased">Deceased</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value=""
+            disabled={bulkBusy || allTags.length === 0}
+            onValueChange={(v) => runBulk("add_tag", v)}
+          >
+            <SelectTrigger className="h-9 w-40"><SelectValue placeholder="Add tag…" /></SelectTrigger>
+            <SelectContent>
+              {allTags.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value=""
+            disabled={bulkBusy || allTags.length === 0}
+            onValueChange={(v) => runBulk("remove_tag", v)}
+          >
+            <SelectTrigger className="h-9 w-44"><SelectValue placeholder="Remove tag…" /></SelectTrigger>
+            <SelectContent>
+              {allTags.map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {bulkBusy && <Loader2 className="h-4 w-4 animate-spin text-purple-600" />}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearSelection}
+            disabled={bulkBusy}
+            className="ml-auto h-9 gap-1.5 text-warm-500"
+          >
+            <X className="h-4 w-4" />
+            Clear
+          </Button>
+        </div>
+      )}
+
       {/* Table */}
       <FadeIn>
         <div className="rounded-xl border border-warm-100 dark:border-warm-800 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-warm-50 dark:bg-warm-900">
+                <TableHead className="w-10">
+                  <Checkbox
+                    aria-label="Select all filtered members"
+                    checked={filtered.length > 0 && filtered.every((m) => selectedIds.has(m.id))}
+                    onCheckedChange={(v) => toggleSelectAll(filtered, v === true)}
+                  />
+                </TableHead>
                 <TableHead className="font-medium">Name</TableHead>
                 <TableHead className="font-medium">Email</TableHead>
                 <TableHead className="font-medium">Role</TableHead>
@@ -710,7 +1008,7 @@ export default function MemberManagementPage() {
               {paged.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className="text-center py-8 text-warm-400"
                   >
                     {search ? "No members match your search" : "No members found"}
@@ -722,7 +1020,16 @@ export default function MemberManagementPage() {
                   const deacon = getDeaconForMember(member.id);
 
                   return (
-                    <TableRow key={member.id}>
+                    <TableRow key={member.id} data-state={selectedIds.has(member.id) ? "selected" : undefined}>
+                      {/* Select */}
+                      <TableCell className="w-10">
+                        <Checkbox
+                          aria-label={`Select ${member.first_name} ${member.last_name}`}
+                          checked={selectedIds.has(member.id)}
+                          onCheckedChange={(v) => toggleSelect(member.id, v === true)}
+                        />
+                      </TableCell>
+
                       {/* Name */}
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -746,6 +1053,25 @@ export default function MemberManagementPage() {
                               >
                                 {f.name}
                               </Badge>
+                            ))}
+                          </div>
+                        )}
+                        {member.tags && member.tags.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {member.tags.map((t) => (
+                              <span
+                                key={t.id}
+                                className={`inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium ${
+                                  t.color ? "" : "bg-warm-100 text-warm-600 dark:bg-warm-800 dark:text-warm-300"
+                                }`}
+                                style={
+                                  t.color
+                                    ? { backgroundColor: `${t.color}22`, color: t.color }
+                                    : undefined
+                                }
+                              >
+                                {t.name}
+                              </span>
                             ))}
                           </div>
                         )}
@@ -1219,6 +1545,102 @@ export default function MemberManagementPage() {
               Remove
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Manage Tags Dialog ──────────────────────────────────────── */}
+      <Dialog open={tagsDialogOpen} onOpenChange={setTagsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-xl">Manage Tags</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Create tag */}
+            <div className="space-y-2">
+              <Label htmlFor="new-tag">Create a tag</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label="Tag color"
+                  value={newTagColor}
+                  onChange={(e) => setNewTagColor(e.target.value)}
+                  className="h-10 w-10 shrink-0 cursor-pointer rounded-md border border-warm-200 dark:border-warm-800 bg-transparent p-0.5"
+                />
+                <Input
+                  id="new-tag"
+                  placeholder="Tag name (e.g. Choir, New Convert)"
+                  value={newTagName}
+                  maxLength={100}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !creatingTag && newTagName.trim()) {
+                      e.preventDefault();
+                      handleCreateTag();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleCreateTag}
+                  disabled={creatingTag || !newTagName.trim()}
+                  className="shrink-0 bg-purple-700 hover:bg-purple-600 text-white"
+                >
+                  {creatingTag ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Existing tags */}
+            <div className="space-y-2">
+              <Label>Existing tags</Label>
+              {allTags.length === 0 ? (
+                <p className="text-xs text-warm-400">No tags yet. Create one above.</p>
+              ) : (
+                <div className="max-h-64 space-y-1.5 overflow-y-auto rounded-lg border border-warm-200 dark:border-warm-800 p-2">
+                  {allTags.map((t) => (
+                    <div
+                      key={t.id}
+                      className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-warm-50 dark:hover:bg-warm-800"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span
+                          className="h-3 w-3 shrink-0 rounded-full border border-black/10"
+                          style={{ backgroundColor: t.color ?? "#94a3b8" }}
+                        />
+                        <span className="truncate text-sm text-warm-700 dark:text-warm-200">
+                          {t.name}
+                        </span>
+                        <span className="text-xs text-warm-400">
+                          {t.member_count ?? 0}
+                        </span>
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTag(t)}
+                        className="h-8 w-8 shrink-0 p-0 text-warm-400 hover:text-red-600 hover:bg-red-50"
+                        title={`Delete tag "${t.name}"`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-warm-400">
+                Deleting a tag removes it from every member.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTagsDialogOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

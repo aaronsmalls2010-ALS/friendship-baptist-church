@@ -67,11 +67,26 @@ export async function GET() {
       minsByUser.set(row.profile_id, list);
     }
 
+    // Attach each member's tags (id + name + color) with one bulk query on
+    // profile_tags joined to tags — same map pattern as roles/families/ministries.
+    const { data: tagRows } = await admin
+      .from("profile_tags")
+      .select("profile_id, tags(id, name, color)");
+    const tagsByUser = new Map<string, { id: string; name: string; color: string | null }[]>();
+    for (const row of tagRows ?? []) {
+      const tag = row.tags as unknown as { id?: string; name?: string; color?: string | null } | null;
+      if (!tag?.id) continue;
+      const list = tagsByUser.get(row.profile_id) ?? [];
+      list.push({ id: tag.id, name: tag.name ?? "Tag", color: tag.color ?? null });
+      tagsByUser.set(row.profile_id, list);
+    }
+
     const members = (profiles ?? []).map((p) => ({
       ...p,
       roles: rolesByUser.get(p.id) ?? [p.role],
       families: famsByUser.get(p.id) ?? [],
       ministries: minsByUser.get(p.id) ?? [],
+      tags: tagsByUser.get(p.id) ?? [],
     }));
 
     return NextResponse.json({ members });

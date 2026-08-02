@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   UsersRound,
   Sparkles,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/brand/logo";
@@ -37,6 +38,7 @@ const navItems = [
   { label: "Devotionals", href: "/portal/devotionals", icon: BookOpen },
   { label: "Spiritual Growth", href: "/portal/growth", icon: TrendingUp },
   { label: "Notifications", href: "/portal/notifications", icon: Bell },
+  { label: "Settings", href: "/portal/settings", icon: Settings },
 ];
 
 const mobileNavItems = [

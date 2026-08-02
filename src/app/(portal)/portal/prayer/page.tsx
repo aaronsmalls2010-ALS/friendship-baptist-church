@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Heart, CheckCircle, XCircle, Loader2, Plus, Lock, Globe } from "lucide-react";
+import { Heart, HandHeart, CheckCircle, XCircle, Loader2, Plus, Lock, Globe } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -21,6 +21,8 @@ interface PrayerRequest {
   category?: string;
   created_at: string;
   profile_id: string;
+  prayed_count?: number;
+  has_prayed?: boolean;
 }
 
 type Toast = { message: string; type: "success" | "error" } | null;
@@ -78,6 +80,78 @@ export default function PrayerPortalPage() {
     } else {
       const d = await res.json();
       showToast(d.error ?? "Failed to submit", "error");
+    }
+  }
+
+  const [prayingId, setPrayingId] = useState<string | null>(null);
+  const [answeringId, setAnsweringId] = useState<string | null>(null);
+
+  async function togglePrayed(r: PrayerRequest) {
+    if (prayingId) return;
+    setPrayingId(r.id);
+    const willPray = !r.has_prayed;
+    // Optimistic update
+    setRequests((prev) =>
+      prev.map((x) =>
+        x.id === r.id
+          ? {
+              ...x,
+              has_prayed: willPray,
+              prayed_count: Math.max(0, (x.prayed_count ?? 0) + (willPray ? 1 : -1)),
+            }
+          : x
+      )
+    );
+    try {
+      const res = await fetch(`/api/portal/prayer-requests/${r.id}/prayed`, {
+        method: willPray ? "POST" : "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      // Reconcile with server-authoritative count
+      setRequests((prev) =>
+        prev.map((x) =>
+          x.id === r.id ? { ...x, has_prayed: data.prayed, prayed_count: data.count } : x
+        )
+      );
+    } catch {
+      // Revert on failure
+      setRequests((prev) =>
+        prev.map((x) =>
+          x.id === r.id
+            ? {
+                ...x,
+                has_prayed: r.has_prayed,
+                prayed_count: r.prayed_count,
+              }
+            : x
+        )
+      );
+      showToast("Could not update. Please try again.", "error");
+    } finally {
+      setPrayingId(null);
+    }
+  }
+
+  async function handleMarkAnswered(r: PrayerRequest) {
+    if (answeringId) return;
+    setAnsweringId(r.id);
+    try {
+      const res = await fetch("/api/portal/prayer-requests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: r.id, status: "answered" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      setRequests((prev) =>
+        prev.map((x) => (x.id === r.id ? { ...x, status: "answered" } : x))
+      );
+      showToast("Marked as answered. Praise God!");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to update", "error");
+    } finally {
+      setAnsweringId(null);
     }
   }
 
@@ -162,7 +236,25 @@ export default function PrayerPortalPage() {
                           : <span className="text-xs text-warm-400 flex items-center gap-1"><Lock className="h-3 w-3" />Private</span>}
                       </div>
                     </div>
-                    <p className="text-xs text-warm-400">{formatDate(r.created_at)}</p>
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <p className="text-xs text-warm-400">{formatDate(r.created_at)}</p>
+                      {r.status !== "answered" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs text-green-700 border-green-200 hover:bg-green-50 hover:text-green-800"
+                          onClick={() => handleMarkAnswered(r)}
+                          disabled={answeringId === r.id}
+                        >
+                          {answeringId === r.id ? (
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle className="mr-1.5 h-3.5 w-3.5" />
+                          )}
+                          Mark as answered
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -173,10 +265,35 @@ export default function PrayerPortalPage() {
                 <h2 className="font-semibold text-warm-800 dark:text-warm-200">Community Prayer Wall</h2>
                 <p className="text-sm text-warm-500">Pray for your fellow church family</p>
                 {communityRequests.map((r) => (
-                  <div key={r.id} className="rounded-xl border border-warm-100 dark:border-warm-800 bg-white dark:bg-warm-950 p-4 space-y-1">
+                  <div key={r.id} className="rounded-xl border border-warm-100 dark:border-warm-800 bg-white dark:bg-warm-950 p-4 space-y-2">
                     <p className="text-sm font-medium text-warm-700 dark:text-warm-300">{r.name}</p>
                     <p className="text-sm text-warm-600 dark:text-warm-400 leading-relaxed">{r.request}</p>
-                    <p className="text-xs text-warm-400">{formatDate(r.created_at)}</p>
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <p className="text-xs text-warm-400">{formatDate(r.created_at)}</p>
+                      <Button
+                        variant={r.has_prayed ? "default" : "outline"}
+                        size="sm"
+                        className={`h-8 text-xs ${
+                          r.has_prayed
+                            ? "bg-purple-700 hover:bg-purple-600 text-white"
+                            : "text-purple-700 border-purple-200 hover:bg-purple-50"
+                        }`}
+                        onClick={() => togglePrayed(r)}
+                        disabled={prayingId === r.id}
+                        aria-pressed={r.has_prayed ?? false}
+                        aria-label={r.has_prayed ? "You prayed for this — tap to undo" : "I prayed for this"}
+                      >
+                        {prayingId === r.id ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <HandHeart className="mr-1.5 h-3.5 w-3.5" />
+                        )}
+                        {r.has_prayed ? "Prayed" : "I prayed"}
+                        {(r.prayed_count ?? 0) > 0 && (
+                          <span className="ml-1.5 tabular-nums opacity-80">{r.prayed_count}</span>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

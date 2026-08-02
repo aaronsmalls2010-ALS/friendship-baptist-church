@@ -47,9 +47,9 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   roles?: "finance";
 };
+type NavGroup = { title: string; items: NavItem[] };
 
-// Grouped so a growing list of admin sections stays scannable.
-const navGroups: { title: string; items: NavItem[] }[] = [
+const navGroups: NavGroup[] = [
   {
     title: "Overview",
     items: [{ label: "Dashboard", href: "/admin", icon: LayoutDashboard }],
@@ -102,6 +102,131 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   },
 ];
 
+// ── Module-level presentational components ──────────────────────────────
+// These MUST live outside AdminSidebar. If they were nested inside it, React
+// would treat them as new component types on every re-render (e.g. on route
+// change) and REMOUNT the scrollable <nav>, resetting its scroll to the top.
+
+function NavLink({
+  item,
+  showLabel,
+  active,
+}: {
+  item: NavItem;
+  showLabel: boolean;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={item.href}
+      title={!showLabel ? item.label : undefined}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-all duration-150",
+        active
+          ? "bg-white/10 text-white"
+          : "text-purple-200/70 hover:bg-white/5 hover:text-white",
+        !showLabel && "justify-center px-2"
+      )}
+    >
+      {active && showLabel && (
+        <span className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gold-400" />
+      )}
+      <item.icon
+        className={cn(
+          "h-[18px] w-[18px] shrink-0 transition-colors",
+          active ? "text-gold-400" : "text-purple-300/70 group-hover:text-white"
+        )}
+      />
+      {showLabel && item.label}
+    </Link>
+  );
+}
+
+function NavBody({
+  showLabels,
+  groups,
+  query,
+  setQuery,
+  pathname,
+}: {
+  showLabels: boolean;
+  groups: NavGroup[];
+  query: string;
+  setQuery: (v: string) => void;
+  pathname: string;
+}) {
+  return (
+    <nav
+      className="nav-scroll flex-1 overflow-y-auto px-3 py-3 space-y-4"
+      aria-label="Admin navigation"
+    >
+      {showLabels && (
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-purple-300/60" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search…"
+            aria-label="Filter admin navigation"
+            className="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-9 pr-3 text-sm text-white placeholder:text-purple-300/50 outline-none transition-colors focus-visible:border-gold-400/60 focus-visible:ring-1 focus-visible:ring-gold-400/40"
+          />
+        </div>
+      )}
+      {groups.map((group) => (
+        <div key={group.title} className="space-y-1">
+          {showLabels && (
+            <p className="px-3 pb-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-purple-300/45">
+              {group.title}
+            </p>
+          )}
+          {group.items.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              showLabel={showLabels}
+              active={pathname === item.href}
+            />
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
+function FooterLinks({
+  showLabels,
+  onSignOut,
+}: {
+  showLabels: boolean;
+  onSignOut: () => void;
+}) {
+  const cls = (extra?: string) =>
+    cn(
+      "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-purple-200/60 transition-colors hover:bg-white/5 hover:text-white",
+      !showLabels && "justify-center px-2",
+      extra
+    );
+  return (
+    <div className="space-y-0.5 border-t border-white/10 p-3">
+      <Link href="/portal" title={!showLabels ? "Member Portal" : undefined} className={cls()}>
+        <ArrowLeftRight className="h-[18px] w-[18px] shrink-0" />
+        {showLabels && "Member Portal"}
+      </Link>
+      <Link href="/" title={!showLabels ? "Back to Website" : undefined} className={cls()}>
+        <Globe className="h-[18px] w-[18px] shrink-0" />
+        {showLabels && "Back to Website"}
+      </Link>
+      <button onClick={onSignOut} className={cls("hover:!text-red-300")}>
+        <LogOut className="h-[18px] w-[18px] shrink-0" />
+        {showLabels && "Sign Out"}
+      </button>
+    </div>
+  );
+}
+
+// ── Sidebar ─────────────────────────────────────────────────────────────
 export function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -115,12 +240,10 @@ export function AdminSidebar() {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
   }, []);
 
-  // Close the mobile drawer whenever the route changes.
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
 
-  // Lock body scroll while the mobile drawer is open.
   useEffect(() => {
     if (mobileOpen) {
       const prev = document.body.style.overflow;
@@ -132,7 +255,6 @@ export function AdminSidebar() {
   }, [mobileOpen]);
 
   const isFinance = user ? canViewFinancials(user) : false;
-
   const q = query.trim().toLowerCase();
   const groups = navGroups
     .map((g) => ({
@@ -151,128 +273,42 @@ export function AdminSidebar() {
     router.push("/auth/login");
   }
 
-  function NavLink({ item, showLabel }: { item: NavItem; showLabel: boolean }) {
-    const isActive = pathname === item.href;
-    return (
-      <Link
-        href={item.href}
-        title={!showLabel ? item.label : undefined}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-          isActive
-            ? "bg-purple-800 text-gold-400"
-            : "text-purple-300 hover:bg-purple-900 hover:text-white",
-          !showLabel && "justify-center px-2"
-        )}
-      >
-        <item.icon className="h-[18px] w-[18px] shrink-0" />
-        {showLabel && item.label}
-      </Link>
-    );
-  }
-
-  // Shared nav body; `showLabels` false = desktop collapsed icon rail.
-  function NavBody({ showLabels }: { showLabels: boolean }) {
-    return (
-      <nav className="flex-1 p-2 space-y-3 overflow-y-auto" aria-label="Admin navigation">
-        {showLabels && (
-          <div className="relative px-1 pb-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400" />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter…"
-              aria-label="Filter admin navigation"
-              className="w-full rounded-lg bg-purple-900/60 py-2 pl-9 pr-3 text-sm text-white placeholder:text-purple-400 outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
-            />
-          </div>
-        )}
-        {groups.map((group) => (
-          <div key={group.title} className="space-y-0.5">
-            {showLabels && (
-              <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-purple-500">
-                {group.title}
-              </p>
-            )}
-            {group.items.map((item) => (
-              <NavLink key={item.href} item={item} showLabel={showLabels} />
-            ))}
-          </div>
-        ))}
-      </nav>
-    );
-  }
-
-  function FooterLinks({ showLabels }: { showLabels: boolean }) {
-    return (
-      <div className="p-2 border-t border-purple-900 space-y-0.5">
-        <Link
-          href="/portal"
-          title={!showLabels ? "Member Portal" : undefined}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-purple-400 hover:text-white hover:bg-purple-900 w-full transition-colors",
-            !showLabels && "justify-center px-2"
-          )}
-        >
-          <ArrowLeftRight className="h-[18px] w-[18px] shrink-0" />
-          {showLabels && "Member Portal"}
-        </Link>
-        <Link
-          href="/"
-          title={!showLabels ? "Back to Website" : undefined}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-purple-400 hover:text-white hover:bg-purple-900 w-full transition-colors",
-            !showLabels && "justify-center px-2"
-          )}
-        >
-          <Globe className="h-[18px] w-[18px] shrink-0" />
-          {showLabels && "Back to Website"}
-        </Link>
-        <button
-          onClick={handleSignOut}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-purple-400 hover:text-red-400 hover:bg-purple-900 w-full transition-colors",
-            !showLabels && "justify-center px-2"
-          )}
-        >
-          <LogOut className="h-[18px] w-[18px] shrink-0" />
-          {showLabels && "Sign Out"}
-        </button>
-      </div>
-    );
-  }
-
   return (
     <>
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          "hidden lg:flex bg-purple-950 text-white h-screen sticky top-0 flex-col transition-all duration-300",
+          "hidden lg:flex h-screen flex-col bg-gradient-to-b from-[#1a1030] to-[#0f0a1f] text-white shadow-xl transition-all duration-300",
           collapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="p-4 flex items-center justify-between border-b border-purple-900">
+        <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
           {!collapsed && <Logo variant="icon" size="sm" darkBg />}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-lg hover:bg-purple-900 transition-colors"
+            className="rounded-lg p-1.5 text-purple-200/70 transition-colors hover:bg-white/5 hover:text-white"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
         </div>
-        <NavBody showLabels={!collapsed} />
-        <FooterLinks showLabels={!collapsed} />
+        <NavBody
+          showLabels={!collapsed}
+          groups={groups}
+          query={query}
+          setQuery={setQuery}
+          pathname={pathname}
+        />
+        <FooterLinks showLabels={!collapsed} onSignOut={handleSignOut} />
       </aside>
 
       {/* Mobile top bar */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-40 h-14 bg-purple-950 text-white flex items-center justify-between px-4 border-b border-purple-900">
+      <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/10 bg-[#140c26] px-4 text-white lg:hidden">
         <Logo variant="icon" size="sm" darkBg />
-        <span className="text-xs uppercase tracking-wider text-purple-400">Admin</span>
+        <span className="text-xs uppercase tracking-[0.14em] text-purple-300/60">Admin</span>
         <button
           onClick={() => setMobileOpen(true)}
-          className="p-2 rounded-lg hover:bg-purple-900 transition-colors"
+          className="rounded-lg p-2 transition-colors hover:bg-white/5"
           aria-label="Open admin menu"
           aria-expanded={mobileOpen}
         >
@@ -283,25 +319,31 @@ export function AdminSidebar() {
       {/* Mobile full-screen drawer */}
       <div
         className={cn(
-          "lg:hidden fixed inset-0 z-50 bg-purple-950 text-white flex flex-col transition-opacity duration-200",
-          mobileOpen ? "opacity-100 visible" : "opacity-0 invisible pointer-events-none"
+          "fixed inset-0 z-50 flex flex-col bg-gradient-to-b from-[#1a1030] to-[#0f0a1f] text-white transition-opacity duration-200 lg:hidden",
+          mobileOpen ? "visible opacity-100" : "pointer-events-none invisible opacity-0"
         )}
         role="dialog"
         aria-modal="true"
         aria-label="Admin navigation"
       >
-        <div className="p-4 flex items-center justify-between border-b border-purple-900">
+        <div className="flex h-16 items-center justify-between border-b border-white/10 px-4">
           <Logo variant="icon" size="sm" darkBg />
           <button
             onClick={() => setMobileOpen(false)}
-            className="p-2 rounded-lg hover:bg-purple-900 transition-colors"
+            className="rounded-lg p-2 transition-colors hover:bg-white/5"
             aria-label="Close admin menu"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <NavBody showLabels={true} />
-        <FooterLinks showLabels={true} />
+        <NavBody
+          showLabels={true}
+          groups={groups}
+          query={query}
+          setQuery={setQuery}
+          pathname={pathname}
+        />
+        <FooterLinks showLabels={true} onSignOut={handleSignOut} />
       </div>
     </>
   );

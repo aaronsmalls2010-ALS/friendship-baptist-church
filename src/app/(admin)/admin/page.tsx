@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, DollarSign, Calendar, Heart, CalendarPlus, Megaphone, UserPlus, MessageCircle, HandCoins, ClipboardList, Clock, MapPin, Loader2 } from "lucide-react";
+import { Users, DollarSign, Calendar, Heart, CalendarPlus, Megaphone, UserPlus, MessageCircle, HandCoins, ClipboardList, Clock, MapPin, Loader2, Check, X, ShieldCheck, Church, UsersRound, MessageSquareQuote, CheckCircle2 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,15 @@ import { formatDate } from "@/lib/utils";
 import type { Event } from "@/types";
 
 interface AuditRow { id: string; action: string; resource_type: string; created_at: string; }
+
+interface Approvals {
+  members: { id: string; first_name: string; last_name: string; email: string; created_at: string }[];
+  ministries: { ministry_id: string; profile_id: string; member_name: string; ministry_name: string }[];
+  groups: { group_id: string; profile_id: string; member_name: string; group_name: string }[];
+  testimonies: { id: string; author_name: string; excerpt: string; created_at: string }[];
+  total: number;
+}
+const EMPTY_APPROVALS: Approvals = { members: [], ministries: [], groups: [], testimonies: [], total: 0 };
 
 function auditIcon(action: string) {
   if (action.startsWith("donation")) return HandCoins;
@@ -37,6 +46,50 @@ function timeAgo(ts: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+function ApprovalRow({
+  icon: Icon,
+  title,
+  subtitle,
+  busy,
+  onApprove,
+  onDeny,
+}: {
+  icon: typeof Check;
+  title: string;
+  subtitle?: string;
+  busy: boolean;
+  onApprove: () => void;
+  onDeny: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+      <div className="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
+        <Icon className="h-4 w-4 text-slate-500" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{title}</p>
+        {subtitle && <p className="truncate text-xs text-slate-500">{subtitle}</p>}
+      </div>
+      <button
+        onClick={onApprove}
+        disabled={busy}
+        className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        Approve
+      </button>
+      <button
+        onClick={onDeny}
+        disabled={busy}
+        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+      >
+        <X className="h-3.5 w-3.5" />
+        Deny
+      </button>
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [auditFeed, setAuditFeed] = useState<AuditRow[]>([]);
@@ -45,17 +98,46 @@ export default function AdminDashboardPage() {
   const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
   const [prayerRequestsCount, setPrayerRequestsCount] = useState(0);
   const [nextEvents, setNextEvents] = useState<Event[]>([]);
+  const [approvals, setApprovals] = useState<Approvals>(EMPTY_APPROVALS);
+  const [actioning, setActioning] = useState<Set<string>>(new Set());
+
+  async function refreshApprovals() {
+    const res = await fetch("/api/admin/approvals");
+    if (res.ok) setApprovals(await res.json());
+  }
+
+  async function act(type: string, payload: Record<string, string>, action: "approve" | "deny") {
+    const key = `${type}:${Object.values(payload).join(":")}`;
+    setActioning((p) => new Set(p).add(key));
+    try {
+      const res = await fetch("/api/admin/approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, action, ...payload }),
+      });
+      if (res.ok) await refreshApprovals();
+    } finally {
+      setActioning((p) => {
+        const n = new Set(p);
+        n.delete(key);
+        return n;
+      });
+    }
+  }
 
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const [membersRes, eventsRes, donationsRes, prayerRes, auditRes] = await Promise.all([
+        const [membersRes, eventsRes, donationsRes, prayerRes, auditRes, approvalsRes] = await Promise.all([
           fetch("/api/admin/members"),
           fetch("/api/admin/events"),
           fetch("/api/admin/donations"),
           fetch("/api/admin/prayer-requests"),
           fetch("/api/admin/audit?page=1"),
+          fetch("/api/admin/approvals"),
         ]);
+
+        if (approvalsRes.ok) setApprovals(await approvalsRes.json());
 
         if (membersRes.ok) {
           const data = await membersRes.json();
@@ -118,6 +200,84 @@ export default function AdminDashboardPage() {
         title="Dashboard"
         description="Overview of church activity"
       />
+
+      {/* Pending Approvals — needs an admin decision */}
+      <FadeIn>
+        <Card
+          className={
+            approvals.total > 0
+              ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10"
+              : "border-slate-200 dark:border-slate-800"
+          }
+        >
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShieldCheck className="h-5 w-5 text-amber-600" />
+              Pending Approvals
+              {approvals.total > 0 && (
+                <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white tabular-nums">
+                  {approvals.total}
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {approvals.total === 0 ? (
+              <div className="flex items-center gap-2 py-4 text-sm text-slate-500">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                All caught up — nothing is waiting on approval.
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {approvals.members.map((m) => (
+                  <ApprovalRow
+                    key={`member-${m.id}`}
+                    icon={UserPlus}
+                    title={`${m.first_name} ${m.last_name}`.trim() || m.email}
+                    subtitle={`New member signup · ${m.email}`}
+                    busy={actioning.has(`member:${m.id}`)}
+                    onApprove={() => act("member", { id: m.id }, "approve")}
+                    onDeny={() => act("member", { id: m.id }, "deny")}
+                  />
+                ))}
+                {approvals.ministries.map((r) => (
+                  <ApprovalRow
+                    key={`min-${r.ministry_id}-${r.profile_id}`}
+                    icon={Church}
+                    title={r.member_name}
+                    subtitle={`Wants to join ministry · ${r.ministry_name}`}
+                    busy={actioning.has(`ministry:${r.ministry_id}:${r.profile_id}`)}
+                    onApprove={() => act("ministry", { ministry_id: r.ministry_id, profile_id: r.profile_id }, "approve")}
+                    onDeny={() => act("ministry", { ministry_id: r.ministry_id, profile_id: r.profile_id }, "deny")}
+                  />
+                ))}
+                {approvals.groups.map((r) => (
+                  <ApprovalRow
+                    key={`grp-${r.group_id}-${r.profile_id}`}
+                    icon={UsersRound}
+                    title={r.member_name}
+                    subtitle={`Wants to join group · ${r.group_name}`}
+                    busy={actioning.has(`group:${r.group_id}:${r.profile_id}`)}
+                    onApprove={() => act("group", { group_id: r.group_id, profile_id: r.profile_id }, "approve")}
+                    onDeny={() => act("group", { group_id: r.group_id, profile_id: r.profile_id }, "deny")}
+                  />
+                ))}
+                {approvals.testimonies.map((t) => (
+                  <ApprovalRow
+                    key={`test-${t.id}`}
+                    icon={MessageSquareQuote}
+                    title={`Testimony from ${t.author_name || "a member"}`}
+                    subtitle={t.excerpt || "Awaiting moderation"}
+                    busy={actioning.has(`testimony:${t.id}`)}
+                    onApprove={() => act("testimony", { id: t.id }, "approve")}
+                    onDeny={() => act("testimony", { id: t.id }, "deny")}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </FadeIn>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

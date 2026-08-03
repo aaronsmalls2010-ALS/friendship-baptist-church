@@ -24,6 +24,20 @@ export default function SettingsPage() {
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [orgLoading, setOrgLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [smsStatus, setSmsStatus] = useState<{
+    configured: boolean;
+    valid?: boolean;
+    from_number?: string;
+    number_owned?: boolean;
+    message?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/sms/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setSmsStatus(d))
+      .catch(() => {});
+  }, []);
 
   // General / org fields
   const [churchName, setChurchName] = useState("");
@@ -274,24 +288,44 @@ export default function SettingsPage() {
               <CardContent>
                 <div className="space-y-4">
                   {[
-                    { icon: Database, color: "green", label: "Supabase", desc: "Database & Authentication", status: "Connected", connected: true },
-                    { icon: CreditCard, color: "yellow", label: "Stripe", desc: "Payment Processing", status: "Not Connected", connected: false },
-                    { icon: MessageSquare, color: "yellow", label: "Twilio (SMS)", desc: "SMS & Messaging", status: "Not Connected", connected: false },
-                  ].map(({ icon: Icon, color, label, desc, status, connected }) => (
-                    <div key={label} className="flex flex-col gap-4 rounded-lg border border-warm-100 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-warm-800">
-                      <div className="flex items-center gap-3">
-                        <div className={`rounded-lg bg-${color}-50 p-2 dark:bg-${color}-900/20`}>
-                          <Icon className={`h-5 w-5 text-${color}-600`} />
+                    { icon: Database, color: "green", label: "Supabase", desc: "Database & Authentication", status: "Connected", connected: true, detail: undefined as string | undefined },
+                    { icon: CreditCard, color: "yellow", label: "Stripe", desc: "Payment Processing", status: "Not Connected", connected: false, detail: undefined as string | undefined },
+                    {
+                      icon: MessageSquare,
+                      color: smsStatus?.valid ? "green" : "yellow",
+                      label: "Twilio (SMS)",
+                      desc: smsStatus?.from_number ? `Sending from ${smsStatus.from_number}` : "SMS & Messaging",
+                      status:
+                        smsStatus == null
+                          ? "Checking…"
+                          : smsStatus.valid
+                            ? "Connected"
+                            : smsStatus.configured
+                              ? "Needs attention"
+                              : "Not Connected",
+                      connected: Boolean(smsStatus?.valid),
+                      detail: smsStatus && !smsStatus.valid ? smsStatus.message : undefined,
+                    },
+                  ].map(({ icon: Icon, color, label, desc, status, connected, detail }) => (
+                    <div key={label} className="flex flex-col gap-2 rounded-lg border border-warm-100 p-4 dark:border-warm-800">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`rounded-lg bg-${color}-50 p-2 dark:bg-${color}-900/20`}>
+                            <Icon className={`h-5 w-5 text-${color}-600`} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-warm-900 dark:text-warm-50">{label}</p>
+                            <p className="text-xs text-warm-500">{desc}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-warm-900 dark:text-warm-50">{label}</p>
-                          <p className="text-xs text-warm-500">{desc}</p>
-                        </div>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          connected ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                    : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
+                        }`}>{status}</span>
                       </div>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        connected ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                  : "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                      }`}>{status}</span>
+                      {detail && (
+                        <p className="text-xs text-warm-500 sm:pl-11">{detail}</p>
+                      )}
                     </div>
                   ))}
                 </div>

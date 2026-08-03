@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDate, toEasternInputValue, fromEasternInputValue } from "@/lib/utils";
-import { RECURRENCE_OPTIONS } from "@/lib/events/recurrence";
+import { RecurrenceBuilder } from "@/components/admin/recurrence-builder";
 import type { Event } from "@/types";
 import { Pencil, Trash2, Plus, Loader2, ImagePlus, X } from "lucide-react";
 
@@ -494,17 +494,7 @@ export default function EventManagementPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="recurrence">Repeats</Label>
-              <Select value={formRecurrence} onValueChange={setFormRecurrence}>
-                <SelectTrigger id="recurrence"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {RECURRENCE_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <RecurrenceBuilder value={formRecurrence} onChange={setFormRecurrence} />
 
             {formRecurrence !== "none" && (
               <div className="space-y-2">

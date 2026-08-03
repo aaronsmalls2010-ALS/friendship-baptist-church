@@ -213,7 +213,7 @@ function EventSlide({ event }: { event: Event }) {
     // Fill the whole slide with the brand colour (so the fixed nav has a clean
     // backdrop), then inset the actual content BELOW the nav bar (top-20/24).
     <div className="absolute inset-0 bg-purple-950">
-      <div className="absolute inset-x-0 bottom-0 top-20 flex flex-col md:flex-row lg:top-24">
+      <div className="absolute inset-x-0 bottom-0 top-28 flex flex-col md:flex-row lg:top-32">
         {/* Image half (church logo fallback when no image). object-contain so
             the full image is always shown, never cropped. */}
         <div className="relative h-1/2 w-full overflow-hidden bg-purple-950 md:h-full md:w-1/2">

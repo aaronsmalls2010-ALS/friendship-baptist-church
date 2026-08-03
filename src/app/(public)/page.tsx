@@ -109,38 +109,7 @@ export default function HomePage() {
       {/* Hero Section — auto-scrolling upcoming-events carousel (welcome = slide 0) */}
       <HeroEventsCarousel welcome={heroWelcome} />
 
-      {/* Service Times */}
-      <section className="section-padding bg-warm-50 dark:bg-warm-950">
-        <div className="container-wide">
-          <FadeIn>
-            <SectionHeading
-              title="Join Us for Worship"
-              subtitle="All are welcome at Friendship Baptist Church"
-            />
-          </FadeIn>
-
-          <SlideUpContainer className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {CHURCH_INFO.serviceTimes.map((service) => (
-              <SlideUpItem key={service.name}>
-                <div className="bg-white dark:bg-warm-900 rounded-xl p-6 text-center shadow-sm hover:shadow-card-hover transition-shadow border border-warm-100 dark:border-warm-800">
-                  <div className="w-12 h-12 mx-auto mb-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-                    <BookOpen className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <h3 className="font-heading text-lg font-semibold text-warm-900 dark:text-warm-50">
-                    {service.name}
-                  </h3>
-                  <p className="text-purple-700 dark:text-purple-400 font-medium mt-1">
-                    {service.day}
-                  </p>
-                  <p className="text-fluid-xl font-bold text-warm-900 dark:text-warm-50 mt-1">
-                    {service.time}
-                  </p>
-                </div>
-              </SlideUpItem>
-            ))}
-          </SlideUpContainer>
-        </div>
-      </section>
+      {/* Service times moved to the header bar (see PublicHeader). */}
 
       {/* Scripture */}
       <section className="py-16 bg-purple-700 dark:bg-purple-900">

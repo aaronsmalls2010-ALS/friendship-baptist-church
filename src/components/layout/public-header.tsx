@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Heart, Video, HandHeart, LogIn, LogOut, User } from "lucide-react";
+import { Menu, X, ChevronDown, Heart, Video, HandHeart, LogIn, LogOut, User, Clock } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { useScrollPosition } from "@/hooks/use-scroll-position";
 import { useAuth } from "@/hooks/use-auth";
 import { useSiteSettings } from "@/contexts/site-settings-context";
-import { PUBLIC_NAV } from "@/lib/constants";
+import { PUBLIC_NAV, CHURCH_INFO } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 export function PublicHeader() {
@@ -39,6 +39,22 @@ export function PublicHeader() {
         animate={{ y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
+        {/* Service-times strip */}
+        <div className="bg-purple-950 text-white">
+          <div className="container-wide flex h-8 items-center justify-center gap-x-3 whitespace-nowrap text-[11px] sm:gap-x-6 sm:text-xs">
+            <Clock className="hidden h-3.5 w-3.5 shrink-0 text-gold-300 sm:block" />
+            {CHURCH_INFO.serviceTimes.map((s) => (
+              <span key={s.name} className="flex items-center gap-1.5">
+                <span className="font-semibold text-white">{s.name}</span>
+                <span className="text-purple-200">
+                  <span className="hidden sm:inline">{s.day} · </span>
+                  {s.time}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+
         <nav className="container-wide" aria-label="Main navigation">
           <div
             className={cn(

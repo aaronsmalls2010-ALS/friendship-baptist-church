@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { DataTable } from "@/components/admin/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate, toEasternInputValue, fromEasternInputValue } from "@/lib/utils";
 import type { Event } from "@/types";
-import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Plus, Loader2, ImagePlus, X } from "lucide-react";
 
 export default function EventManagementPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -43,6 +43,9 @@ export default function EventManagementPage() {
   const [formCapacity, setFormCapacity] = useState("");
   const [formAllowWaitlist, setFormAllowWaitlist] = useState(false);
   const [formIsPublished, setFormIsPublished] = useState(false);
+  const [formImageUrl, setFormImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState("");
 
   // ── Data fetching ─────────────────────────────────────────────────
   async function loadData() {
@@ -72,6 +75,8 @@ export default function EventManagementPage() {
     setFormCapacity("");
     setFormAllowWaitlist(false);
     setFormIsPublished(false);
+    setFormImageUrl("");
+    setImageError("");
     setEditingEvent(null);
   }
 
@@ -91,7 +96,37 @@ export default function EventManagementPage() {
     setFormCapacity(event.capacity != null ? String(event.capacity) : "");
     setFormAllowWaitlist(event.allow_waitlist ?? false);
     setFormIsPublished(event.is_published);
+    setFormImageUrl(event.image_url ?? "");
+    setImageError("");
     setFormOpen(true);
+  }
+
+  async function handleImageChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // Allow re-selecting the same file later.
+    e.target.value = "";
+    if (!file) return;
+
+    setImageError("");
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setFormImageUrl(data.url);
+      } else {
+        setImageError(data.error ?? "Upload failed. Please try again.");
+      }
+    } catch {
+      setImageError("Upload failed. Please try again.");
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   async function handleSave() {
@@ -105,6 +140,7 @@ export default function EventManagementPage() {
       capacity: formCapacity.trim() === "" ? null : Number(formCapacity),
       allow_waitlist: formAllowWaitlist,
       is_published: formIsPublished,
+      image_url: formImageUrl || null,
     };
 
     if (editingEvent) {
@@ -314,6 +350,65 @@ export default function EventManagementPage() {
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Event Image</Label>
+              {formImageUrl ? (
+                <div className="flex items-start gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={formImageUrl}
+                    alt="Event preview"
+                    className="h-20 w-20 rounded-md border border-warm-200 object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormImageUrl("")}
+                    className="text-warm-600"
+                  >
+                    <X className="mr-1 h-3.5 w-3.5" />
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <label
+                    htmlFor="event_image"
+                    className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-warm-300 bg-warm-50/50 px-4 py-3 text-sm text-warm-600 transition-colors hover:border-purple-400 hover:text-purple-700"
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading…
+                      </>
+                    ) : (
+                      <>
+                        <ImagePlus className="h-4 w-4" />
+                        Upload an image
+                      </>
+                    )}
+                  </label>
+                  <input
+                    id="event_image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                    className="sr-only"
+                    disabled={uploadingImage}
+                    onChange={handleImageChange}
+                  />
+                  <p className="mt-1 text-xs text-warm-500">
+                    JPEG, PNG, WebP, GIF, or AVIF. Max 8 MB.
+                  </p>
+                </div>
+              )}
+              {imageError && (
+                <p role="alert" className="text-xs text-red-600">
+                  {imageError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

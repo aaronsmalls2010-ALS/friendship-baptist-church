@@ -12,30 +12,32 @@ import { CHURCH_INFO } from "@/lib/constants";
 import { EditableText } from "@/components/cms/editable-text";
 import { EditableImage } from "@/components/cms/editable-image";
 import { useSiteSettings } from "@/contexts/site-settings-context";
+import { HeroEventsCarousel } from "@/components/home/hero-events-carousel";
 
 export default function HomePage() {
   const { watchLiveEnabled } = useSiteSettings();
 
-  return (
+  // Slide 0 of the hero carousel — the CMS-editable church welcome.
+  // Preserved exactly: all EditableText/EditableImage ids and CTAs unchanged.
+  const heroWelcome = (
     <>
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <EditableImage
-            id="home.hero.bg"
-            fallback="/images/church/cross.jpg"
-            alt=""
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-hero" />
-          <div className="absolute inset-0 bg-purple-950/40" />
-        </div>
+      {/* Background */}
+      <div className="absolute inset-0">
+        <EditableImage
+          id="home.hero.bg"
+          fallback="/images/church/cross.jpg"
+          alt=""
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-hero" />
+        <div className="absolute inset-0 bg-purple-950/40" />
+      </div>
 
-        {/* Content */}
-        <div className="relative z-10 container-wide text-center text-white pt-24 pb-16">
+      {/* Content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center">
+        <div className="container-wide text-center text-white pt-24 pb-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -98,18 +100,14 @@ export default function HomePage() {
             </CTAButton>
           </motion.div>
         </div>
+      </div>
+    </>
+  );
 
-        {/* Scroll indicator */}
-        <motion.div
-          className="absolute bottom-8 left-1/2 -translate-x-1/2"
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex items-start justify-center p-1.5">
-            <div className="w-1.5 h-3 bg-white/60 rounded-full" />
-          </div>
-        </motion.div>
-      </section>
+  return (
+    <>
+      {/* Hero Section — auto-scrolling upcoming-events carousel (welcome = slide 0) */}
+      <HeroEventsCarousel welcome={heroWelcome} />
 
       {/* Service Times */}
       <section className="section-padding bg-warm-50 dark:bg-warm-950">

@@ -19,7 +19,10 @@ import { CTAButton } from "@/components/shared/cta-button";
 import { CHURCH_TZ } from "@/lib/utils";
 import type { Event } from "@/types";
 
-const AUTO_ADVANCE_MS = 6000;
+// The welcome slide (index 0) is seen most, so it flips quickly; event slides
+// linger so visitors can read them.
+const WELCOME_MS = 3000;
+const EVENT_MS = 10000;
 
 /** Short date pill, e.g. "Sat, Jun 21 · 10:00 AM" */
 function formatPill(iso: string): string {
@@ -93,7 +96,7 @@ export function HeroEventsCarousel({ welcome }: HeroEventsCarouselProps) {
     if (!hasCarousel || paused || prefersReducedMotion) return;
     const t = setTimeout(() => {
       setIndex((i) => (i + 1) % totalSlides);
-    }, AUTO_ADVANCE_MS);
+    }, index === 0 ? WELCOME_MS : EVENT_MS);
     return () => clearTimeout(t);
   }, [hasCarousel, paused, prefersReducedMotion, index, totalSlides]);
 

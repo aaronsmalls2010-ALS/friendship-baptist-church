@@ -39,7 +39,7 @@ export default function HomePage() {
           floating events card is present (driven by the section's
           data-has-events via group-data variants). */}
       <div className="relative z-10 flex min-h-screen items-center justify-center lg:group-data-[has-events=true]/hero:justify-start">
-        <div className="container-wide text-center text-white pt-24 pb-16 lg:group-data-[has-events=true]/hero:text-left lg:group-data-[has-events=true]/hero:pr-[420px]">
+        <div className="container-wide text-center text-white pt-24 pb-16 lg:group-data-[has-events=true]/hero:text-left lg:group-data-[has-events=true]/hero:pr-[470px] xl:group-data-[has-events=true]/hero:pr-[520px]">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}

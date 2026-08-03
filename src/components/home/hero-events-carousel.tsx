@@ -206,7 +206,7 @@ export function HeroEventsCarousel({ welcome }: HeroEventsCarouselProps) {
         <>
           {/* Desktop: floating card, docked top-right and vertically centered */}
           <div
-            className="hidden lg:absolute lg:right-6 lg:top-1/2 lg:z-20 lg:block lg:w-[370px] lg:-translate-y-1/2 xl:right-10"
+            className="hidden lg:absolute lg:right-6 lg:top-1/2 lg:z-20 lg:block lg:w-[420px] lg:-translate-y-1/2 xl:right-10 xl:w-[460px]"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
             onFocusCapture={() => setPaused(true)}
@@ -296,15 +296,16 @@ function EventCard({ event }: { event: Event }) {
       className="group/card block focus-visible:outline-none"
       aria-label={`View details for ${event.title}`}
     >
-      {/* Image on top */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-purple-950">
+      {/* Image on top — object-contain so the full flyer/photo is always
+          visible (never cropped); a soft matte fills any letterboxing. */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-warm-100">
         {hasImage ? (
           <Image
             src={event.image_url as string}
             alt={event.title}
             fill
-            className="object-cover transition-transform duration-500 group-hover/card:scale-105"
-            sizes="(min-width: 1024px) 370px, 100vw"
+            className="object-contain transition-transform duration-500 group-hover/card:scale-[1.03]"
+            sizes="(min-width: 1024px) 440px, 100vw"
             priority={false}
           />
         ) : (
@@ -321,7 +322,7 @@ function EventCard({ event }: { event: Event }) {
               alt="Friendship Baptist Church"
               width={200}
               height={200}
-              className="relative w-2/5 max-w-[140px] object-contain opacity-95 drop-shadow-xl"
+              className="relative w-2/5 max-w-[180px] object-contain opacity-95 drop-shadow-xl"
             />
           </div>
         )}

@@ -245,35 +245,37 @@ function EventSlide({ event }: { event: Event }) {
           </div>
         )}
         {/* Soft seam blending image into the details panel */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-purple-950/40 to-transparent md:bg-gradient-to-r md:from-transparent md:to-purple-900/50" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-white/20 md:bg-gradient-to-r md:from-transparent md:to-white/20" />
       </div>
 
-      {/* Details half */}
-      <div className="relative flex h-1/2 w-full items-center bg-gradient-to-br from-purple-900 via-purple-800 to-purple-950 md:h-full md:w-1/2">
+      {/* Details half — white panel, dark centered text, on-brand accents */}
+      <div className="relative flex h-1/2 w-full items-center justify-center bg-white md:h-full md:w-1/2">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.1 }}
-          className="w-full px-8 py-10 text-white sm:px-12 md:px-14 lg:px-20"
+          className="flex w-full flex-col items-center px-8 py-10 text-center sm:px-12 md:px-14 lg:px-16"
         >
-          <span className="inline-flex items-center gap-2 rounded-full bg-gold-400 px-4 py-1.5 text-sm font-semibold text-purple-950 shadow-lg">
+          <span className="inline-flex items-center gap-2 rounded-full bg-gold-400 px-4 py-1.5 text-sm font-semibold text-purple-950 shadow-sm">
             <CalendarDays className="h-4 w-4" />
             {formatPill(event.start_date)}
           </span>
 
-          <h2 className="mt-5 font-heading text-3xl font-bold leading-tight sm:text-4xl lg:text-5xl">
+          <h2 className="mt-5 font-heading text-3xl font-bold leading-tight text-purple-900 sm:text-4xl lg:text-5xl">
             {event.title}
           </h2>
 
+          <div className="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-gold-400 to-purple-500" />
+
           {event.location && (
-            <div className="mt-4 flex items-center gap-2 text-gold-200">
+            <div className="mt-4 flex items-center justify-center gap-2 text-purple-700">
               <MapPin className="h-5 w-5 shrink-0" />
               <span className="font-medium">{event.location}</span>
             </div>
           )}
 
           {event.description && (
-            <p className="mt-4 max-w-xl text-base text-white/80 line-clamp-3">
+            <p className="mt-4 max-w-xl text-base text-warm-600 line-clamp-3">
               {event.description}
             </p>
           )}

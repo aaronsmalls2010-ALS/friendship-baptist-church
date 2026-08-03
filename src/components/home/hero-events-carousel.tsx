@@ -216,7 +216,7 @@ function EventSlide({ event }: { event: Event }) {
       <div className="absolute inset-x-0 bottom-0 top-28 flex flex-col md:flex-row lg:top-32">
         {/* Image half (church logo fallback when no image). object-contain so
             the full image is always shown, never cropped. */}
-        <div className="relative h-1/2 w-full overflow-hidden bg-purple-950 md:h-full md:w-1/2">
+        <div className="relative h-2/5 w-full overflow-hidden bg-purple-950 md:h-full md:w-1/2">
           {hasImage ? (
             <Image
               src={event.image_url as string}
@@ -249,38 +249,38 @@ function EventSlide({ event }: { event: Event }) {
       </div>
 
       {/* Details half — white panel, dark centered text, on-brand accents */}
-      <div className="relative flex h-1/2 w-full items-center justify-center bg-white md:h-full md:w-1/2">
+      <div className="relative flex h-3/5 w-full items-center justify-center overflow-y-auto bg-white md:h-full md:w-1/2">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, delay: 0.1 }}
-          className="flex w-full flex-col items-center px-8 py-10 text-center sm:px-12 md:px-14 lg:px-16"
+          className="flex w-full flex-col items-center px-6 py-6 text-center sm:px-12 sm:py-10 md:px-14 lg:px-16"
         >
           <span className="inline-flex items-center gap-2 rounded-full bg-gold-400 px-4 py-1.5 text-sm font-semibold text-purple-950 shadow-sm">
             <CalendarDays className="h-4 w-4" />
             {formatPill(event.start_date)}
           </span>
 
-          <h2 className="mt-5 font-heading text-3xl font-bold leading-tight text-purple-900 sm:text-4xl lg:text-5xl">
+          <h2 className="mt-3 font-heading text-2xl font-bold leading-tight text-purple-900 sm:mt-5 sm:text-4xl lg:text-5xl">
             {event.title}
           </h2>
 
-          <div className="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-gold-400 to-purple-500" />
+          <div className="mt-3 h-1 w-16 rounded-full bg-gradient-to-r from-gold-400 to-purple-500 sm:mt-4" />
 
           {event.location && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-purple-700">
+            <div className="mt-3 flex items-center justify-center gap-2 text-purple-700 sm:mt-4">
               <MapPin className="h-5 w-5 shrink-0" />
               <span className="font-medium">{event.location}</span>
             </div>
           )}
 
           {event.description && (
-            <p className="mt-4 max-w-xl text-base text-warm-600 line-clamp-3">
+            <p className="mt-3 max-w-xl text-sm text-warm-600 line-clamp-2 sm:mt-4 sm:text-base sm:line-clamp-3">
               {event.description}
             </p>
           )}
 
-          <div className="mt-8">
+          <div className="mt-5 sm:mt-8">
             <CTAButton
               href={`/events#${event.id}`}
               variant="gold"

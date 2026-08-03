@@ -48,8 +48,7 @@ export const PUBLIC_NAV: NavItem[] = [
     label: "Connect",
     href: "/events",
     children: [
-      { label: "Events", href: "/events" },
-      { label: "Calendar", href: "/calendar" },
+      { label: "Events & Calendar", href: "/events" },
       { label: "Bible Trivia", href: "/trivia" },
       { label: "Business Directory", href: "/business-directory" },
       { label: "Contact Us", href: "/contact" },

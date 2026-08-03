@@ -10,8 +10,6 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  List as ListIcon,
-  CalendarRange,
 } from "lucide-react";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
 import { FadeIn } from "@/components/motion/fade-in";
@@ -127,7 +125,6 @@ function getCalendarDays(year: number, month: number): Date[] {
   return days;
 }
 
-type ViewMode = "list" | "calendar";
 
 /* ─── Component ───────────────────────────────────────────────────── */
 
@@ -136,7 +133,6 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [birthdayEvents, setBirthdayEvents] = useState<Event[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
-  const [view, setView] = useState<ViewMode>("list");
 
   // Calendar view state
   const [currentMonth, setCurrentMonth] = useState<Date>(
@@ -326,51 +322,9 @@ export default function EventsPage() {
         breadcrumbs={[{ label: "Events" }]}
       />
 
-      {/* ── View Toggle ─────────────────────────────────────────────── */}
-      <section className="pt-8 lg:pt-10">
-        <div className="container-wide">
-          <FadeIn>
-            <div
-              className="inline-flex items-center gap-1 p-1 rounded-xl bg-warm-100 dark:bg-warm-900 border border-warm-200 dark:border-warm-800"
-              role="tablist"
-              aria-label="Choose events view"
-            >
-              <button
-                role="tab"
-                aria-selected={view === "list"}
-                onClick={() => setView("list")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400",
-                  view === "list"
-                    ? "bg-purple-700 text-white shadow-sm"
-                    : "text-warm-600 dark:text-warm-300 hover:text-purple-700 dark:hover:text-purple-300"
-                )}
-              >
-                <ListIcon className="h-4 w-4" />
-                List
-              </button>
-              <button
-                role="tab"
-                aria-selected={view === "calendar"}
-                onClick={() => setView("calendar")}
-                className={cn(
-                  "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400",
-                  view === "calendar"
-                    ? "bg-purple-700 text-white shadow-sm"
-                    : "text-warm-600 dark:text-warm-300 hover:text-purple-700 dark:hover:text-purple-300"
-                )}
-              >
-                <CalendarRange className="h-4 w-4" />
-                Calendar
-              </button>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ══ LIST VIEW ═══════════════════════════════════════════════════ */}
-      {view === "list" && (
-        <>
+      {/* One combined view — calendar first, list underneath */}
+      <div className="flex flex-col">
+      <div className="order-2">
           {/* ── Featured Event ──────────────────────────────────────── */}
           {featuredEvent && (
             <section className="section-padding">
@@ -609,11 +563,10 @@ export default function EventsPage() {
               </div>
             </section>
           )}
-        </>
-      )}
+      </div>
 
-      {/* ══ CALENDAR VIEW ═══════════════════════════════════════════════ */}
-      {view === "calendar" && (
+      {/* Calendar (shown first) */}
+      <div className="order-1">
         <section className="section-padding">
           <div className="container-wide">
             <FadeIn>
@@ -875,7 +828,8 @@ export default function EventsPage() {
             </FadeIn>
           </div>
         </section>
-      )}
+      </div>
+      </div>
 
       {/* ── CTA ─────────────────────────────────────────────────────── */}
       <section className="section-padding bg-warm-50 dark:bg-warm-950">
@@ -885,7 +839,7 @@ export default function EventsPage() {
               <EditableText id="events.cta.heading" fallback="Never Miss a Gathering" as="span" />
             </h2>
             <p className="text-warm-600 dark:text-warm-400 text-lg mb-8 max-w-xl mx-auto">
-              <EditableText id="events.cta.description" fallback="Switch between the list and calendar views above to stay connected with everything happening at Friendship Baptist." as="span" multiline />
+              <EditableText id="events.cta.description" fallback="Stay connected with everything happening at Friendship Baptist Church." as="span" multiline />
             </p>
             <CTAButton
               href="/contact"

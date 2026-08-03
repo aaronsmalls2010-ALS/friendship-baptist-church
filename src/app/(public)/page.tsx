@@ -35,9 +35,11 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-purple-950/40" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center">
-        <div className="container-wide text-center text-white pt-24 pb-16">
+      {/* Content — centered by default; shifts left on desktop when the
+          floating events card is present (driven by the section's
+          data-has-events via group-data variants). */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center lg:group-data-[has-events=true]/hero:justify-start">
+        <div className="container-wide text-center text-white pt-24 pb-16 lg:group-data-[has-events=true]/hero:text-left lg:group-data-[has-events=true]/hero:pr-[420px]">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -74,7 +76,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7 }}
-            className="text-white/70 text-fluid-base mb-10 max-w-2xl mx-auto"
+            className="text-white/70 text-fluid-base mb-10 max-w-2xl mx-auto lg:group-data-[has-events=true]/hero:mx-0"
           >
             Led by {CHURCH_INFO.pastor}, serving the Beaufort, SC community with
             love, faith, and fellowship in the Lowcountry Gullah Geechee
@@ -85,7 +87,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.9 }}
-            className="flex flex-wrap items-center justify-center gap-4"
+            className="flex flex-wrap items-center justify-center gap-4 lg:group-data-[has-events=true]/hero:justify-start"
           >
             {watchLiveEnabled && (
               <CTAButton href="/media?tab=live" variant="gold" size="lg" icon={<Video className="h-5 w-5" />}>

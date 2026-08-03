@@ -14,15 +14,14 @@ import {
   ChevronRight,
   MapPin,
   CalendarDays,
+  ArrowRight,
+  X,
 } from "lucide-react";
-import { CTAButton } from "@/components/shared/cta-button";
 import { CHURCH_TZ } from "@/lib/utils";
 import type { Event } from "@/types";
 
-// The welcome slide (index 0) is seen most, so it flips quickly; event slides
-// linger so visitors can read them.
-const WELCOME_MS = 3000;
-const EVENT_MS = 10000;
+// The event card advances every 5 seconds, pausing on hover / focus.
+const ROTATE_MS = 5000;
 
 /** Short date pill, e.g. "Sat, Jun 21 · 10:00 AM" */
 function formatPill(iso: string): string {
@@ -47,7 +46,7 @@ function formatPill(iso: string): string {
 }
 
 interface HeroEventsCarouselProps {
-  /** Slide 0 — the CMS-editable church welcome. Rendered as-is inside the first slide. */
+  /** The CMS-editable church welcome hero. Always visible; the event card overlays it. */
   welcome: ReactNode;
 }
 
@@ -56,7 +55,8 @@ export function HeroEventsCarousel({ welcome }: HeroEventsCarouselProps) {
   const [events, setEvents] = useState<Event[]>([]);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const liveRef = useRef<HTMLDivElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
   // Fetch upcoming events on mount
   useEffect(() => {
@@ -67,168 +67,246 @@ export function HeroEventsCarousel({ welcome }: HeroEventsCarouselProps) {
         if (active) setEvents(Array.isArray(data?.events) ? data.events : []);
       })
       .catch(() => {
-        /* silently keep welcome-only hero */
+        /* silently keep the welcome-only hero */
       });
     return () => {
       active = false;
     };
   }, []);
 
-  const totalSlides = 1 + events.length;
-  const hasCarousel = events.length > 0;
+  const count = events.length;
+  const hasCarousel = count > 0;
+  const hasMultiple = count > 1;
 
   // Clamp index if the event list shrinks
   useEffect(() => {
-    if (index > totalSlides - 1) setIndex(0);
-  }, [index, totalSlides]);
+    if (index > count - 1) setIndex(0);
+  }, [index, count]);
 
   const goTo = useCallback(
-    (next: number) => {
-      setIndex(((next % totalSlides) + totalSlides) % totalSlides);
+    (nextIdx: number) => {
+      if (count === 0) return;
+      setIndex(((nextIdx % count) + count) % count);
     },
-    [totalSlides]
+    [count]
   );
   const prev = useCallback(() => goTo(index - 1), [goTo, index]);
   const next = useCallback(() => goTo(index + 1), [goTo, index]);
 
-  // Auto-advance — disabled when paused, reduced-motion, or welcome-only
+  // Auto-advance — disabled when paused, reduced-motion, or only one event
   useEffect(() => {
-    if (!hasCarousel || paused || prefersReducedMotion) return;
+    if (!hasMultiple || paused || prefersReducedMotion) return;
     const t = setTimeout(() => {
-      setIndex((i) => (i + 1) % totalSlides);
-    }, index === 0 ? WELCOME_MS : EVENT_MS);
+      setIndex((i) => (i + 1) % count);
+    }, ROTATE_MS);
     return () => clearTimeout(t);
-  }, [hasCarousel, paused, prefersReducedMotion, index, totalSlides]);
+  }, [hasMultiple, paused, prefersReducedMotion, index, count]);
 
-  // Keyboard arrows
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!hasCarousel) return;
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        prev();
-      } else if (e.key === "ArrowRight") {
-        e.preventDefault();
-        next();
-      }
-    },
-    [hasCarousel, prev, next]
+  // Lock body scroll while the mobile modal is open
+  useEffect(() => {
+    if (!modalOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [modalOpen]);
+
+  // Close the mobile modal on Escape; focus the close button when it opens
+  useEffect(() => {
+    if (!modalOpen) return;
+    closeBtnRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setModalOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [modalOpen]);
+
+  const currentEvent = events[index] ?? null;
+
+  // Shared rotating card + controls, reused by the desktop overlay and mobile modal.
+  const carousel = currentEvent && (
+    <>
+      <div className="relative overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/5">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={currentEvent.id}
+            initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: prefersReducedMotion ? 0 : -12 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.4, ease: "easeInOut" }}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${index + 1} of ${count}: ${currentEvent.title}`}
+          >
+            <EventCard event={currentEvent} />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Prev / Next — only when there is more than one event */}
+        {hasMultiple && (
+          <>
+            <button
+              type="button"
+              onClick={prev}
+              aria-label="Previous event"
+              className="absolute left-2 top-[28%] z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm ring-1 ring-white/25 transition-colors hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 cursor-pointer"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={next}
+              aria-label="Next event"
+              className="absolute right-2 top-[28%] z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm ring-1 ring-white/25 transition-colors hover:bg-black/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 cursor-pointer"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Dot indicators */}
+      {hasMultiple && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {events.map((ev, i) => (
+            <button
+              key={ev.id}
+              type="button"
+              onClick={() => goTo(i)}
+              aria-label={`Go to event ${i + 1}`}
+              aria-current={i === index ? "true" : undefined}
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
+                i === index
+                  ? "w-7 bg-gold-300"
+                  : "w-2.5 bg-white/60 hover:bg-white/90"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Screen-reader live announcement */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {`Event ${index + 1} of ${count}: ${currentEvent.title}`}
+      </div>
+    </>
   );
-
-  const currentEvent = index > 0 ? events[index - 1] : null;
 
   return (
     <section
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
-      aria-roledescription="carousel"
-      aria-label="Church welcome and upcoming events"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={() => setPaused(false)}
-      onKeyDown={onKeyDown}
+      className="group/hero relative min-h-screen overflow-hidden"
+      data-has-events={hasCarousel ? "true" : "false"}
     >
-      {/* Slides */}
-      <AnimatePresence mode="sync" initial={false}>
-        <motion.div
-          key={index}
-          className="absolute inset-0"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{
-            duration: prefersReducedMotion ? 0 : 0.7,
-            ease: "easeInOut",
-          }}
-          role="group"
-          aria-roledescription="slide"
-          aria-label={
-            currentEvent
-              ? `Slide ${index + 1} of ${totalSlides}: ${currentEvent.title}`
-              : `Slide 1 of ${totalSlides}: Welcome`
-          }
-        >
-          {currentEvent ? (
-            <EventSlide event={currentEvent} />
-          ) : (
-            <div className="absolute inset-0">{welcome}</div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+      {/* Welcome hero — the default, always-visible layer */}
+      {welcome}
 
-      {/* Carousel chrome — only when there is at least one event */}
-      {hasCarousel && (
+      {hasCarousel && currentEvent && (
         <>
-          {/* Prev / Next arrows */}
-          <button
-            type="button"
-            onClick={prev}
-            aria-label="Previous slide"
-            className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm ring-1 ring-white/20 transition-colors hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 cursor-pointer"
+          {/* Desktop: floating card, docked top-right and vertically centered */}
+          <div
+            className="hidden lg:absolute lg:right-6 lg:top-1/2 lg:z-20 lg:block lg:w-[370px] lg:-translate-y-1/2 xl:right-10"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onFocusCapture={() => setPaused(true)}
+            onBlurCapture={() => setPaused(false)}
+            aria-roledescription="carousel"
+            aria-label="Upcoming events"
           >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-          <button
-            type="button"
-            onClick={next}
-            aria-label="Next slide"
-            className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-sm ring-1 ring-white/20 transition-colors hover:bg-black/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 cursor-pointer"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-
-          {/* Dot indicators */}
-          <div className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2.5">
-            {Array.from({ length: totalSlides }).map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => goTo(i)}
-                aria-label={
-                  i === 0 ? "Go to welcome slide" : `Go to event ${i}`
-                }
-                aria-current={i === index ? "true" : undefined}
-                className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
-                  i === index
-                    ? "w-7 bg-gold-300"
-                    : "w-2.5 bg-white/50 hover:bg-white/80"
-                }`}
-              />
-            ))}
+            <p className="mb-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-white/90 drop-shadow">
+              Upcoming Events
+            </p>
+            {carousel}
           </div>
 
-          {/* Screen-reader live announcement */}
-          <div ref={liveRef} className="sr-only" aria-live="polite" aria-atomic="true">
-            {currentEvent
-              ? `Slide ${index + 1} of ${totalSlides}: ${currentEvent.title}`
-              : `Slide 1 of ${totalSlides}: Welcome`}
-          </div>
+          {/* Mobile: a pill that brings up the events in a modal */}
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="absolute bottom-8 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-gold-400 px-5 py-2.5 text-sm font-semibold text-purple-950 shadow-xl ring-1 ring-black/10 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white lg:hidden"
+            aria-haspopup="dialog"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Upcoming Events
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-purple-950 px-1.5 text-xs font-bold text-gold-300">
+              {count}
+            </span>
+          </button>
+
+          {/* Mobile modal — bottom sheet the visitor can read, then close */}
+          <AnimatePresence>
+            {modalOpen && (
+              <div
+                className="fixed inset-0 z-[60] lg:hidden"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Upcoming events"
+              >
+                <motion.div
+                  className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.25 }}
+                  onClick={() => setModalOpen(false)}
+                />
+                <motion.div
+                  className="absolute inset-x-0 bottom-0 flex max-h-[92dvh] flex-col rounded-t-3xl bg-purple-950 shadow-2xl"
+                  initial={{ y: prefersReducedMotion ? 0 : "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: prefersReducedMotion ? 0 : "100%" }}
+                  transition={{ type: "tween", duration: prefersReducedMotion ? 0 : 0.3, ease: "easeOut" }}
+                >
+                  {/* Header — pinned */}
+                  <div className="flex shrink-0 items-center justify-between px-5 pb-3 pt-4">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-gold-300">
+                      Upcoming Events
+                    </h2>
+                    <button
+                      ref={closeBtnRef}
+                      type="button"
+                      onClick={() => setModalOpen(false)}
+                      aria-label="Close upcoming events"
+                      className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-300 cursor-pointer"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  {/* Scroll region */}
+                  <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-8">
+                    {carousel}
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </section>
   );
 }
 
-/** A single upcoming-event slide — split image | details. */
-function EventSlide({ event }: { event: Event }) {
+/** A single upcoming-event card — image on top, details underneath. */
+function EventCard({ event }: { event: Event }) {
   const hasImage = Boolean(event.image_url);
   return (
-    // Fill the whole slide with the brand colour (so the fixed nav has a clean
-    // backdrop), then inset the actual content BELOW the nav bar (top-20/24).
-    <div className="absolute inset-0 bg-purple-950">
-      <div className="absolute inset-x-0 bottom-0 top-28 flex flex-col md:flex-row lg:top-32">
-        {/* Image half (church logo fallback when no image). object-contain so
-            the full image is always shown, never cropped. */}
-        <div className="relative h-2/5 w-full overflow-hidden bg-purple-950 md:h-full md:w-1/2">
-          {hasImage ? (
-            <Image
-              src={event.image_url as string}
-              alt={event.title}
-              fill
-              className="object-contain"
-              sizes="(min-width: 768px) 50vw, 100vw"
-              priority={false}
-            />
+    <a
+      href={`/events#${event.id}`}
+      className="group/card block focus-visible:outline-none"
+      aria-label={`View details for ${event.title}`}
+    >
+      {/* Image on top */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-purple-950">
+        {hasImage ? (
+          <Image
+            src={event.image_url as string}
+            alt={event.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover/card:scale-105"
+            sizes="(min-width: 1024px) 370px, 100vw"
+            priority={false}
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-800 via-purple-700 to-purple-950">
             <div
@@ -241,61 +319,43 @@ function EventSlide({ event }: { event: Event }) {
             <Image
               src="/images/logos/fbc-logo-light.png"
               alt="Friendship Baptist Church"
-              width={320}
-              height={320}
-              className="relative w-1/2 max-w-[240px] object-contain opacity-95 drop-shadow-xl"
+              width={200}
+              height={200}
+              className="relative w-2/5 max-w-[140px] object-contain opacity-95 drop-shadow-xl"
             />
           </div>
         )}
-        {/* Soft seam blending image into the details panel */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent to-white/20 md:bg-gradient-to-r md:from-transparent md:to-white/20" />
+        {/* Date pill overlaps the bottom of the image */}
+        <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-gold-400 px-3 py-1 text-xs font-semibold text-purple-950 shadow-md">
+          <CalendarDays className="h-3.5 w-3.5" />
+          {formatPill(event.start_date)}
+        </span>
       </div>
 
-      {/* Details half — white panel, dark centered text, on-brand accents */}
-      <div className="relative flex h-3/5 w-full items-center justify-center overflow-y-auto bg-white md:h-full md:w-1/2">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.1 }}
-          className="flex w-full flex-col items-center px-6 py-6 text-center sm:px-12 sm:py-10 md:px-14 lg:px-16"
-        >
-          <span className="inline-flex items-center gap-2 rounded-full bg-gold-400 px-4 py-1.5 text-sm font-semibold text-purple-950 shadow-sm">
-            <CalendarDays className="h-4 w-4" />
-            {formatPill(event.start_date)}
-          </span>
+      {/* Event information under the image */}
+      <div className="p-5">
+        <h3 className="font-heading text-lg font-bold leading-snug text-purple-900 line-clamp-2 transition-colors group-hover/card:text-purple-700">
+          {event.title}
+        </h3>
 
-          <h2 className="mt-3 font-heading text-2xl font-bold leading-tight text-purple-900 sm:mt-5 sm:text-4xl lg:text-5xl">
-            {event.title}
-          </h2>
-
-          <div className="mt-3 h-1 w-16 rounded-full bg-gradient-to-r from-gold-400 to-purple-500 sm:mt-4" />
-
-          {event.location && (
-            <div className="mt-3 flex items-center justify-center gap-2 text-purple-700 sm:mt-4">
-              <MapPin className="h-5 w-5 shrink-0" />
-              <span className="font-medium">{event.location}</span>
-            </div>
-          )}
-
-          {event.description && (
-            <p className="mt-3 max-w-xl text-sm text-warm-600 line-clamp-2 sm:mt-4 sm:text-base sm:line-clamp-3">
-              {event.description}
-            </p>
-          )}
-
-          <div className="mt-5 sm:mt-8">
-            <CTAButton
-              href={`/events#${event.id}`}
-              variant="gold"
-              size="lg"
-              icon={<CalendarDays className="h-5 w-5" />}
-            >
-              View Event Details
-            </CTAButton>
+        {event.location && (
+          <div className="mt-2 flex items-center gap-1.5 text-sm text-purple-700">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="line-clamp-1 font-medium">{event.location}</span>
           </div>
-        </motion.div>
+        )}
+
+        {event.description && (
+          <p className="mt-2 text-sm text-warm-600 line-clamp-2">
+            {event.description}
+          </p>
+        )}
+
+        <span className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-600 transition-colors group-hover/card:text-gold-700">
+          View Event Details
+          <ArrowRight className="h-4 w-4 transition-transform group-hover/card:translate-x-0.5" />
+        </span>
       </div>
-      </div>
-    </div>
+    </a>
   );
 }

@@ -210,18 +210,22 @@ export function HeroEventsCarousel({ welcome }: HeroEventsCarouselProps) {
 function EventSlide({ event }: { event: Event }) {
   const hasImage = Boolean(event.image_url);
   return (
-    <div className="absolute inset-0 flex flex-col md:flex-row">
-      {/* Image half (church logo fallback when no image) */}
-      <div className="relative h-1/2 w-full overflow-hidden bg-purple-950 md:h-full md:w-1/2">
-        {hasImage ? (
-          <Image
-            src={event.image_url as string}
-            alt={event.title}
-            fill
-            className="object-cover"
-            sizes="(min-width: 768px) 50vw, 100vw"
-            priority={false}
-          />
+    // Fill the whole slide with the brand colour (so the fixed nav has a clean
+    // backdrop), then inset the actual content BELOW the nav bar (top-20/24).
+    <div className="absolute inset-0 bg-purple-950">
+      <div className="absolute inset-x-0 bottom-0 top-20 flex flex-col md:flex-row lg:top-24">
+        {/* Image half (church logo fallback when no image). object-contain so
+            the full image is always shown, never cropped. */}
+        <div className="relative h-1/2 w-full overflow-hidden bg-purple-950 md:h-full md:w-1/2">
+          {hasImage ? (
+            <Image
+              src={event.image_url as string}
+              alt={event.title}
+              fill
+              className="object-contain"
+              sizes="(min-width: 768px) 50vw, 100vw"
+              priority={false}
+            />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-800 via-purple-700 to-purple-950">
             <div
@@ -285,6 +289,7 @@ function EventSlide({ event }: { event: Event }) {
             </CTAButton>
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );

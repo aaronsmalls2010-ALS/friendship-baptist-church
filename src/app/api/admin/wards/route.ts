@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
-    const { name, description, deacon_id } = body;
+    const { name, description } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     const admin = createAdminClient();
     const { data: ward, error } = await admin
       .from("wards")
-      .insert({ name, description, deacon_id })
+      .insert({ name, description })
       .select()
       .single();
 
@@ -108,7 +108,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const allowed = ["name", "description", "deacon_id"];
+    const allowed = ["name", "description"];
     const fields: Record<string, unknown> = {};
     for (const k of allowed) { if (k in raw) fields[k] = raw[k]; }
 

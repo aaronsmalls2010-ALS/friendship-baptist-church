@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { expandOccurrences } from "@/lib/events/recurrence";
 
 /**
  * GET /api/public/events
@@ -19,14 +20,16 @@ export async function GET(request: NextRequest) {
       const now = new Date();
       const in28Days = new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000);
 
+      // Fetch candidates: any published non-birthday event whose (base) start is
+      // on or before the window end. Recurring events that began earlier are
+      // included so their upcoming occurrences can be expanded; past one-offs
+      // simply expand to nothing.
       const { data: events, error } = await admin
         .from("events")
         .select("*")
         .eq("is_published", true)
-        .gte("start_date", now.toISOString())
         .lte("start_date", in28Days.toISOString())
-        .or("is_birthday.is.null,is_birthday.eq.false")
-        .order("start_date", { ascending: true });
+        .or("is_birthday.is.null,is_birthday.eq.false");
 
       if (error) {
         console.error("[PUBLIC] Fetch upcoming events error:", error);
@@ -36,7 +39,19 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      return NextResponse.json({ events: events ?? [] });
+      // Expand recurring events into concrete occurrences within [now, +28d],
+      // present each occurrence as a normal event (start_date = occurrence date).
+      const occurrences = (events ?? [])
+        .flatMap((e) => expandOccurrences(e, now, in28Days))
+        .map((o) => ({
+          ...o,
+          start_date: o.occurrence_start,
+          end_date: o.occurrence_end ?? o.end_date,
+        }))
+        .sort((a, b) => a.start_date.localeCompare(b.start_date))
+        .slice(0, 40);
+
+      return NextResponse.json({ events: occurrences });
     }
 
     const { data: events, error } = await admin

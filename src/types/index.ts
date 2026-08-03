@@ -75,6 +75,10 @@ export interface Event {
   capacity?: number | null;
   allow_waitlist?: boolean;
   is_published: boolean;
+  /** "none" | "daily" | "weekly" | "biweekly" | "monthly" | "yearly" */
+  recurrence?: string | null;
+  /** Optional "repeat until" date (YYYY-MM-DD) for a recurring event. */
+  recurrence_end?: string | null;
   created_at: string;
   /** Count of confirmed ('going') RSVP rows — populated by list endpoints, not stored. */
   going_count?: number;

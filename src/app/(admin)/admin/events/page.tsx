@@ -17,9 +17,31 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatDate, toEasternInputValue, fromEasternInputValue } from "@/lib/utils";
+import { RECURRENCE_OPTIONS } from "@/lib/events/recurrence";
 import type { Event } from "@/types";
 import { Pencil, Trash2, Plus, Loader2, ImagePlus, X } from "lucide-react";
+
+// Only top-of-the-hour and half-hour times, 12:00 AM … 11:30 PM.
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+  const h = Math.floor(i / 2);
+  const m = i % 2 === 0 ? "00" : "30";
+  const value = `${String(h).padStart(2, "0")}:${m}`;
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  const ampm = h < 12 ? "AM" : "PM";
+  return { value, label: `${h12}:${m} ${ampm}` };
+});
+// datetime-local strings are "YYYY-MM-DDTHH:mm"; split/recombine the parts.
+const datePart = (v: string) => (v ? v.split("T")[0] : "");
+const timePart = (v: string) => (v && v.includes("T") ? v.split("T")[1].slice(0, 5) : "");
+const combineDT = (day: string, time: string) => (day ? `${day}T${time || "09:00"}` : "");
 
 export default function EventManagementPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -44,6 +66,8 @@ export default function EventManagementPage() {
   const [formAllowWaitlist, setFormAllowWaitlist] = useState(false);
   const [formIsPublished, setFormIsPublished] = useState(false);
   const [formImageUrl, setFormImageUrl] = useState("");
+  const [formRecurrence, setFormRecurrence] = useState("none");
+  const [formRecurrenceEnd, setFormRecurrenceEnd] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageError, setImageError] = useState("");
 
@@ -76,6 +100,8 @@ export default function EventManagementPage() {
     setFormAllowWaitlist(false);
     setFormIsPublished(false);
     setFormImageUrl("");
+    setFormRecurrence("none");
+    setFormRecurrenceEnd("");
     setImageError("");
     setEditingEvent(null);
   }
@@ -97,6 +123,8 @@ export default function EventManagementPage() {
     setFormAllowWaitlist(event.allow_waitlist ?? false);
     setFormIsPublished(event.is_published);
     setFormImageUrl(event.image_url ?? "");
+    setFormRecurrence(event.recurrence || "none");
+    setFormRecurrenceEnd(event.recurrence_end ?? "");
     setImageError("");
     setFormOpen(true);
   }
@@ -141,6 +169,9 @@ export default function EventManagementPage() {
       allow_waitlist: formAllowWaitlist,
       is_published: formIsPublished,
       image_url: formImageUrl || null,
+      recurrence: formRecurrence,
+      recurrence_end:
+        formRecurrence !== "none" && formRecurrenceEnd ? formRecurrenceEnd : null,
     };
 
     if (editingEvent) {
@@ -411,25 +442,82 @@ export default function EventManagementPage() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
-              <Input
-                id="start_date"
-                type="datetime-local"
-                value={formStartDate}
-                onChange={(e) => setFormStartDate(e.target.value)}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="start_day">Start Date</Label>
+                <Input
+                  id="start_day"
+                  type="date"
+                  value={datePart(formStartDate)}
+                  onChange={(e) => setFormStartDate(combineDT(e.target.value, timePart(formStartDate)))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="start_time">Start Time</Label>
+                <Select
+                  value={timePart(formStartDate) || undefined}
+                  onValueChange={(v) => setFormStartDate(combineDT(datePart(formStartDate), v))}
+                >
+                  <SelectTrigger id="start_time"><SelectValue placeholder="Select time" /></SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {TIME_OPTIONS.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="end_day">End Date</Label>
+                <Input
+                  id="end_day"
+                  type="date"
+                  value={datePart(formEndDate)}
+                  onChange={(e) => setFormEndDate(e.target.value ? combineDT(e.target.value, timePart(formEndDate)) : "")}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end_time">End Time</Label>
+                <Select
+                  value={timePart(formEndDate) || undefined}
+                  onValueChange={(v) => setFormEndDate(combineDT(datePart(formEndDate), v))}
+                >
+                  <SelectTrigger id="end_time"><SelectValue placeholder="Select time" /></SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {TIME_OPTIONS.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_date">End Date</Label>
-              <Input
-                id="end_date"
-                type="datetime-local"
-                value={formEndDate}
-                onChange={(e) => setFormEndDate(e.target.value)}
-              />
+              <Label htmlFor="recurrence">Repeats</Label>
+              <Select value={formRecurrence} onValueChange={setFormRecurrence}>
+                <SelectTrigger id="recurrence"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {RECURRENCE_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+
+            {formRecurrence !== "none" && (
+              <div className="space-y-2">
+                <Label htmlFor="recurrence_end">Repeat until (optional)</Label>
+                <Input
+                  id="recurrence_end"
+                  type="date"
+                  value={formRecurrenceEnd}
+                  onChange={(e) => setFormRecurrenceEnd(e.target.value)}
+                />
+                <p className="text-xs text-slate-500">Leave blank to repeat indefinitely.</p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="location">Location</Label>

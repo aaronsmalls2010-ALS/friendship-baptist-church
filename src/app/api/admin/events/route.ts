@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
-    const { title, description, start_date, end_date, location, ministry_id, is_published, rsvp_enabled, capacity, allow_waitlist, image_url } = body;
+    const { title, description, start_date, end_date, location, ministry_id, is_published, rsvp_enabled, capacity, allow_waitlist, image_url, recurrence, recurrence_end } = body;
 
     if (!title || !start_date) {
       return NextResponse.json(
@@ -98,6 +98,8 @@ export async function POST(request: Request) {
         capacity: normalizedCapacity,
         allow_waitlist: allow_waitlist === true,
         image_url,
+        recurrence: recurrence || "none",
+        recurrence_end: recurrence_end || null,
       })
       .select()
       .single();
@@ -141,7 +143,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    const allowed = ["title", "description", "start_date", "end_date", "location", "ministry_id", "is_published", "rsvp_enabled", "capacity", "allow_waitlist", "image_url"];
+    const allowed = ["title", "description", "start_date", "end_date", "location", "ministry_id", "is_published", "rsvp_enabled", "capacity", "allow_waitlist", "image_url", "recurrence", "recurrence_end"];
     const fields: Record<string, unknown> = {};
     for (const k of allowed) { if (k in raw) fields[k] = raw[k]; }
 

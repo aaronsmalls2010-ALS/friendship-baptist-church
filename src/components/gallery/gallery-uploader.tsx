@@ -51,15 +51,17 @@ async function prepareForUpload(file: File): Promise<File> {
   const imageCompression = (await import("browser-image-compression")).default;
   // useWebWorker:false — a strict CSP blocks the library's CDN-loaded worker,
   // which would otherwise hang forever. Main-thread compression is reliable.
+  // ONE pass (maxIteration:1) at the resolution the server keeps anyway
+  // (1800px) — the iterative size-target loop was the main slowdown.
   return withTimeout(
     imageCompression(asFile, {
-      maxSizeMB: 2,
-      maxWidthOrHeight: 2400,
+      maxWidthOrHeight: 1800,
+      initialQuality: 0.72,
+      maxIteration: 1,
       useWebWorker: false,
       fileType: "image/jpeg",
-      initialQuality: 0.8,
     }),
-    60000,
+    45000,
     "Photo compression"
   );
 }

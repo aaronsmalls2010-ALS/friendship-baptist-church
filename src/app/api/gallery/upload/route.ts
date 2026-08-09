@@ -84,43 +84,45 @@ export async function POST(request: NextRequest) {
     albumId = album?.id ?? null;
   }
 
-  let uploaded = 0;
-  const errors: string[] = [];
+  const userId = ctx.user.id;
 
-  for (const file of files) {
+  // Process one file end-to-end. Returns null on success, or an error message.
+  async function processOne(file: File): Promise<string | null> {
+    if (file.size > MAX_BYTES) return `${file.name || "A photo"} is too large.`;
+    let bytes: Buffer;
     try {
-      if (file.size > MAX_BYTES) {
-        errors.push(`${file.name || "A photo"} is too large.`);
-        continue;
-      }
-      const bytes = Buffer.from(await file.arrayBuffer());
-
-      // Trust the BYTES, not the declared type. HEIC is converted to JPEG
-      // client-side; every other standard format is accepted here and sharp
-      // re-encodes it to WebP below.
-      if (!isAllowedImage(bytes, ["jpeg", "png", "webp", "gif", "avif"])) {
-        errors.push(`${file.name || "A photo"} isn't a supported image.`);
-        continue;
-      }
-
+      bytes = Buffer.from(await file.arrayBuffer());
+    } catch {
+      return `${file.name || "A photo"} couldn't be read.`;
+    }
+    // Trust the BYTES, not the declared type. HEIC is converted to JPEG
+    // client-side; every other standard format is accepted here and sharp
+    // re-encodes it to WebP below.
+    if (!isAllowedImage(bytes, ["jpeg", "png", "webp", "gif", "avif"])) {
+      return `${file.name || "A photo"} isn't a supported image.`;
+    }
+    try {
       const processed = await processGalleryImage(bytes);
-
       const id = randomUUID();
-      const imagePath = `${ctx.user.id}/${id}.webp`;
-      const thumbPath = `${ctx.user.id}/${id}_thumb.webp`;
+      const imagePath = `${userId}/${id}.webp`;
+      const thumbPath = `${userId}/${id}_thumb.webp`;
 
-      const up1 = await admin.storage
-        .from(REVIEW_BUCKET)
-        .upload(imagePath, processed.full, { contentType: "image/webp", upsert: false });
-      if (up1.error) throw new Error(up1.error.message);
-
-      const up2 = await admin.storage
-        .from(REVIEW_BUCKET)
-        .upload(thumbPath, processed.thumb, { contentType: "image/webp", upsert: false });
-      if (up2.error) throw new Error(up2.error.message);
+      // Upload full + thumbnail in parallel.
+      const [up1, up2] = await Promise.all([
+        admin.storage
+          .from(REVIEW_BUCKET)
+          .upload(imagePath, processed.full, { contentType: "image/webp", upsert: false }),
+        admin.storage
+          .from(REVIEW_BUCKET)
+          .upload(thumbPath, processed.thumb, { contentType: "image/webp", upsert: false }),
+      ]);
+      if (up1.error || up2.error) {
+        await admin.storage.from(REVIEW_BUCKET).remove([imagePath, thumbPath]);
+        throw new Error(up1.error?.message || up2.error?.message || "upload failed");
+      }
 
       const { error: insErr } = await admin.from("gallery_photos").insert({
-        uploader_id: ctx.user.id,
+        uploader_id: userId,
         uploader_name: uploaderName,
         caption,
         album_id: albumId,
@@ -131,15 +133,25 @@ export async function POST(request: NextRequest) {
         height: processed.height,
       });
       if (insErr) {
-        // Roll back the just-uploaded objects so we don't orphan storage.
         await admin.storage.from(REVIEW_BUCKET).remove([imagePath, thumbPath]);
         throw new Error(insErr.message);
       }
-
-      uploaded += 1;
+      return null;
     } catch (err) {
       console.error("[GALLERY/UPLOAD]", err instanceof Error ? err.message : err);
-      errors.push(`${file.name || "A photo"} couldn't be processed.`);
+      return `${file.name || "A photo"} couldn't be processed.`;
+    }
+  }
+
+  // Run in bounded-concurrency batches so sharp doesn't spike function memory.
+  const CONCURRENCY = 4;
+  let uploaded = 0;
+  const errors: string[] = [];
+  for (let i = 0; i < files.length; i += CONCURRENCY) {
+    const results = await Promise.all(files.slice(i, i + CONCURRENCY).map(processOne));
+    for (const r of results) {
+      if (r === null) uploaded += 1;
+      else errors.push(r);
     }
   }
 

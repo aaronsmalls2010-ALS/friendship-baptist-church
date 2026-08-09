@@ -263,6 +263,35 @@ export interface TimelineEvent {
   order: number;
 }
 
+export interface GalleryAlbum {
+  id: string;
+  name: string;
+  slug: string;
+  sort_order: number;
+}
+
+export type GalleryPhotoStatus = "pending" | "approved" | "rejected";
+
+export interface GalleryPhoto {
+  id: string;
+  uploader_id: string | null;
+  uploader_name: string;
+  caption: string | null;
+  album_id: string | null;
+  album_slug?: string | null;
+  album_name?: string | null;
+  status: GalleryPhotoStatus;
+  /** Public CDN URL of the full image (approved) or a signed URL (pending review). */
+  url: string;
+  /** Public/signed URL of the grid thumbnail. */
+  thumb_url: string;
+  width: number | null;
+  height: number | null;
+  review_note?: string | null;
+  created_at: string;
+  approved_at?: string | null;
+}
+
 export interface Testimony {
   id: string;
   author_name: string;

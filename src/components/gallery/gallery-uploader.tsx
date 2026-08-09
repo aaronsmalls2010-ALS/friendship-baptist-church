@@ -20,14 +20,28 @@ function isHeic(file: File): boolean {
   return t === "image/heic" || t === "image/heif" || n.endsWith(".heic") || n.endsWith(".heif");
 }
 
-/** Convert (HEIC→JPEG if needed) then compress a file for upload. */
+/** Reject if a step takes too long, so a stuck conversion can't freeze the batch. */
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out`)), ms)
+    ),
+  ]);
+}
+
+/** Convert (HEIC→JPEG if needed) then compress a file for upload, to save space. */
 async function prepareForUpload(file: File): Promise<File> {
   let working: Blob = file;
   let name = file.name;
 
   if (isHeic(file)) {
     const heic2any = (await import("heic2any")).default;
-    const out = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 });
+    const out = await withTimeout(
+      heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 }),
+      60000,
+      "Photo conversion"
+    );
     working = Array.isArray(out) ? out[0] : out;
     name = name.replace(/\.(heic|heif)$/i, ".jpg");
   }
@@ -35,12 +49,19 @@ async function prepareForUpload(file: File): Promise<File> {
   const asFile = new File([working], name, { type: working.type || "image/jpeg" });
 
   const imageCompression = (await import("browser-image-compression")).default;
-  return imageCompression(asFile, {
-    maxSizeMB: 2.5,
-    maxWidthOrHeight: 2400,
-    useWebWorker: true,
-    fileType: "image/jpeg",
-  });
+  // useWebWorker:false — a strict CSP blocks the library's CDN-loaded worker,
+  // which would otherwise hang forever. Main-thread compression is reliable.
+  return withTimeout(
+    imageCompression(asFile, {
+      maxSizeMB: 2,
+      maxWidthOrHeight: 2400,
+      useWebWorker: false,
+      fileType: "image/jpeg",
+      initialQuality: 0.8,
+    }),
+    60000,
+    "Photo compression"
+  );
 }
 
 interface GalleryUploaderProps {
@@ -55,6 +76,7 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
   const [caption, setCaption] = useState("");
   const [albumId, setAlbumId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -113,7 +135,9 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
     setError(null);
     try {
       const form = new FormData();
-      for (const p of picked) {
+      for (let i = 0; i < picked.length; i++) {
+        const p = picked[i];
+        setProgress(`Preparing photo ${i + 1} of ${picked.length}…`);
         try {
           const prepared = await prepareForUpload(p.file);
           form.append("files", prepared, prepared.name);
@@ -129,22 +153,27 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
       if (!form.has("files")) {
         setError("We couldn't read those photos. Please try different ones.");
         setBusy(false);
+        setProgress(null);
         return;
       }
       if (caption.trim()) form.append("caption", caption.trim());
       if (albumId) form.append("albumId", albumId);
 
+      setProgress("Uploading…");
       const res = await fetch("/api/gallery/upload", { method: "POST", body: form });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
         setError(data?.error ?? "Upload failed. Please try again.");
         setBusy(false);
+        setProgress(null);
         return;
       }
+      setProgress(null);
       setDone(data.uploaded as number);
     } catch {
       setError("Something went wrong. Please try again.");
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -252,8 +281,8 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
                         <img src={p.preview} alt="" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full flex-col items-center justify-center p-2 text-center text-[10px] text-warm-500">
-                          <ImagePlus className="mb-1 h-5 w-5" />
-                          iPhone photo
+                          <CheckCircle2 className="mb-1 h-5 w-5 text-green-500" />
+                          Ready
                         </div>
                       )}
                       {!busy && (
@@ -332,7 +361,7 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
               {busy ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  Uploading…
+                  {progress ?? "Working…"}
                 </>
               ) : (
                 <>

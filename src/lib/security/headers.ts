@@ -16,9 +16,11 @@ export function getCSPHeader(nonce?: string): string {
   // Next.js requires 'unsafe-inline' for hydration bootstrap scripts.
   // 'unsafe-eval' is only needed in development mode for hot reload.
   const isDev = process.env.NODE_ENV === "development";
+  // 'wasm-unsafe-eval' allows the gallery uploader's in-browser HEIC decoder
+  // (WebAssembly) without permitting general eval().
   const scriptSrc = nonce
-    ? `'self' 'nonce-${nonce}'`
-    : `'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`;
+    ? `'self' 'nonce-${nonce}' 'wasm-unsafe-eval'`
+    : `'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`;
 
   const styleSrc = nonce
     ? `'self' 'unsafe-inline' 'nonce-${nonce}' https://fonts.googleapis.com`

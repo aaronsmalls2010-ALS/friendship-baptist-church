@@ -43,8 +43,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Per-member throttle: a handful of upload batches per hour.
-  const rl = await formRateLimit.check(6, `gallery-upload:${ctx.user.id}`);
+  // Per-member throttle. Uploads are one request per photo, so allow a
+  // generous per-hour budget (a few batches of 10).
+  const rl = await formRateLimit.check(60, `gallery-upload:${ctx.user.id}`);
   if (!rl.success) {
     return NextResponse.json(
       { error: "You've uploaded a lot just now — please try again later." },

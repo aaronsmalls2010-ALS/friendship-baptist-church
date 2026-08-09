@@ -19,7 +19,7 @@ export async function GET() {
 
   const admin = createAdminClient();
 
-  const [members, ministries, groups, testimonies] = await Promise.all([
+  const [members, ministries, groups, testimonies, photos] = await Promise.all([
     admin
       .from("profiles")
       .select("id, first_name, last_name, email, created_at")
@@ -39,6 +39,10 @@ export async function GET() {
       .select("id, author_name, content, created_at")
       .eq("is_approved", false)
       .order("created_at", { ascending: true }),
+    admin
+      .from("gallery_photos")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
   ]);
 
   const ministryReqs = (ministries.data ?? []).map((r) => ({
@@ -64,12 +68,20 @@ export async function GET() {
     created_at: t.created_at,
   }));
 
+  const photoCount = photos.count ?? 0;
+
   return NextResponse.json({
     members: memberList,
     ministries: ministryReqs,
     groups: groupReqs,
     testimonies: testimonyList,
-    total: memberList.length + ministryReqs.length + groupReqs.length + testimonyList.length,
+    photos: photoCount,
+    total:
+      memberList.length +
+      ministryReqs.length +
+      groupReqs.length +
+      testimonyList.length +
+      photoCount,
   });
 }
 

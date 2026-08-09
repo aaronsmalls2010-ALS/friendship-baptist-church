@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, DollarSign, Calendar, Heart, CalendarPlus, Megaphone, UserPlus, MessageCircle, HandCoins, ClipboardList, Clock, MapPin, Loader2, Check, X, ShieldCheck, Church, UsersRound, MessageSquareQuote, CheckCircle2 } from "lucide-react";
+import { Users, DollarSign, Calendar, Heart, CalendarPlus, Megaphone, UserPlus, MessageCircle, HandCoins, ClipboardList, Clock, MapPin, Loader2, Check, X, ShieldCheck, Church, UsersRound, MessageSquareQuote, CheckCircle2, Images } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +18,10 @@ interface Approvals {
   ministries: { ministry_id: string; profile_id: string; member_name: string; ministry_name: string }[];
   groups: { group_id: string; profile_id: string; member_name: string; group_name: string }[];
   testimonies: { id: string; author_name: string; excerpt: string; created_at: string }[];
+  photos: number;
   total: number;
 }
-const EMPTY_APPROVALS: Approvals = { members: [], ministries: [], groups: [], testimonies: [], total: 0 };
+const EMPTY_APPROVALS: Approvals = { members: [], ministries: [], groups: [], testimonies: [], photos: 0, total: 0 };
 
 function auditIcon(action: string) {
   if (action.startsWith("donation")) return HandCoins;
@@ -273,6 +274,27 @@ export default function AdminDashboardPage() {
                     onDeny={() => act("testimony", { id: t.id }, "deny")}
                   />
                 ))}
+                {approvals.photos > 0 && (
+                  <Link
+                    href="/admin/photos"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-white p-3 transition-colors hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900/40"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="rounded-lg bg-amber-50 p-2 dark:bg-amber-950/30">
+                        <Images className="h-4 w-4 text-amber-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                          {approvals.photos} photo{approvals.photos === 1 ? "" : "s"} awaiting review
+                        </p>
+                        <p className="truncate text-xs text-slate-500">Member gallery uploads</p>
+                      </div>
+                    </div>
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white">
+                      Review
+                    </span>
+                  </Link>
+                )}
               </div>
             )}
           </CardContent>

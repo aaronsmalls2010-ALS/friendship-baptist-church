@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { X, ImagePlus, Loader2, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
+import { X, ImagePlus, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import type { GalleryAlbum } from "@/types";
 
 const MAX_FILES = 10;
@@ -10,7 +10,7 @@ const MAX_FILES = 10;
 type Picked = {
   key: string;
   file: File;
-  preview: string | null; // objectURL for non-HEIC; null → placeholder tile
+  preview: string; // objectURL — rendered directly; falls back to a tile if the browser can't decode it
   isHeic: boolean;
 };
 
@@ -66,6 +66,8 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<number | null>(null);
+  // Keys whose preview the browser couldn't decode (e.g. HEIC on desktop) → show a tile.
+  const [previewFailed, setPreviewFailed] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -95,15 +97,12 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
       if (Array.from(list).length > room) {
         setError(`You can upload up to ${MAX_FILES} photos at a time.`);
       }
-      const mapped: Picked[] = incoming.map((file, i) => {
-        const heic = isHeic(file);
-        return {
-          key: `${Date.now()}-${i}-${file.name}`,
-          file,
-          preview: heic ? null : URL.createObjectURL(file),
-          isHeic: heic,
-        };
-      });
+      const mapped: Picked[] = incoming.map((file, i) => ({
+        key: `${Date.now()}-${i}-${file.name}`,
+        file,
+        preview: URL.createObjectURL(file),
+        isHeic: isHeic(file),
+      }));
       return [...prev, ...mapped];
     });
   }, []);
@@ -120,50 +119,49 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
     if (picked.length === 0 || busy) return;
     setBusy(true);
     setError(null);
-    try {
-      const form = new FormData();
-      for (let i = 0; i < picked.length; i++) {
-        const p = picked[i];
-        setProgress(`Preparing photo ${i + 1} of ${picked.length}…`);
-        if (p.isHeic) {
-          // iPhone HEIC is decoded on the server — upload the original as-is.
-          form.append("files", p.file, p.file.name);
-          continue;
-        }
+
+    // Upload ONE photo per request. Batching several megapixel photos into a
+    // single request exceeds the server body limit — that's why multiple used
+    // to fail while a single photo worked.
+    let ok = 0;
+    let lastError = "";
+    for (let i = 0; i < picked.length; i++) {
+      const p = picked[i];
+      setProgress(`Uploading ${i + 1} of ${picked.length}…`);
+
+      // HEIC uploads as-is (server decodes); other formats compress client-side
+      // to shrink the upload, falling back to the original on any hiccup.
+      let toSend: File = p.file;
+      if (!p.isHeic) {
         try {
-          const compressed = await compressForUpload(p.file);
-          form.append("files", compressed, compressed.name);
+          toSend = await compressForUpload(p.file);
         } catch {
-          // If client compression hiccups, upload the original; the server
-          // re-encodes it to WebP anyway.
-          form.append("files", p.file, p.file.name);
+          toSend = p.file;
         }
       }
-      if (!form.has("files")) {
-        setError("Please choose at least one photo.");
-        setBusy(false);
-        setProgress(null);
-        return;
-      }
+
+      const form = new FormData();
+      form.append("files", toSend, toSend.name);
       if (caption.trim()) form.append("caption", caption.trim());
       if (albumId) form.append("albumId", albumId);
 
-      setProgress("Uploading…");
-      const res = await fetch("/api/gallery/upload", { method: "POST", body: form });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "Upload failed. Please try again.");
-        setBusy(false);
-        setProgress(null);
-        return;
+      try {
+        const res = await fetch("/api/gallery/upload", { method: "POST", body: form });
+        const data = await res.json().catch(() => null);
+        if (res.ok && data?.ok && data.uploaded > 0) ok += 1;
+        else lastError = data?.error ?? "";
+      } catch {
+        /* network error — counted as a failure below */
       }
-      setProgress(null);
-      setDone(data.uploaded as number);
-    } catch {
-      setError("Something went wrong. Please try again.");
-      setBusy(false);
-      setProgress(null);
     }
+
+    setProgress(null);
+    setBusy(false);
+    if (ok === 0) {
+      setError(lastError || "We couldn't upload your photos. Please try again.");
+      return;
+    }
+    setDone(ok);
   }
 
   return (
@@ -263,25 +261,32 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
                   {picked.map((p) => (
                     <div
                       key={p.key}
-                      className="group relative aspect-square overflow-hidden rounded-xl bg-warm-100 dark:bg-warm-800"
+                      className="relative aspect-square overflow-hidden rounded-xl bg-warm-100 dark:bg-warm-800"
                     >
-                      {p.preview ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.preview} alt="" className="h-full w-full object-cover" />
-                      ) : (
+                      {previewFailed.has(p.key) ? (
                         <div className="flex h-full w-full flex-col items-center justify-center p-2 text-center text-[10px] text-warm-500">
                           <CheckCircle2 className="mb-1 h-5 w-5 text-green-500" />
                           Ready
                         </div>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={p.preview}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={() =>
+                            setPreviewFailed((s) => new Set(s).add(p.key))
+                          }
+                        />
                       )}
                       {!busy && (
                         <button
                           type="button"
                           onClick={() => removeAt(p.key)}
                           aria-label="Remove photo"
-                          className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                          className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow-md ring-2 ring-white transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <X className="h-4 w-4" />
                         </button>
                       )}
                     </div>

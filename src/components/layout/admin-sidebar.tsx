@@ -113,10 +113,12 @@ function NavLink({
   item,
   showLabel,
   active,
+  badge = 0,
 }: {
   item: NavItem;
   showLabel: boolean;
   active: boolean;
+  badge?: number;
 }) {
   return (
     <Link
@@ -141,6 +143,14 @@ function NavLink({
         )}
       />
       {showLabel && item.label}
+      {badge > 0 &&
+        (showLabel ? (
+          <span className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white tabular-nums">
+            {badge > 99 ? "99+" : badge}
+          </span>
+        ) : (
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-amber-500" />
+        ))}
     </Link>
   );
 }
@@ -151,12 +161,14 @@ function NavBody({
   query,
   setQuery,
   pathname,
+  pendingPhotos,
 }: {
   showLabels: boolean;
   groups: NavGroup[];
   query: string;
   setQuery: (v: string) => void;
   pathname: string;
+  pendingPhotos: number;
 }) {
   return (
     <nav
@@ -189,6 +201,7 @@ function NavBody({
               item={item}
               showLabel={showLabels}
               active={pathname === item.href}
+              badge={item.href === "/admin/photos" ? pendingPhotos : 0}
             />
           ))}
         </div>
@@ -236,11 +249,20 @@ export function AdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [user, setUser] = useState<User | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
   }, []);
+
+  // Pending photo count for the Photos nav badge (refreshes on route change).
+  useEffect(() => {
+    fetch("/api/admin/approvals")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setPendingPhotos(d.photos ?? 0))
+      .catch(() => {});
+  }, [pathname]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -300,6 +322,7 @@ export function AdminSidebar() {
           query={query}
           setQuery={setQuery}
           pathname={pathname}
+          pendingPhotos={pendingPhotos}
         />
         <FooterLinks showLabels={!collapsed} onSignOut={handleSignOut} />
       </aside>
@@ -344,6 +367,7 @@ export function AdminSidebar() {
           query={query}
           setQuery={setQuery}
           pathname={pathname}
+          pendingPhotos={pendingPhotos}
         />
         <FooterLinks showLabels={true} onSignOut={handleSignOut} />
       </div>

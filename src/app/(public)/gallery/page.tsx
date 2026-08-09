@@ -40,7 +40,20 @@ export default function GalleryPage() {
     let active = true;
     (async () => {
       const supabase = createClient();
-      supabase.auth.getUser().then(({ data }) => active && setAuthed(!!data.user));
+      supabase.auth.getUser().then(({ data }) => {
+        if (!active) return;
+        const signedIn = !!data.user;
+        setAuthed(signedIn);
+        // Deep link from the header ("Add Photos") opens the uploader straight away.
+        if (
+          signedIn &&
+          typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search).get("upload") === "1"
+        ) {
+          setUploaderOpen(true);
+          window.history.replaceState({}, "", "/gallery");
+        }
+      });
       fetch("/api/gallery/albums")
         .then((r) => (r.ok ? r.json() : { albums: [] }))
         .then((d) => active && setUploaderAlbums(d.albums ?? []));

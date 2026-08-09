@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Heart, Video, HandHeart, LogIn, LogOut, User, Clock } from "lucide-react";
+import { Menu, X, ChevronDown, Heart, Video, HandHeart, LogIn, LogOut, User, Clock, ImagePlus } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { useScrollPosition } from "@/hooks/use-scroll-position";
 import { useAuth } from "@/hooks/use-auth";
@@ -133,6 +133,14 @@ export function PublicHeader() {
                 {isAuthenticated ? (
                   <>
                     <Link
+                      href="/gallery?upload=1"
+                      className="flex items-center gap-1.5 rounded-lg bg-gold-400 px-3 py-2 text-sm font-semibold text-warm-900 transition-colors hover:bg-gold-300"
+                      title="Share photos to the gallery"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      Add Photos
+                    </Link>
+                    <Link
                       href="/portal"
                       className={cn(
                         "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
@@ -232,6 +240,15 @@ export function PublicHeader() {
             <HandHeart className="h-5 w-5" />
             Prayer
           </Link>
+          {isAuthenticated && (
+            <Link
+              href="/gallery?upload=1"
+              className="flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:text-purple-800"
+            >
+              <ImagePlus className="h-5 w-5" />
+              Add Photos
+            </Link>
+          )}
         </div>
       </div>
     </>
@@ -342,6 +359,14 @@ function MobileNav({
             <div className="mt-4 pt-4 border-t border-warm-200 space-y-2">
               {isAuthenticated ? (
                 <>
+                  <Link
+                    href="/gallery?upload=1"
+                    onClick={onClose}
+                    className="flex items-center gap-2 rounded-lg bg-gold-400 px-4 py-3 font-semibold text-warm-900 hover:bg-gold-300"
+                  >
+                    <ImagePlus className="h-5 w-5" />
+                    Add Photos to Gallery
+                  </Link>
                   <Link
                     href="/portal"
                     onClick={onClose}

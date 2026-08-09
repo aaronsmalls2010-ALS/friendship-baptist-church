@@ -118,7 +118,12 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
           const prepared = await prepareForUpload(p.file);
           form.append("files", prepared, prepared.name);
         } catch {
-          // Skip a single unreadable file rather than failing the whole batch.
+          // If client-side conversion/compression hiccups, still upload the
+          // original when it's already a web-safe image (the server re-encodes
+          // it anyway). Only HEIC truly depends on the client conversion.
+          if (!p.isHeic && p.file.type.startsWith("image/")) {
+            form.append("files", p.file, p.file.name);
+          }
         }
       }
       if (!form.has("files")) {
@@ -202,8 +207,9 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
           ) : (
             <>
               <p className="mb-3 text-sm text-warm-500 dark:text-warm-400">
-                Share up to {MAX_FILES} photos. Please only upload photos you have permission to
-                share. Every photo is reviewed by a church admin before it&apos;s shown publicly.
+                Share up to {MAX_FILES} photos from any phone or camera (JPG, PNG, HEIC and more).
+                Please only upload photos you have permission to share. Every photo is reviewed by a
+                church admin before it&apos;s shown publicly.
               </p>
 
               {/* Picker */}
@@ -218,7 +224,7 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
                   {picked.length === 0 ? "Choose photos" : "Add more"}
                 </span>
                 <span className="text-xs text-purple-500/80">
-                  {picked.length}/{MAX_FILES} selected · iPhone (HEIC) welcome
+                  {picked.length}/{MAX_FILES} selected · JPG, PNG, HEIC &amp; more
                 </span>
               </button>
               <input

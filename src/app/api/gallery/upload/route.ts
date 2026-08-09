@@ -95,9 +95,10 @@ export async function POST(request: NextRequest) {
       }
       const bytes = Buffer.from(await file.arrayBuffer());
 
-      // Trust the BYTES, not the declared type. HEIC is converted client-side
-      // before it reaches here, so only real jpeg/png/webp pass.
-      if (!isAllowedImage(bytes, ["jpeg", "png", "webp"])) {
+      // Trust the BYTES, not the declared type. HEIC is converted to JPEG
+      // client-side; every other standard format is accepted here and sharp
+      // re-encodes it to WebP below.
+      if (!isAllowedImage(bytes, ["jpeg", "png", "webp", "gif", "avif"])) {
         errors.push(`${file.name || "A photo"} isn't a supported image.`);
         continue;
       }

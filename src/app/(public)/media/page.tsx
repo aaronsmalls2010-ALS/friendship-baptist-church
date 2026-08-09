@@ -25,7 +25,6 @@ import {
   VolumeX,
   List,
   BookOpen,
-  Camera,
   Quote,
   Music,
   ListPlus,
@@ -36,14 +35,13 @@ import {
   ChevronDown,
   ChevronUp,
   MessageCircleHeart,
-  Image as ImageIcon,
   Loader2,
   Archive,
 } from "lucide-react";
 import { MOCK_MUSIC_TRACKS } from "@/lib/mock-data";
 import type { WorshipService, MusicTrack, Testimony } from "@/types";
 
-const VALID_TABS = ["services", "music", "gallery", "testimonies", "archives"] as const;
+const VALID_TABS = ["services", "music", "testimonies", "archives"] as const;
 type MediaTab = (typeof VALID_TABS)[number];
 
 // ─── Services Tab (real worship service archive) ────────────────────
@@ -738,32 +736,6 @@ function MusicTab({ tracks }: { tracks: MusicTrack[] }) {
 }
 
 // ─── Gallery Tab ─────────────────────────────────────────────────────
-function GalleryTab() {
-  return (
-    <div className="space-y-8">
-      <FadeIn>
-        <div className="rounded-xl border border-warm-200 bg-warm-50 p-6 text-center">
-          <ImageIcon className="mx-auto mb-2 h-8 w-8 text-warm-400" />
-          <p className="text-warm-600">
-            <EditableText id="media.gallery.placeholder" fallback="Photo gallery coming soon. Check back for images from our worship services and events." as="span" multiline />
-          </p>
-        </div>
-      </FadeIn>
-
-      <SlideUpContainer className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <SlideUpItem key={i}>
-            <div className="flex aspect-square flex-col items-center justify-center rounded-xl bg-warm-100 text-warm-400 transition-colors hover:bg-warm-150">
-              <Camera className="mb-3 h-10 w-10" />
-              <p className="text-sm font-medium">Photo Coming Soon</p>
-            </div>
-          </SlideUpItem>
-        ))}
-      </SlideUpContainer>
-    </div>
-  );
-}
-
 // ─── Testimonies Tab ─────────────────────────────────────────────────
 function TestimoniesTab({ testimonies }: { testimonies: Testimony[] }) {
   const approvedTestimonies = testimonies.filter((t) => t.is_approved);
@@ -1192,13 +1164,6 @@ function MediaPageInner() {
                   Music
                 </TabsTrigger>
                 <TabsTrigger
-                  value="gallery"
-                  className="flex-1 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
-                >
-                  <Camera className="h-4 w-4" />
-                  Gallery
-                </TabsTrigger>
-                <TabsTrigger
                   value="testimonies"
                   className="flex-1 gap-2 rounded-lg px-4 py-2.5 text-sm font-medium data-[state=active]:bg-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md"
                 >
@@ -1220,10 +1185,6 @@ function MediaPageInner() {
 
               <TabsContent value="music">
                 <MusicTab tracks={tracks} />
-              </TabsContent>
-
-              <TabsContent value="gallery">
-                <GalleryTab />
               </TabsContent>
 
               <TabsContent value="testimonies">

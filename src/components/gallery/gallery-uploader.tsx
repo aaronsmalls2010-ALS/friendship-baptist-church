@@ -30,38 +30,23 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   ]);
 }
 
-/** Convert (HEIC→JPEG if needed) then compress a file for upload, to save space. */
-async function prepareForUpload(file: File): Promise<File> {
-  let working: Blob = file;
-  let name = file.name;
-
-  if (isHeic(file)) {
-    const heic2any = (await import("heic2any")).default;
-    const out = await withTimeout(
-      heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 }),
-      60000,
-      "Photo conversion"
-    );
-    working = Array.isArray(out) ? out[0] : out;
-    name = name.replace(/\.(heic|heif)$/i, ".jpg");
-  }
-
-  const asFile = new File([working], name, { type: working.type || "image/jpeg" });
-
+/**
+ * Compress a web-safe image (JPG/PNG/WebP) for a smaller, faster upload.
+ * HEIC is NOT handled here — it's decoded on the server, which is far more
+ * reliable than in-browser libheif under a strict CSP. ONE pass at the
+ * resolution the server keeps anyway (1800px) keeps it fast on phones.
+ */
+async function compressForUpload(file: File): Promise<File> {
   const imageCompression = (await import("browser-image-compression")).default;
-  // useWebWorker:false — a strict CSP blocks the library's CDN-loaded worker,
-  // which would otherwise hang forever. Main-thread compression is reliable.
-  // ONE pass (maxIteration:1) at the resolution the server keeps anyway
-  // (1800px) — the iterative size-target loop was the main slowdown.
   return withTimeout(
-    imageCompression(asFile, {
+    imageCompression(file, {
       maxWidthOrHeight: 1800,
       initialQuality: 0.72,
       maxIteration: 1,
       useWebWorker: false,
       fileType: "image/jpeg",
     }),
-    45000,
+    30000,
     "Photo compression"
   );
 }
@@ -140,20 +125,22 @@ export function GalleryUploader({ albums, onClose, onUploaded }: GalleryUploader
       for (let i = 0; i < picked.length; i++) {
         const p = picked[i];
         setProgress(`Preparing photo ${i + 1} of ${picked.length}…`);
+        if (p.isHeic) {
+          // iPhone HEIC is decoded on the server — upload the original as-is.
+          form.append("files", p.file, p.file.name);
+          continue;
+        }
         try {
-          const prepared = await prepareForUpload(p.file);
-          form.append("files", prepared, prepared.name);
+          const compressed = await compressForUpload(p.file);
+          form.append("files", compressed, compressed.name);
         } catch {
-          // If client-side conversion/compression hiccups, still upload the
-          // original when it's already a web-safe image (the server re-encodes
-          // it anyway). Only HEIC truly depends on the client conversion.
-          if (!p.isHeic && p.file.type.startsWith("image/")) {
-            form.append("files", p.file, p.file.name);
-          }
+          // If client compression hiccups, upload the original; the server
+          // re-encodes it to WebP anyway.
+          form.append("files", p.file, p.file.name);
         }
       }
       if (!form.has("files")) {
-        setError("We couldn't read those photos. Please try different ones.");
+        setError("Please choose at least one photo.");
         setBusy(false);
         setProgress(null);
         return;

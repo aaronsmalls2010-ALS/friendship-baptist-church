@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import heicConvert from "heic-convert";
 import { getAuthContext } from "@/lib/auth/context";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { formRateLimit } from "@/lib/security/rate-limit";
 import { isAllowedImage } from "@/lib/security/image-validation";
 import { processGalleryImage } from "@/lib/gallery/process";
 
-// sharp requires the Node runtime; never statically optimize an upload handler.
+// sharp + heic decoding require the Node runtime; never statically optimize.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// HEIC decoding can be slow; give the batch room (respected up to the plan limit).
+export const maxDuration = 60;
 
 const MAX_FILES = 10;
-const MAX_BYTES = 20 * 1024 * 1024; // 20 MB per file (client already compresses)
+const MAX_BYTES = 25 * 1024 * 1024; // 25 MB per file (originals may arrive uncompressed)
 const REVIEW_BUCKET = "gallery-review";
+
+/** True if the bytes are an HEIC/HEIF image (ISOBMFF 'ftyp' + a heic/heif brand). */
+function isHeicBytes(b: Buffer): boolean {
+  if (b.length < 12) return false;
+  if (!(b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70)) return false; // "ftyp"
+  const brand = b.toString("latin1", 8, 12).toLowerCase();
+  return [
+    "heic", "heix", "heim", "heis", "hevc", "hevx", "hevm", "hevs", "mif1", "msf1",
+  ].includes(brand);
+}
 
 /**
  * POST /api/gallery/upload  (multipart)
@@ -95,12 +108,22 @@ export async function POST(request: NextRequest) {
     } catch {
       return `${file.name || "A photo"} couldn't be read.`;
     }
-    // Trust the BYTES, not the declared type. HEIC is converted to JPEG
-    // client-side; every other standard format is accepted here and sharp
-    // re-encodes it to WebP below.
-    if (!isAllowedImage(bytes, ["jpeg", "png", "webp", "gif", "avif"])) {
-      return `${file.name || "A photo"} isn't a supported image.`;
+
+    // Decode iPhone HEIC/HEIF here (sharp on Vercel can't) so the client never
+    // has to. Everything else must be a real jpeg/png/webp/gif/avif; sharp
+    // re-encodes whatever we hand it to WebP below.
+    try {
+      if (isHeicBytes(bytes)) {
+        const jpeg = await heicConvert({ buffer: bytes, format: "JPEG", quality: 0.9 });
+        bytes = Buffer.from(jpeg);
+      } else if (!isAllowedImage(bytes, ["jpeg", "png", "webp", "gif", "avif"])) {
+        return `${file.name || "A photo"} isn't a supported image.`;
+      }
+    } catch (err) {
+      console.error("[GALLERY/UPLOAD] heic decode", err instanceof Error ? err.message : err);
+      return `${file.name || "A photo"} couldn't be read.`;
     }
+
     try {
       const processed = await processGalleryImage(bytes);
       const id = randomUUID();
@@ -143,8 +166,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Run in bounded-concurrency batches so sharp doesn't spike function memory.
-  const CONCURRENCY = 4;
+  // Run in bounded-concurrency batches so sharp + HEIC decode don't spike memory.
+  const CONCURRENCY = 3;
   let uploaded = 0;
   const errors: string[] = [];
   for (let i = 0; i < files.length; i += CONCURRENCY) {

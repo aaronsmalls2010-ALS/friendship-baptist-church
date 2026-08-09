@@ -1,13 +1,11 @@
 import type { NextConfig } from "next";
 
 // Build CSP inline (avoid importing TS from src at config level)
-// Next.js requires 'unsafe-inline' for hydration; 'unsafe-eval' only for dev HMR.
-// 'wasm-unsafe-eval' lets the gallery uploader decode iPhone HEIC photos in the
-// browser (WebAssembly) without permitting general eval().
+// Next.js requires 'unsafe-inline' for hydration; 'unsafe-eval' only for dev HMR
 const isDev = process.env.NODE_ENV === "development";
 const cspDirectives = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""} https://analytics.integritywebcreations.com`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://analytics.integritywebcreations.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' https://fonts.gstatic.com",
@@ -23,6 +21,10 @@ const cspDirectives = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Keep native/WASM server deps out of the bundle so their binaries resolve
+  // from node_modules at runtime (sharp = native, heic-convert = libheif WASM).
+  serverExternalPackages: ["sharp", "heic-convert"],
+
   // ── Image optimization ──
   images: {
     formats: ["image/avif", "image/webp"],

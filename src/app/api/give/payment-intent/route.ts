@@ -103,12 +103,36 @@ export async function POST(request: NextRequest) {
       cover_fees: coverFees ? "true" : "false",
     };
 
+    // Map the donor into a real Stripe Customer so the name/email show in the
+    // dashboard (not just metadata). Reuse an existing customer by email so a
+    // repeat giver isn't duplicated.
+    let customerId: string | undefined;
+    try {
+      if (donorEmail) {
+        const found = await stripe.customers.list({ email: donorEmail, limit: 1 });
+        if (found.data[0]) {
+          customerId = found.data[0].id;
+          if (donorName && found.data[0].name !== donorName) {
+            await stripe.customers.update(customerId, { name: donorName });
+          }
+        } else {
+          customerId = (await stripe.customers.create({ name: donorName, email: donorEmail })).id;
+        }
+      } else if (donorName) {
+        customerId = (await stripe.customers.create({ name: donorName })).id;
+      }
+    } catch (custErr) {
+      // Non-fatal: proceed without a customer rather than block the gift.
+      console.error("[GIVE/PAYMENT-INTENT] customer", custErr instanceof Error ? custErr.message : custErr);
+    }
+
     // No receipt_email — the church sends its own branded receipt from the webhook.
     const intent = await stripe.paymentIntents.create({
       amount: chargedCents,
       currency: "usd",
       description,
       metadata,
+      ...(customerId ? { customer: customerId } : {}),
       automatic_payment_methods: { enabled: true },
     });
 

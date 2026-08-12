@@ -318,6 +318,8 @@ export function GiveForm({ stripeConfigured }: { stripeConfigured: boolean }) {
                 amountLabel={`$${chargedDisplay.toFixed(2)}`}
                 giftLabel={`$${amountNum.toFixed(2)}`}
                 coverFees={coverFees}
+                donorName={name.trim()}
+                donorEmail={email.trim()}
                 onBack={() => {
                   setPhase("details");
                   setClientSecret(null);
@@ -338,12 +340,16 @@ function PaymentSection({
   amountLabel,
   giftLabel,
   coverFees,
+  donorName,
+  donorEmail,
   onBack,
   onSuccess,
 }: {
   amountLabel: string;
   giftLabel: string;
   coverFees: boolean;
+  donorName: string;
+  donorEmail: string;
   onBack: () => void;
   onSuccess: () => void;
 }) {
@@ -362,6 +368,14 @@ function PaymentSection({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/give/thank-you`,
+        // Carry the donor's name/email from our form onto the charge's billing
+        // details, so Stripe captures the customer accurately.
+        payment_method_data: {
+          billing_details: {
+            name: donorName || undefined,
+            ...(donorEmail ? { email: donorEmail } : {}),
+          },
+        },
       },
       redirect: "if_required",
     });
@@ -402,7 +416,10 @@ function PaymentSection({
         )}
       </div>
 
-      <PaymentElement onReady={() => setReady(true)} />
+      <PaymentElement
+        onReady={() => setReady(true)}
+        options={{ fields: { billingDetails: { name: "never", email: "never" } } }}
+      />
 
       {error && (
         <p className="text-sm text-red-600" role="alert">{error}</p>

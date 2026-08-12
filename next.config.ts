@@ -5,13 +5,13 @@ import type { NextConfig } from "next";
 const isDev = process.env.NODE_ENV === "development";
 const cspDirectives = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://analytics.integritywebcreations.com`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://analytics.integritywebcreations.com https://js.stripe.com`,
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.supabase.co",
   "font-src 'self' https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://analytics.integritywebcreations.com",
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://analytics.integritywebcreations.com https://api.stripe.com https://m.stripe.network",
   "media-src 'self' https://*.supabase.co",
-  "frame-src 'self' https://www.youtube.com https://youtube.com https://www.google.com",
+  "frame-src 'self' https://www.youtube.com https://youtube.com https://www.google.com https://js.stripe.com https://hooks.stripe.com https://m.stripe.network",
   "frame-ancestors 'none'",
   "form-action 'self'",
   "base-uri 'self'",

@@ -68,6 +68,8 @@ export async function POST(request: NextRequest) {
   try {
     if (event.type === "checkout.session.completed") {
       await recordDonation(admin, event.data.object as Stripe.Checkout.Session);
+    } else if (event.type === "payment_intent.succeeded") {
+      await recordDonationFromIntent(admin, event.data.object as Stripe.PaymentIntent);
     }
     // Other event types: acknowledged but intentionally unhandled in v1.
     return NextResponse.json({ received: true });
@@ -141,6 +143,73 @@ async function recordDonation(admin: any, session: Stripe.Checkout.Session) {
   // Receipts are best-effort — a delivery failure must NOT trigger a webhook
   // retry (the money already moved and the donation is recorded).
   const reference = paymentIntentId ?? session.id;
+  await sendReceipts({ donorName, donorEmail, amount, typeSlug, reference }).catch((e) =>
+    console.error("[STRIPE WEBHOOK] receipt email failed:", e instanceof Error ? e.message : e)
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function recordDonationFromIntent(admin: any, intent: Stripe.PaymentIntent) {
+  // Only record fully-paid intents.
+  if (intent.status !== "succeeded") return;
+
+  const meta = intent.metadata ?? {};
+  const typeSlug = normalizeGivingType(meta.donation_type);
+  const giftCents = Number(meta.gift_cents) || intent.amount_received || intent.amount || 0;
+  const feeCents = Number(meta.fee_cents) || 0;
+  const amount = Math.round(giftCents) / 100;
+  if (amount <= 0) return;
+
+  const donorName = (meta.donor_name ?? "").trim();
+  const donorEmail = (meta.donor_email ?? intent.receipt_email ?? "").trim().toLowerCase();
+
+  // Idempotency backstop: never record the same PaymentIntent twice, even if a
+  // duplicate/related event slips through the webhook_events claim.
+  const { data: existing } = await admin
+    .from("donations")
+    .select("id")
+    .eq("stripe_payment_id", intent.id)
+    .maybeSingle();
+  if (existing) return;
+
+  let donationTypeId: string | null = null;
+  const { data: typeRow } = await admin
+    .from("donation_types")
+    .select("id")
+    .eq("slug", typeSlug)
+    .maybeSingle();
+  if (typeRow) donationTypeId = typeRow.id;
+
+  let profileId: string | null = null;
+  if (donorEmail) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("id")
+      .ilike("email", donorEmail)
+      .maybeSingle();
+    if (profile) profileId = profile.id;
+  }
+
+  const { error: insertError } = await admin.from("donations").insert({
+    profile_id: profileId,
+    amount,
+    donation_type: typeSlug,
+    donation_type_id: donationTypeId,
+    is_recurring: false,
+    method: "stripe",
+    stripe_payment_id: intent.id,
+    metadata: {
+      payment_intent: intent.id,
+      charged_cents: intent.amount,
+      fee_covered_cents: feeCents,
+      cover_fees: meta.cover_fees === "true",
+      donor_name: donorName,
+      donor_email: donorEmail,
+    },
+  });
+  if (insertError) throw new Error(`donation insert failed: ${insertError.message}`);
+
+  const reference = intent.id;
   await sendReceipts({ donorName, donorEmail, amount, typeSlug, reference }).catch((e) =>
     console.error("[STRIPE WEBHOOK] receipt email failed:", e instanceof Error ? e.message : e)
   );

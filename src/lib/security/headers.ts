@@ -28,8 +28,8 @@ export function getCSPHeader(nonce?: string): string {
     // Only allow resources from same origin by default
     `default-src 'self'`,
 
-    // Scripts: self + optional nonce for inline scripts
-    `script-src ${scriptSrc} https://analytics.integritywebcreations.com`,
+    // Scripts: self + optional nonce for inline scripts + Stripe.js
+    `script-src ${scriptSrc} https://analytics.integritywebcreations.com https://js.stripe.com`,
 
     // Styles: self + unsafe-inline (needed for Tailwind) + Google Fonts
     `style-src ${styleSrc}`,
@@ -40,14 +40,14 @@ export function getCSPHeader(nonce?: string): string {
     // Fonts: self + Google Fonts CDN
     `font-src 'self' https://fonts.gstatic.com`,
 
-    // API connections: self + Supabase
-    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://analytics.integritywebcreations.com`,
+    // API connections: self + Supabase + Stripe
+    `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://analytics.integritywebcreations.com https://api.stripe.com https://m.stripe.network`,
 
     // Media: self + Supabase storage
     `media-src 'self' https://*.supabase.co`,
 
-    // Allow YouTube embeds for worship service videos + Google Maps
-    `frame-src 'self' https://www.youtube.com https://youtube.com https://www.google.com`,
+    // Allow YouTube embeds, Google Maps, and the Stripe Payment Element iframes
+    `frame-src 'self' https://www.youtube.com https://youtube.com https://www.google.com https://js.stripe.com https://hooks.stripe.com https://m.stripe.network`,
 
     // Disallow embedding in frames
     `frame-ancestors 'none'`,

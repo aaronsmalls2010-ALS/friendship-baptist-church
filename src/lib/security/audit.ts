@@ -20,6 +20,7 @@ export type AuditEventType =
   | "donation.create"
   | "donation.update"
   | "donation.void"
+  | "donation.refund"
   | "donation.archive"
   | "donation.restore"
   | "donation.export"

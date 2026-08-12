@@ -70,6 +70,8 @@ export async function POST(request: NextRequest) {
       await recordDonation(admin, event.data.object as Stripe.Checkout.Session);
     } else if (event.type === "payment_intent.succeeded") {
       await recordDonationFromIntent(admin, event.data.object as Stripe.PaymentIntent);
+    } else if (event.type === "charge.refunded") {
+      await syncRefund(admin, event.data.object as Stripe.Charge);
     }
     // Other event types: acknowledged but intentionally unhandled in v1.
     return NextResponse.json({ received: true });
@@ -213,6 +215,44 @@ async function recordDonationFromIntent(admin: any, intent: Stripe.PaymentIntent
   await sendReceipts({ donorName, donorEmail, amount, typeSlug, reference }).catch((e) =>
     console.error("[STRIPE WEBHOOK] receipt email failed:", e instanceof Error ? e.message : e)
   );
+}
+
+// Keep the donations ledger in sync with refunds — whether they were issued from
+// our admin UI or directly in the Stripe dashboard. Maps the Stripe refund
+// proportionally onto the recorded gift and only ever advances the amount.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function syncRefund(admin: any, charge: Stripe.Charge) {
+  const piId =
+    typeof charge.payment_intent === "string"
+      ? charge.payment_intent
+      : charge.payment_intent?.id ?? null;
+  if (!piId) return;
+
+  const { data: donation } = await admin
+    .from("donations")
+    .select("id, amount, refunded_amount")
+    .eq("stripe_payment_id", piId)
+    .maybeSingle();
+  if (!donation) return;
+
+  const gift = Number(donation.amount) || 0;
+  const current = Number(donation.refunded_amount) || 0;
+  const fraction = charge.amount > 0 ? charge.amount_refunded / charge.amount : 0;
+  const refundedGift = charge.refunded ? gift : Math.round(gift * fraction * 100) / 100;
+  const newAmount = Math.max(current, refundedGift);
+
+  // Nothing new to record.
+  if (!charge.refunded && newAmount <= current + 0.005) return;
+
+  const status = charge.refunded || newAmount >= gift - 0.005 ? "full" : "partial";
+  await admin
+    .from("donations")
+    .update({
+      refunded_amount: charge.refunded ? gift : newAmount,
+      refund_status: status,
+      refunded_at: new Date().toISOString(),
+    })
+    .eq("id", donation.id);
 }
 
 const TYPE_LABELS: Record<string, string> = {

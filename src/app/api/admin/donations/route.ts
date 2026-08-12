@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     .from("donations")
     .select(`
       id, amount, donation_type, campaign, date, created_at, is_recurring,
-      profile_id, archived_at, donation_type_id,
+      profile_id, archived_at, donation_type_id, method, stripe_payment_id, note,
+      refunded_amount, refund_status, refunded_at,
       profiles(first_name, last_name),
       donation_types(name, slug)
     `)

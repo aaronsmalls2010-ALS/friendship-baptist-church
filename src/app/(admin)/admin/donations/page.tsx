@@ -35,7 +35,27 @@ import {
   XCircle,
   PenLine,
   Ban,
+  RotateCcw,
+  ExternalLink,
+  CreditCard,
+  Banknote,
 } from "lucide-react";
+
+const STRIPE_DASHBOARD = "https://dashboard.stripe.com/payments";
+
+function MethodBadge({ method }: { method: string | null }) {
+  if (method === "stripe")
+    return (
+      <Badge className="gap-1 border-transparent bg-indigo-100 text-indigo-700">
+        <CreditCard className="h-3 w-3" /> Online
+      </Badge>
+    );
+  if (method === "check")
+    return <Badge variant="outline" className="gap-1 text-warm-600"><Banknote className="h-3 w-3" /> Check</Badge>;
+  if (method === "cash")
+    return <Badge variant="outline" className="gap-1 text-warm-600"><Banknote className="h-3 w-3" /> Cash</Badge>;
+  return <Badge variant="outline" className="text-warm-500">{method ? method[0].toUpperCase() + method.slice(1) : "—"}</Badge>;
+}
 
 interface DonationType { id: string; name: string; slug: string; }
 interface Donation {
@@ -49,6 +69,12 @@ interface Donation {
   is_recurring: boolean;
   archived_at: string | null;
   profile_id: string | null;
+  method: string | null;
+  stripe_payment_id: string | null;
+  note: string | null;
+  refunded_amount: number | null;
+  refund_status: "none" | "partial" | "full" | null;
+  refunded_at: string | null;
   profiles: { first_name: string; last_name: string } | null;
   donation_types: { name: string; slug: string } | null;
 }
@@ -90,6 +116,13 @@ export default function DonationManagementPage() {
   const [voidReason, setVoidReason] = useState("");
   const [voidSaving, setVoidSaving] = useState(false);
 
+  // Refund dialog
+  const [refundTarget, setRefundTarget] = useState<Donation | null>(null);
+  const [refundFull, setRefundFull] = useState(true);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [refundSaving, setRefundSaving] = useState(false);
+
   function showToast(message: string, type: "success" | "error" = "success") {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -117,6 +150,8 @@ export default function DonationManagementPage() {
 
   // Stats
   const totalDonations = donations.reduce((s, d) => s + d.amount, 0);
+  const totalRefunded = donations.reduce((s, d) => s + (d.refunded_amount ?? 0), 0);
+  const netDonations = totalDonations - totalRefunded;
   const averageGift = donations.length > 0 ? Math.round(totalDonations / donations.length) : 0;
   const recurringCount = donations.filter((d) => d.is_recurring).length;
 
@@ -188,6 +223,38 @@ export default function DonationManagementPage() {
     }
   }
 
+  function openRefund(d: Donation) {
+    const remaining = d.amount - (d.refunded_amount ?? 0);
+    setRefundTarget(d);
+    setRefundFull(true);
+    setRefundAmount(remaining.toFixed(2));
+    setRefundReason("");
+  }
+
+  async function handleRefund(e: React.FormEvent) {
+    e.preventDefault();
+    if (!refundTarget) return;
+    setRefundSaving(true);
+    const res = await fetch(`/api/admin/donations/${refundTarget.id}/refund`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reason: refundReason,
+        ...(refundFull ? {} : { amount: parseFloat(refundAmount) }),
+      }),
+    });
+    setRefundSaving(false);
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && json.ok) {
+      showToast(json.refund_status === "full" ? "Gift fully refunded" : "Partial refund issued");
+      setRefundTarget(null);
+      setRefundReason("");
+      loadData();
+    } else {
+      showToast(json.error ?? "Refund failed", "error");
+    }
+  }
+
   function handleExport() {
     const params = new URLSearchParams();
     if (filterFrom) params.set("from", filterFrom);
@@ -212,7 +279,19 @@ export default function DonationManagementPage() {
       sortable: true,
       render: (row: Row) => {
         const d = row as unknown as Donation;
-        return `$${d.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+        const gross = `$${d.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+        const refunded = d.refunded_amount ?? 0;
+        if (refunded > 0) {
+          return (
+            <div className="flex items-center gap-2">
+              <span className={d.refund_status === "full" ? "text-warm-400 line-through" : ""}>{gross}</span>
+              <Badge className="border-transparent bg-amber-100 text-amber-700">
+                {d.refund_status === "full" ? "Refunded" : `−$${refunded.toFixed(2)}`}
+              </Badge>
+            </div>
+          );
+        }
+        return gross;
       },
     },
     {
@@ -238,13 +317,26 @@ export default function DonationManagementPage() {
       },
     },
     {
-      key: "is_recurring",
-      label: "Recurring",
+      key: "method",
+      label: "Method",
       render: (row: Row) => {
         const d = row as unknown as Donation;
-        return d.is_recurring
-          ? <Badge className="bg-green-100 text-green-700 border-transparent">Recurring</Badge>
-          : <Badge variant="outline" className="text-warm-500">One-time</Badge>;
+        return (
+          <div className="flex items-center gap-1.5">
+            <MethodBadge method={d.method} />
+            {d.method === "stripe" && d.stripe_payment_id && (
+              <a
+                href={`${STRIPE_DASHBOARD}/${d.stripe_payment_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-500 hover:text-indigo-700"
+                title="View in Stripe"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+          </div>
+        );
       },
     },
     {
@@ -252,8 +344,16 @@ export default function DonationManagementPage() {
       label: "",
       render: (row: Row) => {
         const d = row as unknown as Donation;
+        const canRefund =
+          d.method === "stripe" && !!d.stripe_payment_id && d.refund_status !== "full" && !d.archived_at;
         return (
           <div className="flex gap-1">
+            {canRefund && (
+              <Button variant="ghost" size="sm" onClick={() => openRefund(d)}
+                aria-label="Refund donation" className="text-amber-600 hover:text-amber-700">
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={() => { setEditTarget(d); setEditAmount(String(d.amount)); }}
               aria-label="Edit donation">
               <PenLine className="h-4 w-4" />
@@ -402,7 +502,7 @@ export default function DonationManagementPage() {
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { icon: DollarSign, color: "purple", label: "Total Donations", value: `$${totalDonations.toLocaleString("en-US")}` },
+          { icon: DollarSign, color: "purple", label: totalRefunded > 0 ? "Net Donations" : "Total Donations", value: `$${netDonations.toLocaleString("en-US")}` },
           { icon: TrendingUp, color: "gold", label: "Average Gift", value: `$${averageGift.toLocaleString("en-US")}` },
           { icon: Users, color: "peach", label: "Recurring Donors", value: String(recurringCount) },
         ].map(({ icon: Icon, color, label, value }) => (
@@ -482,6 +582,73 @@ export default function DonationManagementPage() {
               {voidSaving ? "Voiding…" : "Void Donation"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund dialog */}
+      <Dialog open={!!refundTarget} onOpenChange={(o) => { if (!o) { setRefundTarget(null); setRefundReason(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Refund Gift</DialogTitle>
+            <DialogDescription>
+              This refunds the donor through Stripe. A reason is required and the action is audited.
+            </DialogDescription>
+          </DialogHeader>
+          {refundTarget && (() => {
+            const remaining = refundTarget.amount - (refundTarget.refunded_amount ?? 0);
+            return (
+              <form onSubmit={handleRefund} className="space-y-4 pt-2">
+                <div className="rounded-lg bg-warm-50 p-3 text-sm text-warm-600 dark:bg-warm-800/50 dark:text-warm-300">
+                  {refundTarget.profiles
+                    ? `${refundTarget.profiles.first_name} ${refundTarget.profiles.last_name}`
+                    : "Anonymous"}{" "}
+                  · ${refundTarget.amount.toFixed(2)} gift
+                  {(refundTarget.refunded_amount ?? 0) > 0 && (
+                    <> · ${remaining.toFixed(2)} left to refund</>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Refund amount</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" variant={refundFull ? "default" : "outline"}
+                      className={refundFull ? "bg-purple-700 text-white" : ""}
+                      onClick={() => { setRefundFull(true); setRefundAmount(remaining.toFixed(2)); }}>
+                      Full (${remaining.toFixed(2)})
+                    </Button>
+                    <Button type="button" variant={!refundFull ? "default" : "outline"}
+                      className={!refundFull ? "bg-purple-700 text-white" : ""}
+                      onClick={() => setRefundFull(false)}>
+                      Partial
+                    </Button>
+                  </div>
+                  {!refundFull && (
+                    <Input type="number" min="0.01" max={remaining} step="0.01" required
+                      value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)}
+                      placeholder="Amount to refund" />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="refundReason">Reason *</Label>
+                  <Textarea id="refundReason" rows={2} required
+                    value={refundReason} onChange={(e) => setRefundReason(e.target.value)}
+                    placeholder="Why is this being refunded?" />
+                </div>
+
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => { setRefundTarget(null); setRefundReason(""); }}>
+                    Cancel
+                  </Button>
+                  <Button type="submit"
+                    disabled={refundSaving || !refundReason.trim() || (!refundFull && !(parseFloat(refundAmount) > 0))}
+                    className="bg-amber-600 hover:bg-amber-700 text-white">
+                    {refundSaving ? "Refunding…" : "Issue Refund"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>

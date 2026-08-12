@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     .from("donations")
     .select(`
       id, amount, donation_type, campaign, date, created_at, is_recurring,
+      method, stripe_payment_id, refunded_amount, refund_status,
       profiles(first_name, last_name),
       donation_types(name)
     `)
@@ -38,17 +39,22 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const headers = ["date", "donor", "amount", "type", "campaign", "recurring"];
+  const headers = ["date", "donor", "amount", "refunded", "net", "type", "method", "campaign", "recurring", "stripe_payment_id"];
   const csvRows = rows.map((d) => {
     const p = d.profiles as unknown as { first_name: string; last_name: string } | null;
     const t = d.donation_types as unknown as { name: string } | null;
+    const refunded = Number(d.refunded_amount) || 0;
     return {
       date: (d.date as string | null) ?? d.created_at?.split("T")[0] ?? "",
       donor: p ? `${p.first_name} ${p.last_name}` : "Anonymous",
       amount: d.amount,
+      refunded: refunded > 0 ? refunded : "",
+      net: (Number(d.amount) - refunded).toFixed(2),
       type: t?.name ?? d.donation_type ?? "",
+      method: d.method ?? "",
       campaign: d.campaign ?? "",
       recurring: d.is_recurring ? "Yes" : "No",
+      stripe_payment_id: d.stripe_payment_id ?? "",
     };
   });
 

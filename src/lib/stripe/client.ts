@@ -85,7 +85,11 @@ const FEE_PERCENT = numFromEnv(process.env.STRIPE_FEE_PERCENT, 0.022); // 2.2%
 const FEE_FIXED_CENTS = Math.round(numFromEnv(process.env.STRIPE_FEE_FIXED, 0.3) * 100); // 30¢
 
 function numFromEnv(raw: string | undefined, fallback: number): number {
-  const n = Number(String(raw ?? "").trim());
+  // An UNSET/blank env var must use the fallback — not 0. (Number("") === 0,
+  // which previously zeroed out the fee so "cover fees" added nothing.)
+  const s = String(raw ?? "").trim();
+  if (s === "") return fallback;
+  const n = Number(s);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 

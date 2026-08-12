@@ -75,6 +75,7 @@ interface Donation {
   refunded_amount: number | null;
   refund_status: "none" | "partial" | "full" | null;
   refunded_at: string | null;
+  metadata: Record<string, unknown> | null;
   profiles: { first_name: string; last_name: string } | null;
   donation_types: { name: string; slug: string } | null;
 }
@@ -281,17 +282,24 @@ export default function DonationManagementPage() {
         const d = row as unknown as Donation;
         const gross = `$${d.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
         const refunded = d.refunded_amount ?? 0;
-        if (refunded > 0) {
-          return (
+        const feeCents = Number(d.metadata?.fee_covered_cents) || 0;
+        return (
+          <div>
             <div className="flex items-center gap-2">
-              <span className={d.refund_status === "full" ? "text-warm-400 line-through" : ""}>{gross}</span>
-              <Badge className="border-transparent bg-amber-100 text-amber-700">
-                {d.refund_status === "full" ? "Refunded" : `−$${refunded.toFixed(2)}`}
-              </Badge>
+              <span className={refunded > 0 && d.refund_status === "full" ? "text-warm-400 line-through" : ""}>{gross}</span>
+              {refunded > 0 && (
+                <Badge className="border-transparent bg-amber-100 text-amber-700">
+                  {d.refund_status === "full" ? "Refunded" : `−$${refunded.toFixed(2)}`}
+                </Badge>
+              )}
             </div>
-          );
-        }
-        return gross;
+            {feeCents > 0 && (
+              <div className="text-[11px] text-warm-400">
+                donor covered ${(feeCents / 100).toFixed(2)} fee
+              </div>
+            )}
+          </div>
+        );
       },
     },
     {

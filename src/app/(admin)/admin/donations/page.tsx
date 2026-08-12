@@ -350,16 +350,18 @@ export default function DonationManagementPage() {
           <div className="flex gap-1">
             {canRefund && (
               <Button variant="ghost" size="sm" onClick={() => openRefund(d)}
-                aria-label="Refund donation" className="text-amber-600 hover:text-amber-700">
+                aria-label="Refund gift" title="Refund this gift through Stripe (full or partial)"
+                className="text-amber-600 hover:text-amber-700">
                 <RotateCcw className="h-4 w-4" />
               </Button>
             )}
             <Button variant="ghost" size="sm" onClick={() => { setEditTarget(d); setEditAmount(String(d.amount)); }}
-              aria-label="Edit donation">
+              aria-label="Edit amount" title="Edit the amount (reason required, audited)">
               <PenLine className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setVoidTarget(d)}
-              aria-label="Void donation" className="text-red-500 hover:text-red-700">
+              aria-label="Void donation" title="Void — remove from reports, kept for audit"
+              className="text-red-500 hover:text-red-700">
               <Ban className="h-4 w-4" />
             </Button>
           </div>

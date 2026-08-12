@@ -9,7 +9,6 @@ import type {
   Donation,
   Deacon,
   Ward,
-  Business,
   Devotional,
   SpiritualGoal,
   Notification,
@@ -642,20 +641,6 @@ export const MOCK_PROFILES: Profile[] = [
   { id: "p12", email: "henry.baker@email.com", first_name: "Henry", last_name: "Baker", phone: "(843) 555-0206", role: "minister", photo_url: undefined, created_at: "2017-04-20", updated_at: "2024-01-01" },
   { id: "p13", email: "gloria.campbell@email.com", first_name: "Gloria", last_name: "Campbell", phone: "(843) 555-0207", role: "member", gender: "female", family_id: "f1", date_of_birth: "1998-06-30", photo_url: undefined, created_at: "2023-02-28", updated_at: "2024-01-01" },
   { id: "p14", email: "william.harris@email.com", first_name: "William", last_name: "Harris", phone: "(843) 555-0208", role: "admin", photo_url: undefined, created_at: "2016-09-05", updated_at: "2024-01-01" },
-];
-
-// ─── Businesses ─────────────────────────────────────────────────────
-export const MOCK_BUSINESSES: Business[] = [
-  { id: "b1", name: "Gullah Grub Restaurant", owner_name: "Bill Green", description: "Authentic Gullah Geechee cuisine in the heart of downtown Beaufort. Family recipes passed down through generations.", category: "Restaurant", phone: "(843) 555-0301", website: "https://example.com", is_approved: true, created_at: "2024-01-01" },
-  { id: "b2", name: "Beaufort Barber & Style", owner_name: "Marcus Johnson", description: "Full-service barbershop serving men and boys. Haircuts, beard trims, and hot towel shaves in a welcoming atmosphere.", category: "Personal Care", phone: "(843) 555-0302", is_approved: true, created_at: "2024-01-01" },
-  { id: "b3", name: "Island Tax & Accounting", owner_name: "Patricia Evans", description: "Professional tax preparation and bookkeeping services for individuals and small businesses. Serving Beaufort since 2005.", category: "Professional Services", phone: "(843) 555-0303", email: "patricia@islandtax.com", is_approved: true, created_at: "2024-01-01" },
-  { id: "b4", name: "Grace Home Health Care", owner_name: "Nurse Dorothy Williams", description: "Compassionate home health care services for seniors and those recovering from illness. Licensed and insured.", category: "Healthcare", phone: "(843) 555-0304", is_approved: true, created_at: "2024-01-01" },
-  { id: "b5", name: "Lowcountry Lawn & Garden", owner_name: "Tommy Davis", description: "Professional landscaping, lawn care, and garden design. Beautifying Beaufort one yard at a time.", category: "Home Services", phone: "(843) 555-0305", is_approved: true, created_at: "2024-01-01" },
-  { id: "b6", name: "Sweet Tea Catering", owner_name: "Sister Alma Reed", description: "Catering for church events, family reunions, weddings, and celebrations. Southern cooking with love.", category: "Restaurant", phone: "(843) 555-0306", is_approved: true, created_at: "2024-01-01" },
-  { id: "b7", name: "Gwen's Arts & Crafts", owner_name: "Gwen Williams", description: "Handmade arts and crafts for all occasions. Custom creations, gifts, and decorations made with love and creativity.", category: "Arts & Crafts", phone: "(843) 694-3808", is_approved: true, created_at: "2024-01-01" },
-  { id: "b8", name: "Smalls Landscaping & Land Clearing", owner_name: "Alex Smalls", description: "Professional landscaping and land clearing services. From yard maintenance to full property clearing, we handle it all.", category: "Home Services", phone: "(843) 263-6006", is_approved: true, created_at: "2024-01-01" },
-  { id: "b9", name: "Sierra's Baked Goods", owner_name: "Sierra Green", description: "Delicious homemade baked goods for every occasion. Cakes, pies, cookies, and specialty desserts baked fresh to order.", category: "Food & Bakery", phone: "(843) 263-7531", is_approved: true, created_at: "2024-01-01" },
-  { id: "b10", name: "Smalls Web Design", owner_name: "Dea. Aaron Smalls", description: "Professional website design and development services. Modern, responsive websites for businesses, churches, and organizations.", category: "Technology", phone: "(843) 263-0072", is_approved: true, created_at: "2024-01-01" },
 ];
 
 // ─── Birthday Events (derived from profiles) ──────────────────────────

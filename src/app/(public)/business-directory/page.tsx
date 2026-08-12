@@ -26,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EditableText } from "@/components/cms/editable-text";
-import { MOCK_BUSINESSES } from "@/lib/mock-data";
 import type { Business } from "@/types";
 
 export default function BusinessDirectoryPage() {
@@ -40,8 +39,7 @@ export default function BusinessDirectoryPage() {
       try {
         const res = await fetch("/api/public/businesses");
         const data = await res.json();
-        const apiBusinesses = data.businesses ?? [];
-        setBusinesses(apiBusinesses.length > 0 ? apiBusinesses : MOCK_BUSINESSES);
+        setBusinesses(data.businesses ?? []);
       } catch (err) {
         console.error("Failed to load businesses:", err);
       } finally {
@@ -251,12 +249,25 @@ export default function BusinessDirectoryPage() {
           ) : (
             <FadeIn>
               <div className="rounded-2xl border border-warm-100 bg-warm-50 py-16 text-center dark:border-warm-800 dark:bg-warm-900">
-                <p className="text-lg text-warm-500">
-                  No businesses found matching your search.
-                </p>
-                <p className="mt-2 text-sm text-warm-400">
-                  Try adjusting your search term or category filter.
-                </p>
+                {searchTerm.trim() === "" && activeCategory === "All" ? (
+                  <>
+                    <p className="text-lg text-warm-500">
+                      Our business directory is just getting started.
+                    </p>
+                    <p className="mt-2 text-sm text-warm-400">
+                      Own a business? Church members can add theirs using the form below.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg text-warm-500">
+                      No businesses found matching your search.
+                    </p>
+                    <p className="mt-2 text-sm text-warm-400">
+                      Try adjusting your search term or category filter.
+                    </p>
+                  </>
+                )}
               </div>
             </FadeIn>
           )}

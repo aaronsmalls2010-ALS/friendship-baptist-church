@@ -33,7 +33,6 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  PenLine,
   Ban,
   RotateCcw,
   ExternalLink,
@@ -108,11 +107,7 @@ export default function DonationManagementPage() {
   const [rNote, setRNote] = useState("");
   const [rSaving, setRSaving] = useState(false);
 
-  // Edit/void dialog
-  const [editTarget, setEditTarget] = useState<Donation | null>(null);
-  const [editAmount, setEditAmount] = useState("");
-  const [editReason, setEditReason] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
+  // Void dialog
   const [voidTarget, setVoidTarget] = useState<Donation | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const [voidSaving, setVoidSaving] = useState(false);
@@ -182,26 +177,6 @@ export default function DonationManagementPage() {
     } else {
       const json = await res.json();
       showToast(json.error ?? "Failed to record gift", "error");
-    }
-  }
-
-  async function handleEdit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!editTarget) return;
-    setEditSaving(true);
-    const res = await fetch(`/api/admin/donations/${editTarget.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: parseFloat(editAmount), reason: editReason }),
-    });
-    setEditSaving(false);
-    if (res.ok) {
-      showToast("Donation updated");
-      setEditTarget(null); setEditAmount(""); setEditReason("");
-      loadData();
-    } else {
-      const json = await res.json();
-      showToast(json.error ?? "Failed to update", "error");
     }
   }
 
@@ -363,10 +338,6 @@ export default function DonationManagementPage() {
                 <RotateCcw className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => { setEditTarget(d); setEditAmount(String(d.amount)); }}
-              aria-label="Edit amount" title="Edit the amount (reason required, audited)">
-              <PenLine className="h-4 w-4" />
-            </Button>
             <Button variant="ghost" size="sm" onClick={() => setVoidTarget(d)}
               aria-label="Void donation" title="Void — remove from reports, kept for audit"
               className="text-red-500 hover:text-red-700">
@@ -535,38 +506,6 @@ export default function DonationManagementPage() {
         columns={columns}
         searchable={false}
       />
-
-      {/* Edit dialog */}
-      <Dialog open={!!editTarget} onOpenChange={(o) => { if (!o) { setEditTarget(null); setEditReason(""); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Donation</DialogTitle>
-            <DialogDescription>All edits require a reason and are audited.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEdit} className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="editAmt">Amount</Label>
-              <Input id="editAmt" type="number" min="0.01" step="0.01" required
-                value={editAmount} onChange={(e) => setEditAmount(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editReason">Reason *</Label>
-              <Textarea id="editReason" rows={2} required
-                value={editReason} onChange={(e) => setEditReason(e.target.value)}
-                placeholder="Why is this being corrected?" />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setEditTarget(null); setEditReason(""); }}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={editSaving || !editReason.trim()}
-                className="bg-purple-700 hover:bg-purple-600 text-white">
-                {editSaving ? "Saving…" : "Save Edit"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Void confirmation */}
       <Dialog open={!!voidTarget} onOpenChange={(o) => { if (!o) { setVoidTarget(null); setVoidReason(""); } }}>

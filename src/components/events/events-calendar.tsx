@@ -142,7 +142,8 @@ export function EventsCalendar({
 
     // First non-birthday occurrence becomes the featured event.
     const featured = occurrences.find((o) => !isBirthdayEvent(o)) ?? null;
-    const rest = occurrences.filter((o) => o !== featured);
+    // Birthdays stay on the calendar but are kept OUT of the Upcoming Events list.
+    const rest = occurrences.filter((o) => o !== featured && !isBirthdayEvent(o));
 
     // Past events: base (non-expanded) published events already behind us.
     const past = publishedEvents

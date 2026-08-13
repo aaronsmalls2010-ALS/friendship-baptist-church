@@ -295,7 +295,7 @@ export default function MemberDashboardPage() {
                       <div>
                         <p className="text-xs lg:text-sm font-medium text-warm-800">{b.first_name} {b.last_name}</p>
                         <p className="text-[10px] lg:text-xs text-warm-400">
-                          {new Date(b.date_of_birth || b.birthday).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          {new Date((b.date_of_birth || b.birthday) + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         </p>
                       </div>
                     </div>

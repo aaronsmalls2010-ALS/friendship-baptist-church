@@ -69,6 +69,7 @@ export default function EventManagementPage() {
   const [formRecurrence, setFormRecurrence] = useState("none");
   const [formRecurrenceEnd, setFormRecurrenceEnd] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [imageError, setImageError] = useState("");
 
   // ── Data fetching ─────────────────────────────────────────────────
@@ -158,6 +159,8 @@ export default function EventManagementPage() {
   }
 
   async function handleSave() {
+    if (saving) return; // guard against double-submit (was creating duplicate events)
+    setSaving(true);
     const payload = {
       title: formTitle,
       description: formDescription,
@@ -174,27 +177,27 @@ export default function EventManagementPage() {
         formRecurrence !== "none" && formRecurrenceEnd ? formRecurrenceEnd : null,
     };
 
-    if (editingEvent) {
-      const res = await fetch("/api/admin/events", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingEvent.id, ...payload }),
-      });
-      if (res.ok) {
-        loadData();
+    try {
+      if (editingEvent) {
+        const res = await fetch("/api/admin/events", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingEvent.id, ...payload }),
+        });
+        if (res.ok) loadData();
+      } else {
+        const res = await fetch("/api/admin/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) loadData();
       }
-    } else {
-      const res = await fetch("/api/admin/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        loadData();
-      }
+      setFormOpen(false);
+      resetForm();
+    } finally {
+      setSaving(false);
     }
-    setFormOpen(false);
-    resetForm();
   }
 
   function openDeleteDialog(event: Event) {
@@ -575,9 +578,10 @@ export default function EventManagementPage() {
 
             <Button
               type="submit"
+              disabled={saving || uploadingImage}
               className="w-full bg-purple-700 hover:bg-purple-600 text-white"
             >
-              {editingEvent ? "Update Event" : "Save Event"}
+              {saving ? "Saving…" : editingEvent ? "Update Event" : "Save Event"}
             </Button>
           </form>
         </DialogContent>

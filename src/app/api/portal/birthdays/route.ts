@@ -25,13 +25,15 @@ export async function GET() {
     }))
     .filter((p: { date_of_birth: string | null }) => {
       if (!p.date_of_birth) return false;
-      const dob = new Date(p.date_of_birth);
+      // Parse as LOCAL noon — new Date("YYYY-MM-DD") is UTC midnight, which lands
+      // on the previous day in US time zones (birthdays off by one).
+      const dob = new Date(p.date_of_birth + "T12:00:00");
       const thisYear = new Date(now.getFullYear(), dob.getMonth(), dob.getDate());
       const diff = thisYear.getTime() - now.getTime();
       return diff >= 0 && diff <= sevenDays;
     })
     .sort((a, b) => {
-      const da = new Date(a.date_of_birth!), db = new Date(b.date_of_birth!);
+      const da = new Date(a.date_of_birth! + "T12:00:00"), db = new Date(b.date_of_birth! + "T12:00:00");
       const fa = new Date(now.getFullYear(), da.getMonth(), da.getDate());
       const fb = new Date(now.getFullYear(), db.getMonth(), db.getDate());
       return fa.getTime() - fb.getTime();

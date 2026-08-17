@@ -23,11 +23,10 @@ import {
   MessageSquare,
 } from "lucide-react";
 
-type ContactMethod = "email" | "phone";
 type Step = "form" | "otp";
 
 export default function RegisterPage() {
-  const [method, setMethod] = useState<ContactMethod>("email");
+  // Account creation is email-only. Phone stays as an optional field for sign-in.
   const [formData, setFormData] = useState<SignUpFormData>({
     firstName: "",
     lastName: "",
@@ -55,12 +54,6 @@ export default function RegisterPage() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendNote, setResendNote] = useState("");
 
-  function selectMethod(next: ContactMethod) {
-    setMethod(next);
-    setFormData((prev) => ({ ...prev, contactMethod: next }));
-    setFieldErrors({});
-  }
-
   function updateField(field: keyof SignUpFormData, value: string | boolean) {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (fieldErrors[field]) {
@@ -77,23 +70,11 @@ export default function RegisterPage() {
     setServerError("");
     setFieldErrors({});
 
-    // Infer the verification channel from what was actually filled in, so a
-    // member who only types a phone number isn't blocked for lacking an email
-    // (and vice versa). The toggle is only the tiebreaker when BOTH are given.
-    const hasEmail = !!formData.email?.trim();
-    const hasPhone = !!formData.phone?.trim();
-    const effectiveMethod: ContactMethod =
-      hasPhone && !hasEmail
-        ? "phone"
-        : hasEmail && !hasPhone
-          ? "email"
-          : method;
-
-    if (effectiveMethod !== method) setMethod(effectiveMethod);
-
+    // Account creation is email-only; the phone field is optional (used for
+    // sign-in later, not for creating the account).
     const result = signUpSchema.safeParse({
       ...formData,
-      contactMethod: effectiveMethod,
+      contactMethod: "email",
     });
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -112,7 +93,7 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contactMethod: effectiveMethod,
+          contactMethod: "email",
           email: result.data.email || "",
           phone: result.data.phone || "",
           password: result.data.password,
@@ -223,11 +204,7 @@ export default function RegisterPage() {
             <div className="mt-6">
               <FormSuccess
                 title="Account Created!"
-                message={
-                  method === "phone"
-                    ? "Your phone number is verified and your account is ready. You can sign in now."
-                    : "Your account has been created! Please check your email to verify your address. Once verified, you can sign in."
-                }
+                message="Your account has been created! Please check your email to verify your address. Once verified, you can sign in."
               />
               <Link href="/auth/login" className="mt-6 block">
                 <Button className="w-full bg-purple-700 text-white hover:bg-purple-800">
@@ -323,39 +300,9 @@ export default function RegisterPage() {
                 Join our church family online
               </p>
 
-              {/* Method toggle */}
-              <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl bg-warm-100 p-1">
-                <button
-                  type="button"
-                  onClick={() => selectMethod("email")}
-                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    method === "email"
-                      ? "bg-white text-purple-700 shadow-sm"
-                      : "text-warm-500 hover:text-warm-700"
-                  }`}
-                  aria-pressed={method === "email"}
-                >
-                  <Mail className="h-4 w-4" />
-                  Use Email
-                </button>
-                <button
-                  type="button"
-                  onClick={() => selectMethod("phone")}
-                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    method === "phone"
-                      ? "bg-white text-purple-700 shadow-sm"
-                      : "text-warm-500 hover:text-warm-700"
-                  }`}
-                  aria-pressed={method === "phone"}
-                >
-                  <Phone className="h-4 w-4" />
-                  Use Phone
-                </button>
-              </div>
               <p className="mt-2 text-center text-xs text-warm-400">
-                {method === "email"
-                  ? "We'll email you a link to verify your account."
-                  : "We'll text you a 6-digit code to verify your account."}
+                We&apos;ll email you a link to verify your account. A phone number is
+                optional and can be used to sign in.
               </p>
 
               {/* Server error */}
@@ -424,12 +371,7 @@ export default function RegisterPage() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email">
-                    Email Address{" "}
-                    {method === "phone" && (
-                      <span className="text-warm-400">(optional)</span>
-                    )}
-                  </Label>
+                  <Label htmlFor="email">Email Address</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />
                     <Input
@@ -450,10 +392,7 @@ export default function RegisterPage() {
                 {/* Phone */}
                 <div className="space-y-2">
                   <Label htmlFor="phone">
-                    Phone Number{" "}
-                    {method === "email" && (
-                      <span className="text-warm-400">(optional)</span>
-                    )}
+                    Phone Number <span className="text-warm-400">(optional)</span>
                   </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-warm-400" />

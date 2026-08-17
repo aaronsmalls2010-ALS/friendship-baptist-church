@@ -71,9 +71,17 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    if (contactMethod !== "email" && contactMethod !== "phone") {
+    // Account creation is EMAIL-ONLY. A phone number may be provided (and can be
+    // used to sign in later), but it can't be the way an account is created.
+    if (contactMethod === "phone") {
       return NextResponse.json(
-        { error: "Please choose how you'd like to verify your account." },
+        { error: "New accounts must be created with an email address. You can add a phone number for sign-in." },
+        { status: 400 }
+      );
+    }
+    if (contactMethod !== "email") {
+      return NextResponse.json(
+        { error: "An email address is required to create an account." },
         { status: 400 }
       );
     }

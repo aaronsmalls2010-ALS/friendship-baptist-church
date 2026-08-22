@@ -68,6 +68,9 @@ export default function EventManagementPage() {
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formRecurrence, setFormRecurrence] = useState("none");
   const [formRecurrenceEnd, setFormRecurrenceEnd] = useState("");
+  // Opt-in per save: never carried over, so a later edit can't re-blast members.
+  const [formNotify, setFormNotify] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [imageError, setImageError] = useState("");
@@ -103,6 +106,7 @@ export default function EventManagementPage() {
     setFormImageUrl("");
     setFormRecurrence("none");
     setFormRecurrenceEnd("");
+    setFormNotify(false);
     setImageError("");
     setEditingEvent(null);
   }
@@ -175,24 +179,35 @@ export default function EventManagementPage() {
       recurrence: formRecurrence,
       recurrence_end:
         formRecurrence !== "none" && formRecurrenceEnd ? formRecurrenceEnd : null,
+      notify: formNotify,
     };
 
     try {
-      if (editingEvent) {
-        const res = await fetch("/api/admin/events", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: editingEvent.id, ...payload }),
-        });
-        if (res.ok) loadData();
-      } else {
-        const res = await fetch("/api/admin/events", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) loadData();
+      const res = await fetch("/api/admin/events", {
+        method: editingEvent ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          editingEvent ? { id: editingEvent.id, ...payload } : payload
+        ),
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.notification) {
+          const { sent, inApp, note } = data.notification;
+          setNotice(
+            note
+              ? `Event saved. ${note}`
+              : `Event saved and sent to ${sent} device${sent === 1 ? "" : "s"} (${inApp} member${inApp === 1 ? "" : "s"} notified in the portal).`
+          );
+        } else if (formNotify) {
+          setNotice(
+            "Event saved as a draft — no notification was sent. Tick Published as well to notify members."
+          );
+        }
+        loadData();
       }
+
       setFormOpen(false);
       resetForm();
     } finally {
@@ -324,6 +339,23 @@ export default function EventManagementPage() {
 
   return (
     <div className="space-y-6">
+      {notice && (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+        >
+          <span>{notice}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="cursor-pointer text-green-700 hover:text-green-900"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       <AdminPageHeader
         title="Events"
         description="Manage church events"
@@ -574,6 +606,27 @@ export default function EventManagementPage() {
                 }
               />
               <Label htmlFor="is_published">Published</Label>
+            </div>
+
+            <div className="rounded-lg border border-warm-200 p-3 dark:border-warm-700">
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="notify"
+                  checked={formNotify}
+                  onCheckedChange={(checked) => setFormNotify(checked === true)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <Label htmlFor="notify" className="cursor-pointer">
+                    Notify members
+                  </Label>
+                  <p className="mt-0.5 text-xs text-warm-400">
+                    Sends a phone notification and a portal notification to
+                    members who opted in to event updates. The event must be
+                    published. Leave unticked for edits and corrections.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <Button

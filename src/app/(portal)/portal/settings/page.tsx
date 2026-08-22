@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { FadeIn } from "@/components/motion/fade-in";
+import { PushToggle } from "@/components/portal/push-toggle";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,9 +175,13 @@ export default function AccountSettingsPage() {
             <ShieldCheck className="h-6 w-6 text-purple-500" /> Account &amp; Security
           </h1>
           <p className="text-warm-500 mt-1">
-            Manage your sign-in email, password, and a copy of your data.
+            Manage notifications, your sign-in email, password, and a copy of your
+            data.
           </p>
         </div>
+
+        {/* ── Push notifications ─────────────────────────────────────────── */}
+        <PushToggle onMessage={showToast} />
 
         {/* ── Change email ─────────────────────────────────────────── */}
         <Card className="p-6">

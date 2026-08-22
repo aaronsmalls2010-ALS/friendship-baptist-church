@@ -1,6 +1,46 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { notifyCongregation } from "@/lib/push/notify";
+
+// notifyCongregation reaches web-push, which needs the Node runtime.
+export const runtime = "nodejs";
+
+type EventRow = {
+  title: string;
+  start_date: string;
+  location: string | null;
+};
+
+/**
+ * Push + in-app notify the congregation about an event. Gated by each member's
+ * `notify_events` preference. Never throws into the caller.
+ */
+async function notifyAboutEvent(event: EventRow) {
+  try {
+    const when = new Date(event.start_date).toLocaleString("en-US", {
+      timeZone: "America/New_York",
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    const body = event.location ? `${when} — ${event.location}` : when;
+
+    const result = await notifyCongregation({
+      topic: "event",
+      title: event.title,
+      body,
+      url: "/events",
+      tag: "event",
+    });
+    return { sent: result.sent, inApp: result.inApp, note: result.note };
+  } catch (err) {
+    console.error("[ADMIN] Event notify error:", err);
+    return { sent: 0, inApp: 0, note: "Notification failed to send." };
+  }
+}
 
 /**
  * GET /api/admin/events
@@ -67,7 +107,7 @@ export async function POST(request: Request) {
     if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
-    const { title, description, start_date, end_date, location, ministry_id, is_published, rsvp_enabled, capacity, allow_waitlist, image_url, recurrence, recurrence_end } = body;
+    const { title, description, start_date, end_date, location, ministry_id, is_published, rsvp_enabled, capacity, allow_waitlist, image_url, recurrence, recurrence_end, notify } = body;
 
     if (!title || !start_date) {
       return NextResponse.json(
@@ -112,7 +152,12 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ event }, { status: 201 });
+    // Only notify when the admin explicitly ticked the box, and never for a
+    // draft — an unpublished event has nothing for a member to open.
+    const notification =
+      notify === true && event.is_published ? await notifyAboutEvent(event) : null;
+
+    return NextResponse.json({ event, notification }, { status: 201 });
   } catch (err) {
     console.error("[ADMIN] Events POST error:", err);
     return NextResponse.json(
@@ -187,7 +232,10 @@ export async function PUT(request: Request) {
       );
     }
 
-    return NextResponse.json({ event });
+    const notification =
+      raw.notify === true && event.is_published ? await notifyAboutEvent(event) : null;
+
+    return NextResponse.json({ event, notification });
   } catch (err) {
     console.error("[ADMIN] Events PUT error:", err);
     return NextResponse.json(

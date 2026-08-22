@@ -1,6 +1,32 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyCongregation } from "@/lib/push/notify";
+
+// notifyCongregation reaches web-push, which needs the Node runtime.
+export const runtime = "nodejs";
+
+type AnnouncementRow = { title: string; body: string };
+
+/**
+ * Push + in-app notify the congregation about an announcement. Gated by each
+ * member's `notify_newsletter` preference. Never throws into the caller.
+ */
+async function notifyAboutAnnouncement(announcement: AnnouncementRow) {
+  try {
+    const result = await notifyCongregation({
+      topic: "announcement",
+      title: announcement.title,
+      body: announcement.body,
+      url: "/portal",
+      tag: "announcement",
+    });
+    return { sent: result.sent, inApp: result.inApp, note: result.note };
+  } catch (err) {
+    console.error("[ADMIN] Announcement notify error:", err);
+    return { sent: 0, inApp: 0, note: "Notification failed to send." };
+  }
+}
 
 /**
  * GET /api/admin/announcements
@@ -49,7 +75,7 @@ export async function POST(request: Request) {
     if (!auth.ok) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
     const body = await request.json();
-    const { title, body: announcementBody, start_date, end_date, is_pinned, is_published, category } = body;
+    const { title, body: announcementBody, start_date, end_date, is_pinned, is_published, category, notify } = body;
 
     if (!title || !announcementBody) {
       return NextResponse.json(
@@ -80,7 +106,11 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ announcement }, { status: 201 });
+    // Only notify when the admin explicitly ticked the box — never on a plain
+    // save, so a typo fix can't blast the congregation a second time.
+    const notification = notify === true ? await notifyAboutAnnouncement(announcement) : null;
+
+    return NextResponse.json({ announcement, notification }, { status: 201 });
   } catch (err) {
     console.error("[ADMIN] Announcements POST error:", err);
     return NextResponse.json(
@@ -150,7 +180,9 @@ export async function PUT(request: Request) {
       );
     }
 
-    return NextResponse.json({ announcement });
+    const notification = raw.notify === true ? await notifyAboutAnnouncement(announcement) : null;
+
+    return NextResponse.json({ announcement, notification });
   } catch (err) {
     console.error("[ADMIN] Announcements PUT error:", err);
     return NextResponse.json(

@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { formatDate } from "@/lib/utils";
 import type { Announcement } from "@/types";
-import { Pencil, Trash2, Plus, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Plus, Loader2, X } from "lucide-react";
 
 const CATEGORIES = ["church", "youth", "finance", "ministry", "outreach"];
 
@@ -51,6 +51,9 @@ export default function AnnouncementManagementPage() {
   const [formEndDate, setFormEndDate] = useState("");
   const [formIsPinned, setFormIsPinned] = useState(false);
   const [formCategory, setFormCategory] = useState("");
+  // Opt-in per save: never carried over, so a later edit can't re-blast members.
+  const [formNotify, setFormNotify] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // ── Data fetching ─────────────────────────────────────────────────
   async function loadData() {
@@ -77,6 +80,7 @@ export default function AnnouncementManagementPage() {
     setFormEndDate("");
     setFormIsPinned(false);
     setFormCategory("");
+    setFormNotify(false);
     setEditingAnnouncement(null);
   }
 
@@ -104,27 +108,30 @@ export default function AnnouncementManagementPage() {
       end_date: formEndDate || undefined,
       is_pinned: formIsPinned,
       category: formCategory || undefined,
+      notify: formNotify,
     };
 
-    if (editingAnnouncement) {
-      const res = await fetch("/api/admin/announcements", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: editingAnnouncement.id, ...payload }),
-      });
-      if (res.ok) {
-        loadData();
+    const res = await fetch("/api/admin/announcements", {
+      method: editingAnnouncement ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        editingAnnouncement ? { id: editingAnnouncement.id, ...payload } : payload
+      ),
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (data.notification) {
+        const { sent, inApp, note } = data.notification;
+        setNotice(
+          note
+            ? `Announcement saved. ${note}`
+            : `Announcement saved and sent to ${sent} device${sent === 1 ? "" : "s"} (${inApp} member${inApp === 1 ? "" : "s"} notified in the portal).`
+        );
       }
-    } else {
-      const res = await fetch("/api/admin/announcements", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        loadData();
-      }
+      loadData();
     }
+
     setFormOpen(false);
     resetForm();
   }
@@ -251,6 +258,23 @@ export default function AnnouncementManagementPage() {
 
   return (
     <div className="space-y-6">
+      {notice && (
+        <div
+          role="status"
+          className="flex items-start justify-between gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+        >
+          <span>{notice}</span>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="cursor-pointer text-green-700 hover:text-green-900"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       <AdminPageHeader
         title="Announcements"
         description="Manage church announcements"
@@ -340,6 +364,27 @@ export default function AnnouncementManagementPage() {
                 onCheckedChange={(checked) => setFormIsPinned(checked === true)}
               />
               <Label htmlFor="is_pinned">Pinned</Label>
+            </div>
+
+            <div className="rounded-lg border border-warm-200 p-3 dark:border-warm-700">
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="notify"
+                  checked={formNotify}
+                  onCheckedChange={(checked) => setFormNotify(checked === true)}
+                  className="mt-0.5"
+                />
+                <div>
+                  <Label htmlFor="notify" className="cursor-pointer">
+                    Notify members
+                  </Label>
+                  <p className="mt-0.5 text-xs text-warm-400">
+                    Sends a phone notification and a portal notification to
+                    members who opted in to announcements. Leave unticked when
+                    you are just fixing wording.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-2">

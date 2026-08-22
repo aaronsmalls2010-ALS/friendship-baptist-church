@@ -13,6 +13,7 @@ import {
   Image,
   Images,
   MessageSquare,
+  BellRing,
   DollarSign,
   BarChart3,
   ClipboardList,
@@ -76,6 +77,7 @@ const navGroups: NavGroup[] = [
       { label: "Media", href: "/admin/media", icon: Image },
       { label: "Photos", href: "/admin/photos", icon: Images },
       { label: "SMS Center", href: "/admin/sms", icon: MessageSquare },
+      { label: "Push Center", href: "/admin/push", icon: BellRing },
     ],
   },
   {

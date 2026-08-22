@@ -166,15 +166,15 @@ export async function POST(
 
     // Create notifications for all approved members
     if (approvedMembers && approvedMembers.length > 0) {
+      // `type` must be a notification_type enum value ("ministry", not
+      // "ministry_message") and the table has no `metadata` column — the old
+      // shape made every one of these inserts fail silently.
       const notifications = approvedMembers.map((m) => ({
         profile_id: m.profile_id,
-        type: "ministry_message",
+        type: "ministry",
         title: `New message from ministry: ${subject.trim()}`,
         body: messageBody.trim().substring(0, 200),
-        metadata: {
-          ministry_id: ministryId,
-          message_id: message.id,
-        },
+        action_url: `/ministries/${ministryId}`,
       }));
 
       const { error: notifError } = await admin

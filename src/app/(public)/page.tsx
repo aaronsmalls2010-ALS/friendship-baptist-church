@@ -21,25 +21,49 @@ export default function HomePage() {
   // Preserved exactly: all EditableText/EditableImage ids and CTAs unchanged.
   const heroWelcome = (
     <>
-      {/* Background */}
-      <div className="absolute inset-0">
-        <EditableImage
-          id="home.hero.bg"
-          fallback="/images/church/cross.jpg"
-          alt=""
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-hero" />
-        <div className="absolute inset-0 bg-purple-950/40" />
+      {/* Background — our own sanctuary. The photo is portrait (3:4), so on
+          desktop it fills a tall right-hand panel at close to its native shape
+          (no crop of the banner, no skew) and the purple washes across from the
+          left where the headline sits. Phone viewports are already portrait, so
+          there the photo goes full-bleed behind the text. */}
+      <div className="absolute inset-0 bg-purple-950">
+        {/* Desktop framing is nudged up (object-position 20%) so the "The Church
+            That Christ Built" banner clears the header wash instead of hiding
+            underneath it. */}
+        <div className="absolute inset-0 lg:left-[34%]">
+          <EditableImage
+            id="home.hero.bg"
+            fallback="/images/church/fbc-sanctuary.jpg"
+            alt=""
+            fill
+            sizes="(max-width: 1023px) 100vw, 66vw"
+            className="object-cover object-center lg:object-[50%_20%]"
+            priority
+          />
+        </div>
+
+        {/* Purple wash: a flat scrim on phones, where the text sits over the
+            photo; a left-to-right fade on desktop so the headline lands on
+            solid colour and the sanctuary emerges beside it. */}
+        <div className="absolute inset-0 bg-purple-950/55 lg:hidden" />
+        <div className="absolute inset-0 hidden lg:block bg-gradient-to-r from-purple-950 from-30% via-purple-950/75 via-55% to-purple-950/10" />
+
+        {/* Edge shading — feathers the photo into the purple on both sides. */}
+        <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-purple-950/85 to-transparent sm:w-28 lg:hidden" />
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-purple-950/85 to-transparent sm:w-28 lg:w-56" />
+
+        {/* Top wash — keeps the sticky header legible. Full-height on phones
+            (text sits over the photo); a short band on desktop so it darkens
+            the header area without swallowing the banner. */}
+        <div className="absolute inset-0 bg-gradient-hero lg:hidden" />
+        <div className="absolute inset-x-0 top-0 hidden h-28 bg-gradient-to-b from-purple-950/85 to-transparent lg:block" />
       </div>
 
-      {/* Content — centered by default; shifts left on desktop when the
-          floating events card is present (driven by the section's
-          data-has-events via group-data variants). */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center lg:group-data-[has-events=true]/hero:justify-start">
-        <div className="container-wide text-center text-white pt-24 pb-16 lg:group-data-[has-events=true]/hero:text-left lg:group-data-[has-events=true]/hero:pr-[470px] xl:group-data-[has-events=true]/hero:pr-[520px]">
+      {/* Content — centered on phones (photo sits behind it); left-aligned on
+          desktop with the right side reserved for the sanctuary panel and the
+          floating events card. */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center lg:justify-start lg:pr-[44%] xl:pr-[40%]">
+        <div className="container-wide text-center text-white pt-24 pb-16 lg:text-left">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -76,7 +100,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7 }}
-            className="text-white/70 text-fluid-base mb-10 max-w-2xl mx-auto lg:group-data-[has-events=true]/hero:mx-0"
+            className="text-white/80 text-fluid-base mb-10 max-w-2xl mx-auto lg:mx-0"
           >
             Led by {CHURCH_INFO.pastor}, serving the Beaufort, SC community with
             love, faith, and fellowship in the Lowcountry Gullah Geechee
@@ -87,7 +111,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.9 }}
-            className="flex flex-wrap items-center justify-center gap-4 lg:group-data-[has-events=true]/hero:justify-start"
+            className="flex flex-wrap items-center justify-center gap-4 lg:justify-start"
           >
             {watchLiveEnabled && (
               <CTAButton href="/media?tab=live" variant="gold" size="lg" icon={<Video className="h-5 w-5" />}>

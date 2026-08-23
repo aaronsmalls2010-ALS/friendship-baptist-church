@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/brand/logo";
+import { PushBell } from "@/components/notifications/push-bell";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { isAdmin } from "@/lib/auth/roles";
@@ -66,7 +67,11 @@ export function PortalSidebar() {
       .then((r) => r.ok ? r.json() : null)
       .then((d) => {
         if (d) {
-          const unread = (d.notifications ?? []).filter((n: { read: boolean }) => !n.read).length;
+          // The column is `is_read`; reading `read` made every notification
+          // count as unread, so the badge never cleared.
+          const unread = (d.notifications ?? []).filter(
+            (n: { is_read?: boolean }) => !n.is_read
+          ).length;
           setNotifCount(unread);
         }
       })
@@ -93,6 +98,12 @@ export function PortalSidebar() {
         <div className="p-4 border-b border-warm-200">
           <Logo variant="icon" size="sm" />
           <p className="text-xs text-warm-500 mt-2">Member Portal</p>
+        </div>
+
+        {/* Always-visible push control, right under the brand so members can
+            see and change it without hunting through Settings. */}
+        <div className="px-3 pt-3">
+          <PushBell />
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Portal navigation">
@@ -152,6 +163,10 @@ export function PortalSidebar() {
       <aside className="hidden md:flex lg:hidden flex-col w-16 bg-white border-r border-warm-200 h-screen sticky top-0 shrink-0">
         <div className="p-2 py-3 border-b border-warm-200 flex justify-center">
           <Logo variant="icon" size="sm" />
+        </div>
+
+        <div className="px-1.5 pt-2">
+          <PushBell variant="icon" />
         </div>
 
         <nav className="flex-1 py-3 px-1.5 space-y-1 overflow-y-auto" aria-label="Portal navigation">
@@ -247,6 +262,9 @@ export function PortalSidebar() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 space-y-1 max-h-[60vh] overflow-y-auto">
+              <div className="mb-2 border-b border-warm-100 pb-2">
+                <PushBell />
+              </div>
               <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider px-3 mb-2">All Pages</p>
               {navItems.map((item) => {
                 const isActive = pathname === item.href;

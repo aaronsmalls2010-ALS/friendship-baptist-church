@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FadeIn } from "@/components/motion/fade-in";
 import { SlideUpContainer, SlideUpItem } from "@/components/motion/slide-up";
+import { PushPromptCard } from "@/components/notifications/push-prompt-card";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDate, CHURCH_TZ } from "@/lib/utils";
 
@@ -145,6 +146,10 @@ export default function MemberDashboardPage() {
           </div>
         </div>
       </FadeIn>
+
+      {/* Notification invitation — hides itself once the member is subscribed,
+          or for 30 days after they dismiss it. */}
+      <PushPromptCard />
 
       {/* Quick Actions */}
       <FadeIn direction="up" delay={0.1}>

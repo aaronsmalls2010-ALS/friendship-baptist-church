@@ -29,6 +29,7 @@ type EventRow = {
   end_date: string | null;
   recurrence: string | null;
   recurrence_end: string | null;
+  recurrence_exceptions: string[] | null;
   is_published: boolean;
   is_birthday: boolean;
 };
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await admin
       .from("events")
       .select(
-        "id, title, start_date, end_date, recurrence, recurrence_end, is_published, is_birthday"
+        "id, title, start_date, end_date, recurrence, recurrence_end, recurrence_exceptions, is_published, is_birthday"
       )
       .eq("is_published", true)
       .eq("is_birthday", false)

@@ -149,7 +149,14 @@ type EventLike = {
   end_date?: string | null;
   recurrence?: string | null;
   recurrence_end?: string | null;
+  /** YYYY-MM-DD dates of the series that are skipped. */
+  recurrence_exceptions?: string[] | null;
 };
+
+function dateKey(d: Date) {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 /**
  * Expand a (possibly recurring) event into occurrences whose start falls within
@@ -185,6 +192,7 @@ export function expandOccurrences<T extends EventLike>(
     return out;
   }
 
+  const skipped = new Set(event.recurrence_exceptions ?? []);
   const hh = base.getHours();
   const mm = base.getMinutes();
   const cursor = startOfDay(new Date(Math.max(windowStart.getTime(), startOfDay(base).getTime())));
@@ -192,7 +200,7 @@ export function expandOccurrences<T extends EventLike>(
   while (cursor <= windowEnd && out.length < cap && guard < 800) {
     guard++;
     if (recEnd && cursor > recEnd) break;
-    if (fires(rule, cursor, base)) {
+    if (fires(rule, cursor, base) && !skipped.has(dateKey(cursor))) {
       const occ = new Date(cursor);
       occ.setHours(hh, mm, 0, 0);
       if (occ >= windowStart && occ <= windowEnd && occ >= base) emit(occ);
